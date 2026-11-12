@@ -190,9 +190,10 @@ class Agent:
 
     async def push_jobs(self) -> None:
         items = self.session.store.all()
+        # Only the jobs not tried yet: a tried one's row is written when its application ends, and pushing it again would
+        # only move its time to now.
         scored = [item for item in items if item.score is not None and item.status not in SENT_WORDS][:PUSH_LIMIT]
-        tried = [item for item in items if item.status in SENT_WORDS]
-        await self.db.upsert("automation_jobs", [self._row(item) for item in scored + tried], "user_id,id")
+        await self.db.upsert("automation_jobs", [self._row(item) for item in scored], "user_id,id")
 
     async def bring_jobs(self) -> None:
         session = self.session

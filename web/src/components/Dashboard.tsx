@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
-import { APPLICATION_STATUSES, isOnline, plural } from '../lib/format';
+import { APPLICATION_STATUSES, isOnline, plural, statusInfo } from '../lib/format';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
 import { playChime, showBrowserNotification } from '../lib/notify';
 import type { JobRow, LiveStatus } from '../lib/types';
@@ -67,9 +67,9 @@ function finishedMessage(job: JobRow): { title: string; detail: string; tone: To
     case 'unconfirmed':
       return { title: `Sent to ${job.company} (not confirmed)`, detail: job.title, tone: 'ok', good: true };
     case 'blocked':
-      return job.dry_run
+      return job.reason === 'dry_run'
         ? { title: 'Filled, not sent (dry run)', detail: `${job.company}: ${job.title}`, tone: 'ok', good: true }
-        : { title: `Stopped at ${job.company}`, detail: job.title, tone: 'warn', good: false };
+        : { title: `${statusInfo(job).label} at ${job.company}`, detail: job.title, tone: 'warn', good: false };
     case 'refused':
       return { title: `Refused by form at ${job.company}`, detail: job.title, tone: 'error', good: false };
     default:

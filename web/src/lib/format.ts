@@ -49,7 +49,24 @@ export const APPLICATION_STATUSES = ['applying', 'submitted', 'unconfirmed', 're
 
 export type StatusTone = 'applying' | 'sent' | 'unconfirmed' | 'bad' | 'stopped';
 
-export function statusInfo(job: Pick<JobRow, 'status' | 'dry_run'>): { label: string; tone: StatusTone } {
+/** Why a form was not sent, in words, from the agent's one-word reason. */
+const STOP_REASONS: Record<string, string> = {
+  missing_info: 'needs info from you',
+  captcha: 'captcha',
+  login: 'needs a login',
+  closed: 'posting closed',
+  broken_page: 'page did not work',
+  stuck: 'got stuck',
+  never_clicked: 'send button not clicked',
+};
+
+export function statusInfo(job: Pick<JobRow, 'status' | 'dry_run'> & Partial<Pick<JobRow, 'reason'>>): { label: string; tone: StatusTone } {
+  if (job.status === 'blocked') {
+    // Only a dry run that reached the send button was filled; any other stop is a stop, dry run or not.
+    if (job.reason === 'dry_run' || (job.dry_run && !job.reason)) return { label: 'Filled, not sent (dry run)', tone: 'stopped' };
+    const why = job.reason ? STOP_REASONS[job.reason] : undefined;
+    return { label: why ? `Stopped: ${why}` : 'Stopped', tone: 'stopped' };
+  }
   switch (job.status) {
     case 'applying':
       return { label: 'Applying...', tone: 'applying' };
@@ -61,8 +78,6 @@ export function statusInfo(job: Pick<JobRow, 'status' | 'dry_run'>): { label: st
       return { label: 'Refused by form', tone: 'bad' };
     case 'failed':
       return { label: 'Failed', tone: 'bad' };
-    case 'blocked':
-      return { label: job.dry_run ? 'Filled, not sent (dry run)' : 'Stopped', tone: 'stopped' };
     default:
       return { label: job.status, tone: 'stopped' };
   }
