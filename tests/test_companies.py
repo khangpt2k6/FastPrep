@@ -1,10 +1,11 @@
 import asyncio
 from typing import Any
 
+import httpx
 import pytest
 
 from agent_automation.agent import companies
-from agent_automation.agent.companies import Company, clean_domain, company_key, name_companies, seen_domains
+from agent_automation.agent.companies import Company, clean_domain, company_key, name_companies, seen_domains, unknown_to_icons
 from agent_automation.memory.store import Store
 from agent_automation.tools.database import Job
 
@@ -34,8 +35,13 @@ def test_a_posting_shows_its_own_site_and_the_domains_its_description_writes_but
     assert seen_domains(posting) == ["careers.snap.com", "snap.com", "snapchat.com"]
 
 
+async def no_unknown(_domains: list[str]) -> set[str]:
+    return set()
+
+
 def test_each_company_is_asked_about_once_and_its_answer_is_cleaned(monkeypatch: pytest.MonkeyPatch) -> None:
     asked: list[str] = []
+    monkeypatch.setattr(companies, "unknown_to_icons", no_unknown)
 
     async def structured(_client: Any, _model: str, _system: str, user: str, _name: str, _schema: dict[str, Any]) -> dict[str, Any]:
         asked.append(user)
@@ -58,6 +64,7 @@ def test_each_company_is_asked_about_once_and_its_answer_is_cleaned(monkeypatch:
 
 def test_many_companies_go_in_batches(monkeypatch: pytest.MonkeyPatch) -> None:
     sizes: list[int] = []
+    monkeypatch.setattr(companies, "unknown_to_icons", no_unknown)
 
     async def structured(_client: Any, _model: str, _system: str, user: str, _name: str, _schema: dict[str, Any]) -> dict[str, Any]:
         sizes.append(user.count("### c"))
@@ -75,3 +82,28 @@ def test_the_store_keeps_each_companys_name_and_domain(tmp_path: Any) -> None:
     assert store.companies() == {"cisco": ("Cisco Systems", "cisco.com"), "dtcc": ("DTCC", "")}
     store.close()
     assert Store(tmp_path / "jobs.db").companies()["dtcc"] == ("DTCC", "")
+
+
+def test_a_domain_the_icon_service_does_not_know_is_dropped(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def structured(*_args: Any) -> dict[str, Any]:
+        return {"companies": [{"id": "c00", "name": "Jeeves", "domain": "getjeevs.com"}, {"id": "c01", "name": "Snap", "domain": "snap.com"}]}
+
+    async def unknown(domains: list[str]) -> set[str]:
+        assert domains == ["getjeevs.com", "snap.com"]
+        return {"getjeevs.com"}
+
+    monkeypatch.setattr(companies, "structured", structured)
+    monkeypatch.setattr(companies, "unknown_to_icons", unknown)
+    named = asyncio.run(name_companies(None, "m", [job("jeeves"), job("Snap Inc.")]))  # type: ignore[arg-type]
+    assert named == {"jeeves": Company("Jeeves", ""), "snap inc.": Company("Snap", "snap.com")}
+
+
+def test_only_a_404_from_the_icon_service_marks_a_domain_unknown() -> None:
+    def answer(request: httpx.Request) -> httpx.Response:
+        domain = request.url.params["domain"]
+        if domain == "down.com":
+            raise httpx.ConnectError("no network")
+        return httpx.Response(404 if domain == "made-up.com" else 200, content=b"png")
+
+    found = asyncio.run(unknown_to_icons(["snap.com", "made-up.com", "down.com"], httpx.MockTransport(answer)))
+    assert found == {"made-up.com"}
