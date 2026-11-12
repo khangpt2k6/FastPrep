@@ -22,6 +22,7 @@ def empty_profile() -> dict[str, Any]:
             "desired_roles", "desired_locations", "work_mode", "willing_to_relocate", "earliest_start", "desired_salary", "notice_period")},
         "authorization": {"countries": [], "citizen_us": "", "authorized_us": "", "needs_sponsorship": "", "authorization_basis": "", "visa_type": ""},
         "eeo": {"gender": "", "pronouns": "", "race": "", "hispanic_latino": "", "veteran": "", "disability": "", "lgbtq": "", "sexual_orientation": []},
+        "background": {"security_clearance": "", "foreign_government_ties": "", "criminal_conviction": "", "let_go_or_resigned": ""},
         "extra": {"how_heard": "", "notes": "", "custom": []},
     }
 
@@ -61,6 +62,10 @@ DISABILITY_WORDS = {
 }
 
 
+# "None" alone reads as an unanswered field; a clearance list offers "No clearance" or "None", and the words fit both.
+CLEARANCE_WORDS = {"none": "None (I hold no security clearance)"}
+
+
 def _said(value: Any, words: dict[str, str]) -> str:
     text = _text(value)
     return words.get(text.lower(), text)
@@ -70,6 +75,7 @@ def profile_answers(data: dict[str, Any]) -> dict[str, str]:
     """name -> value for every field the person filled in; empty ones are left out."""
     personal, prefs = _section(data, "personal"), _section(data, "preferences")
     auth, eeo, extra = _section(data, "authorization"), _section(data, "eeo"), _section(data, "extra")
+    background = _section(data, "background")
     out: dict[str, str] = {}
 
     first, last = _text(personal.get("first_name")), _text(personal.get("last_name"))
@@ -118,6 +124,10 @@ def profile_answers(data: dict[str, Any]) -> dict[str, str]:
         "gender": _text(eeo.get("gender")), "pronouns": _text(eeo.get("pronouns")), "race_ethnicity": _text(eeo.get("race")),
         "hispanic_or_latino": _text(eeo.get("hispanic_latino")), "veteran_status": _said(eeo.get("veteran"), VETERAN_WORDS),
         "disability_status": _said(eeo.get("disability"), DISABILITY_WORDS), "lgbtq": _text(eeo.get("lgbtq")), "sexual_orientation": _text(eeo.get("sexual_orientation")),
+        "security_clearance": _said(background.get("security_clearance"), CLEARANCE_WORDS),
+        "foreign_government_ties": _text(background.get("foreign_government_ties")),
+        "criminal_conviction": _text(background.get("criminal_conviction")),
+        "let_go_or_asked_to_resign": _text(background.get("let_go_or_resigned")),
         "how_did_you_hear": _text(extra.get("how_heard")), "additional_notes": _text(extra.get("notes")),
     }
     for pair in _entries(extra, "custom"):

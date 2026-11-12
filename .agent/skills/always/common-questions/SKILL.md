@@ -9,6 +9,7 @@ Questions most forms ask, and what to answer when the answers give nothing more 
 - Notice period: the answers' `notice_period`; a student or someone between roles says "Available immediately" only when the answers say so, else leave an optional one empty.
 - Willing to relocate, work mode (remote, hybrid, on-site): the answers' `willing_to_relocate` and `work_mode`.
 - Work authorization and sponsorship: `authorized_to_work_in_us`, `requires_visa_sponsorship`, `visa_type`, exactly as the answers say. Never guess these: a required one the answers leave out stops the form as missing information.
+- Security clearance, ties to a foreign government, criminal convictions, having been let go or asked to resign: `security_clearance`, `foreign_government_ties`, `criminal_conviction`, `let_go_or_asked_to_resign`, exactly as the answers say, in the option of the list that means the same. Never guess these either: a required one the answers leave out stops the form as missing information.
 - "How did you hear about us": the answers' `how_did_you_hear`, else the option closest to a company careers page or a job board.
 - Graduation date and GPA: from the education in the answers; a degree in progress graduates at its end date.
 - Before finish_form, read back what each list and typeahead holds (location, country, veteran and disability status, work authorization): an answer that is not what the answers say is fixed first, and a form is never reported ready with one.

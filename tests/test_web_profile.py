@@ -68,6 +68,20 @@ def test_finish_form_written_answers_are_read_safely():
     assert written_answers({"written_answers": "nope"}) == ()
 
 
+def test_background_answers_are_given_as_the_person_set_them():
+    data = empty_profile()
+    data["background"] |= {"security_clearance": "Prefer not to disclose", "foreign_government_ties": "No", "criminal_conviction": "No"}
+    answers = profile_answers(data)
+    assert answers["security_clearance"] == "Prefer not to disclose"
+    assert answers["foreign_government_ties"] == "No" and answers["criminal_conviction"] == "No"
+    assert "let_go_or_asked_to_resign" not in answers
+
+    data["background"] |= {"security_clearance": "None", "let_go_or_resigned": "No"}
+    answers = profile_answers(data)
+    assert answers["security_clearance"].startswith("None (") and answers["let_go_or_asked_to_resign"] == "No"
+    assert profile_answers({"background": "nope"}) == {}
+
+
 def test_veteran_and_disability_answers_say_what_the_lists_offer():
     from agent_automation.memory.web_profile import empty_profile, profile_answers
 
