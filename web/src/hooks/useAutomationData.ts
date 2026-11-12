@@ -1,0 +1,185 @@
+import { useCallback, useEffect, useState } from 'react';
+import { TABLES, supabase } from '../lib/supabase';
+import { toLoadError } from '../lib/errors';
+import type { AgentRow, CommandRow, JobRow, LoadError, MemoryRow, Preferences, PreferencesRow, ProfileRow } from '../lib/types';
+import { useLiveTable } from './useLiveTable';
+
+const JOB_COLUMNS = 'id,title,company,location,url,score,status,note,reason,screenshot_path,dry_run,updated_at';
+
+export function useAgent(userId: string) {
+  const load = useCallback(
+    () => supabase.from(TABLES.agent).select('*').eq('user_id', userId).limit(1).returns<AgentRow[]>(),
+    [userId],
+  );
+  const table = useLiveTable<AgentRow>({
+    table: TABLES.agent,
+    userId,
+    load,
+    keyOf: (row) => row.user_id,
+    pollMs: 10_000,
+  });
+  return { ...table, agent: table.rows[0] ?? null };
+}
+
+export function useJobs(userId: string) {
+  const load = useCallback(
+    () =>
+      supabase
+        .from(TABLES.jobs)
+        .select(JOB_COLUMNS)
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(1000)
+        .returns<JobRow[]>(),
+    [userId],
+  );
+  return useLiveTable<JobRow>({ table: TABLES.jobs, userId, load, keyOf: (row) => row.id });
+}
+
+export function useCommands(userId: string) {
+  const load = useCallback(
+    () =>
+      supabase
+        .from(TABLES.commands)
+        .select('id,kind,job_ids,dry_run,status,error,created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(15)
+        .returns<CommandRow[]>(),
+    [userId],
+  );
+  return useLiveTable<CommandRow>({
+    table: TABLES.commands,
+    userId,
+    load,
+    keyOf: (row) => (row.id === undefined ? undefined : String(row.id)),
+  });
+}
+
+export function useProfileRow(userId: string) {
+  const load = useCallback(
+    () => supabase.from(TABLES.profile).select('*').eq('user_id', userId).limit(1).returns<ProfileRow[]>(),
+    [userId],
+  );
+  const table = useLiveTable<ProfileRow>({
+    table: TABLES.profile,
+    userId,
+    load,
+    keyOf: (row) => row.user_id,
+    pollMs: 60_000,
+  });
+  return { ...table, row: table.rows[0] ?? null };
+}
+
+const MEMORY_COLUMNS = 'id,question,answer,source,pinned,company,job_title,job_id,created_at,updated_at';
+
+export function useMemory(userId: string) {
+  const load = useCallback(
+    () =>
+      supabase
+        .from(TABLES.memory)
+        .select(MEMORY_COLUMNS)
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(500)
+        .returns<MemoryRow[]>(),
+    [userId],
+  );
+  return useLiveTable<MemoryRow>({
+    table: TABLES.memory,
+    userId,
+    load,
+    keyOf: (row) => (row.id === undefined ? undefined : String(row.id)),
+    pollMs: 30_000,
+  });
+}
+
+export async function teachAnswer(question: string, answer: string) {
+  const { error } = await supabase.from(TABLES.memory).insert({ question, answer, source: 'user' });
+  if (error) throw error;
+}
+
+/** Editing an answer makes it yours: source becomes 'user'. */
+export async function editAnswer(id: number, answer: string) {
+  const { error } = await supabase
+    .from(TABLES.memory)
+    .update({ answer, source: 'user', updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function setPinned(id: number, pinned: boolean) {
+  const { error } = await supabase.from(TABLES.memory).update({ pinned }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteAnswer(id: number) {
+  const { error } = await supabase.from(TABLES.memory).delete().eq('id', id);
+  if (error) throw error;
+}
+
+export const DEFAULT_PREFERENCES: Preferences = {
+  tone: '',
+  length: '',
+  highlight: '',
+  avoid: '',
+  notes: '',
+  sample: '',
+  learn: true,
+};
+
+/** Preferences are only edited on their own page, so a plain fetch is enough (no realtime). */
+export function usePreferences(userId: string) {
+  const [row, setRow] = useState<PreferencesRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<LoadError | null>(null);
+
+  const reload = useCallback(async () => {
+    try {
+      const { data, error: err } = await supabase
+        .from(TABLES.preferences)
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle<PreferencesRow>();
+      if (err) setError(toLoadError(err));
+      else {
+        setRow(data);
+        setError(null);
+      }
+    } catch (err) {
+      setError(toLoadError(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  return { row, loading, error, reload };
+}
+
+export async function savePreferences(prefs: Preferences) {
+  const { error } = await supabase
+    .from(TABLES.preferences)
+    .upsert({ ...prefs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  if (error) throw error;
+}
+
+export async function sendApply(jobIds: string[], dryRun: boolean) {
+  const { error } = await supabase.from(TABLES.commands).insert({ kind: 'apply', job_ids: jobIds, dry_run: dryRun });
+  if (error) throw error;
+}
+
+export async function sendSearch() {
+  const { error } = await supabase.from(TABLES.commands).insert({ kind: 'search' });
+  if (error) throw error;
+}
+
+export async function saveProfileRow(data: unknown, completed: boolean) {
+  const { error } = await supabase
+    .from(TABLES.profile)
+    .upsert({ data, completed, updated_by: 'web', updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  if (error) throw error;
+}

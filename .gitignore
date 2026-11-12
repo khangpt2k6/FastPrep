@@ -23,3 +23,7 @@ docs/superpowers/
 
 # your resumes
 resumes/
+
+# supabase cli scratch
+supabase/.temp/
+.playwright-mcp/
