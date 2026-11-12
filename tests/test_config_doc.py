@@ -6,7 +6,7 @@ import re
 from dataclasses import fields
 from pathlib import Path
 
-from agent_automation.config import Config, Filters
+from agent_automation.memory.config import Config, Filters
 
 ROOT = Path(__file__).resolve().parents[1]
 

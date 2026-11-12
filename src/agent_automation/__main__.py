@@ -1,3 +1,3 @@
-from agent_automation.cli import run
+from agent_automation.ui.cli import run
 
 run()

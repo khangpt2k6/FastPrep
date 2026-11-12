@@ -8,7 +8,7 @@ import httpx
 import pytest
 from openai import APIConnectionError
 
-from agent_automation import errors
+from agent_automation.hooks import errors
 
 
 @pytest.fixture(autouse=True)

@@ -12,13 +12,13 @@ from typing import Any
 
 import pytest
 
-from agent_automation import session as session_module
-from agent_automation import telemetry
-from agent_automation.apply import Outcome
-from agent_automation.database import Job
-from agent_automation.llm import Spend
-from agent_automation.session import Session
-from agent_automation.telemetry import EVENTS, KNOWN_SITES, Telemetry, install_id, vendor_of
+from agent_automation.agent import session as session_module
+from agent_automation.agent.apply import Outcome
+from agent_automation.agent.llm import Spend
+from agent_automation.agent.session import Session
+from agent_automation.hooks import telemetry
+from agent_automation.hooks.telemetry import EVENTS, KNOWN_SITES, Telemetry, install_id, vendor_of
+from agent_automation.tools.database import Job
 from fakes import ROOT, load_script
 
 SOURCE = ROOT / "src" / "agent_automation"
@@ -100,7 +100,7 @@ def test_every_known_site_is_a_form_vendor_of_the_pipeline_with_the_same_name() 
 
 def test_every_event_and_property_the_code_sends_is_declared_and_every_declared_one_is_sent() -> None:
     sent: dict[str, set[str]] = {}
-    for path in SOURCE.glob("*.py"):
+    for path in SOURCE.rglob("*.py"):
         for call in (node for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))) if isinstance(node, ast.Call)):
             if not isinstance(call.func, ast.Attribute):
                 continue

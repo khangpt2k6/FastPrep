@@ -13,8 +13,8 @@ from typing import Any
 import anyio
 import pytest
 
-from agent_automation import apply as apply_module
-from agent_automation.apply import (
+from agent_automation.agent import apply as apply_module
+from agent_automation.agent.apply import (
     LOOP_STOP,
     PAGE_CHARS,
     SYSTEM,
@@ -27,8 +27,8 @@ from agent_automation.apply import (
     server_parameters,
     sign_in,
 )
-from agent_automation.config import DRY_RUN_ENV
-from agent_automation.database import Job
+from agent_automation.memory.config import DRY_RUN_ENV
+from agent_automation.tools.database import Job
 from fakes import ScriptedBrowser, ScriptedModel, tool_call
 
 JOB = Job("g:a:1", "Acme", "Engineer", "Rome", "https://u", "https://u/apply", "Build things")

@@ -15,10 +15,10 @@ from pathlib import Path
 import duckdb
 import pytest
 
-from agent_automation.config import Arc, ConfigError, Filters, Form, Node, Plan, load_config
-from agent_automation.database import RECALL, UNDESCRIBED, DatabaseError, Job, load_manifest, rarity, search
-from agent_automation.library import Library, LibraryError
-from agent_automation.store import COLUMNS, Proof, Store, said, sent_word, write_applied
+from agent_automation.memory.config import Arc, ConfigError, Filters, Form, Node, Plan, load_config
+from agent_automation.memory.store import COLUMNS, Proof, Store, said, sent_word, write_applied
+from agent_automation.tools.database import RECALL, UNDESCRIBED, DatabaseError, Job, load_manifest, rarity, search
+from agent_automation.tools.library import Library, LibraryError
 from fakes import publish
 
 JOB = Job("g:a:1", "Acme", "Senior Python Engineer", "Rome, Italy", "u", "a", "d")
@@ -561,7 +561,7 @@ def test_a_chain_that_cannot_be_followed_starts_over_from_the_newest_build(tmp_p
 
 
 def test_many_deltas_become_one_and_a_search_finds_the_same(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import agent_automation.library as library_module
+    import agent_automation.tools.library as library_module
 
     monkeypatch.setattr(library_module, "DELTAS_APART", 2)
     site = tmp_path / "site"
@@ -619,7 +619,7 @@ def test_a_search_can_run_on_the_first_chunk_while_the_others_still_come(tmp_pat
 
 
 def test_the_bytes_that_came_are_told_from_nothing_to_all_of_them_and_never_go_back(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import agent_automation.library as library_module
+    import agent_automation.tools.library as library_module
 
     monkeypatch.setattr(library_module, "READ_BYTES", 64)
     monkeypatch.setattr(library_module, "TELL_EVERY", 0.0)
@@ -639,7 +639,7 @@ def test_the_bytes_that_came_are_told_from_nothing_to_all_of_them_and_never_go_b
 
 
 def test_a_download_is_told_at_most_every_half_second(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import agent_automation.library as library_module
+    import agent_automation.tools.library as library_module
 
     monkeypatch.setattr(library_module, "READ_BYTES", 16)
     site = tmp_path / "site" / "b1"
@@ -672,8 +672,8 @@ def test_a_build_the_dataset_no_longer_has_starts_over_from_the_newest(tmp_path:
 
 
 def test_a_download_stops_at_its_next_part_when_the_app_closes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import agent_automation.library as library_module
-    from agent_automation.library import Stopped
+    import agent_automation.tools.library as library_module
+    from agent_automation.tools.library import Stopped
 
     monkeypatch.setattr(library_module, "READ_BYTES", 64)
     site = tmp_path / "site" / "b1"

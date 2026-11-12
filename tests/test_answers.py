@@ -5,9 +5,9 @@ from __future__ import annotations
 import string
 from pathlib import Path
 
-from agent_automation.config import load_config
-from agent_automation.profile import ACCOUNT_PASSWORD, PASSWORD_SYMBOLS, ensure_account_password, import_answers_file, new_password
-from agent_automation.store import Store
+from agent_automation.memory.config import load_config
+from agent_automation.memory.profile import ACCOUNT_PASSWORD, PASSWORD_SYMBOLS, ensure_account_password, import_answers_file, new_password
+from agent_automation.memory.store import Store
 
 
 def test_answers_are_kept_in_the_store_and_the_persons_answer_wins_over_the_cv(tmp_path: Path) -> None:
@@ -87,7 +87,7 @@ def test_a_plain_password_left_by_an_older_store_is_sealed_on_its_first_read(tmp
 def test_a_sealed_password_with_a_replaced_key_says_so(tmp_path: Path) -> None:
     import pytest
 
-    from agent_automation.secret import SecretError
+    from agent_automation.memory.secret import SecretError
 
     store = Store(tmp_path / "jobs.db")
     store.set_answer(ACCOUNT_PASSWORD, "Secret!9x")
@@ -98,8 +98,8 @@ def test_a_sealed_password_with_a_replaced_key_says_so(tmp_path: Path) -> None:
 
 
 def test_a_plan_from_the_model_is_cleaned_of_what_the_settings_refuse() -> None:
-    from agent_automation.config import _plan
-    from agent_automation.profile import clean_plan
+    from agent_automation.memory.config import _plan
+    from agent_automation.memory.profile import clean_plan
 
     plan = {
         "nodes": [
@@ -123,8 +123,8 @@ def test_a_plan_from_the_model_is_cleaned_of_what_the_settings_refuse() -> None:
 def test_the_countries_of_the_web_profile_become_the_search_places(tmp_path: Path) -> None:
     import yaml
 
-    from agent_automation.config import load_config
-    from agent_automation.profile import set_search_places
+    from agent_automation.memory.config import load_config
+    from agent_automation.memory.profile import set_search_places
 
     (tmp_path / "automation.yaml").write_text(
         yaml.safe_dump({"filters": {"include": ["role"], "locations": ["Tampa", "Ho Chi Minh City", "United States", "Vietnam"],

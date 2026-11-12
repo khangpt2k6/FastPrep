@@ -1,4 +1,4 @@
-from agent_automation.web_profile import empty_profile, profile_answers
+from agent_automation.memory.web_profile import empty_profile, profile_answers
 
 
 def test_empty_profile_gives_no_answers():
@@ -41,7 +41,7 @@ def test_profile_answers_survives_bad_shapes():
 
 
 def test_writing_text_says_the_preferences_and_one_answer_per_question():
-    from agent_automation.web_profile import writing_text
+    from agent_automation.memory.web_profile import writing_text
 
     preferences = {"tone": "Warm", "length": "Short", "highlight": "AI agents", "avoid": "", "notes": "", "sample": "", "learn": True}
     memory = [
@@ -61,7 +61,7 @@ def test_writing_text_says_the_preferences_and_one_answer_per_question():
 
 
 def test_finish_form_written_answers_are_read_safely():
-    from agent_automation.apply import written_answers
+    from agent_automation.agent.apply import written_answers
 
     assert written_answers({"written_answers": [{"question": " Why us? ", "answer": " Mission. "}, {"question": "", "answer": "x"}, "bad"]}) == (("Why us?", "Mission."),)
     assert written_answers({}) == ()

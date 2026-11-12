@@ -1,0 +1,16 @@
+# What runs, and when. The person's ~/.agent-automation/settings.yaml is read after this one: its hooks are added to these.
+#
+# A hook is a command given the event as JSON on its standard input. `python` as the first word is the Python that runs the
+# agent, and a script path is read from the folder this file is in. Exit 0 lets the agent go on; with JSON on standard
+# output it can also change what the event allows (see hooks/README.md). Exit 2 stops the step, and what the hook wrote to
+# standard error is the reason shown. Any other exit is reported and ignored.
+#
+# Events:
+#   session_start    the agent started
+#   before_apply     an application is about to be filled: exit 2 skips this job
+#   letter_written   a cover letter was written: {"letter": "..."} on stdout replaces its text
+#   after_apply      an application ended, with its status
+hooks:
+  before_apply:
+    - run: [python, hooks/skip_companies.py]
+      timeout: 15

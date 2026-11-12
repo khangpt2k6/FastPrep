@@ -19,7 +19,9 @@ web dashboard (Vercel)  --commands-->  Supabase  <--jobs, status, screenshots-- 
 
 ## Skills
 
-What the agent knows about each job site is a **skill**: a Markdown file of plain instructions, not code. Workday, Greenhouse, Lever, Ashby, iCIMS, SmartRecruiters and others ship in `src/agent_automation/plugins/`. Supporting a new site means writing a new skill. See [docs/plugins.md](docs/plugins.md).
+What the agent knows about each job site is a **skill**: a Markdown file of plain instructions, not code. Workday, Greenhouse, Lever, Ashby, iCIMS, SmartRecruiters and others ship in `.agent/skills/sites/`. Supporting a new site means writing a new skill. See [docs/skills.md](docs/skills.md).
+
+Everything the agent is told and keeps lives in one folder laid out like a `.claude` folder: `.agent/` in this repository, and your own `~/.agent-automation/` on top of it. See [.agent/README.md](.agent/README.md).
 
 ## Setup
 

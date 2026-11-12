@@ -13,13 +13,13 @@ import httpx
 import pytest
 from openai import AsyncOpenAI
 
-from agent_automation import scoring as scoring_module
-from agent_automation import session as session_module
-from agent_automation.config import Config, Filters
-from agent_automation.database import Job
-from agent_automation.scoring import NOT_JUDGED, NotAnswering
-from agent_automation.session import WIDE, Session, _places
-from agent_automation.store import Store
+from agent_automation.agent import scoring as scoring_module
+from agent_automation.agent import session as session_module
+from agent_automation.agent.scoring import NOT_JUDGED, NotAnswering
+from agent_automation.agent.session import WIDE, Session, _places
+from agent_automation.memory.config import Config, Filters
+from agent_automation.memory.store import Store
+from agent_automation.tools.database import Job
 
 
 @pytest.fixture(autouse=True)

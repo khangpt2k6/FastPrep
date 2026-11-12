@@ -19,21 +19,21 @@ from openai import APIConnectionError, APIStatusError, APITimeoutError, Authenti
 from pypdf import PdfWriter
 from textual.widgets import DataTable, Input, RichLog, Static
 
-import agent_automation.tui as tui_module
-from agent_automation import apply as apply_module
-from agent_automation import session as session_module
-from agent_automation import telemetry
-from agent_automation.apply import Outcome
-from agent_automation.cli import main as cli_main
-from agent_automation.config import Config, ConfigError, load_config
-from agent_automation.database import Job
-from agent_automation.library import Library
-from agent_automation.llm import explain
-from agent_automation.profile import import_answers_file, install_resume, read_resume
-from agent_automation.screens import Confirm, JobDetails, Said, SendBatch, SentDetails, SentList, Settings, SignIn, StopSending, TextPrompt
-from agent_automation.session import Session
-from agent_automation.store import Proof, Store, Stored
-from agent_automation.tui import AutomationApp
+import agent_automation.ui.tui as tui_module
+from agent_automation.agent import apply as apply_module
+from agent_automation.agent import session as session_module
+from agent_automation.agent.apply import Outcome
+from agent_automation.agent.llm import explain
+from agent_automation.agent.session import Session
+from agent_automation.hooks import telemetry
+from agent_automation.memory.config import Config, ConfigError, load_config
+from agent_automation.memory.profile import import_answers_file, install_resume, read_resume
+from agent_automation.memory.store import Proof, Store, Stored
+from agent_automation.tools.database import Job
+from agent_automation.tools.library import Library
+from agent_automation.ui.cli import main as cli_main
+from agent_automation.ui.screens import Confirm, JobDetails, Said, SendBatch, SentDetails, SentList, Settings, SignIn, StopSending, TextPrompt
+from agent_automation.ui.tui import AutomationApp
 from fakes import ScriptedBrowser, publish
 
 PROFILE = {
@@ -219,14 +219,14 @@ def fake_apply(app: AutomationApp, outcomes: list[Outcome], calls: list[Any]) ->
         calls.append({"job": job, "answers": answers, "guidance": guidance, "cv_file": cv_file, "profile": profile})
         return outcomes.pop(0)
 
-    import agent_automation.session as session_module
+    import agent_automation.agent.session as session_module
 
     session_module.apply_to_job = apply_to_job  # type: ignore[assignment]
 
 
 @pytest.fixture
 def restored_apply() -> Any:
-    import agent_automation.session as session_module
+    import agent_automation.agent.session as session_module
 
     original = session_module.apply_to_job
     yield
@@ -1018,7 +1018,7 @@ def test_the_mail_question_left_with_escape_is_not_asked_again_at_the_next_start
 
 def test_jev_scores_one_page_ahead_and_only_the_side_arrows_turn_the_pages(home: Path, resume: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # A page of one job, and Jev reading two at a time: the three postings make three pages.
-    import agent_automation.session as session_module
+    import agent_automation.agent.session as session_module
 
     monkeypatch.setattr(session_module, "WIDE", 2)
     monkeypatch.setattr(tui_module, "PAGE", 1)
@@ -1066,7 +1066,7 @@ def test_the_right_arrow_says_so_when_there_is_nothing_left_to_read(home: Path, 
 
 
 def test_a_postings_html_reads_as_paragraphs_and_bullets_even_when_escaped() -> None:
-    from agent_automation.screens import readable
+    from agent_automation.ui.screens import readable
 
     html_text = "<h2>About us</h2><p>We build <strong>tools</strong>.</p><ul><li>Python</li><li>Go &amp; Rust</li></ul><script>x()</script>"
     expected = "About us\n\nWe build tools.\n\n• Python\n• Go & Rust"
@@ -1317,7 +1317,7 @@ def test_the_answers_the_person_sees_and_counts_leave_out_the_apps_own(home: Pat
 
 
 def test_every_reason_a_form_stops_for_has_plain_words_and_an_unknown_one_does_not_blame_the_service() -> None:
-    from agent_automation.apply import BLOCKED_BY, WHY_NOT_SENT, why_not_sent
+    from agent_automation.agent.apply import BLOCKED_BY, WHY_NOT_SENT, why_not_sent
 
     for reason in (*BLOCKED_BY, "stuck", "no_code", "mailbox_signed_out", "never_clicked", "form_not_loaded", "refused_by_form"):
         assert reason in WHY_NOT_SENT, reason
@@ -1331,7 +1331,7 @@ def test_every_reason_a_form_stops_for_has_plain_words_and_an_unknown_one_does_n
 def test_a_time_the_store_wrote_in_utc_is_shown_on_the_persons_own_clock() -> None:
     from datetime import datetime
 
-    from agent_automation.screens import when_short
+    from agent_automation.ui.screens import when_short
 
     moment = datetime.fromisoformat("2026-11-05T10:00:00+00:00").astimezone()
     assert when_short("2026-11-05T10:00:00+00:00") == moment.strftime("%Y-%m-%d %H:%M")
@@ -1411,7 +1411,7 @@ def test_while_a_batch_is_sent_one_line_names_the_job_it_is_on_and_changes_in_pl
             await gates.pop(0).wait()
             return Outcome("submitted", "ok")
 
-        import agent_automation.session as session_module
+        import agent_automation.agent.session as session_module
 
         session_module.apply_to_job = slow  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
@@ -1484,7 +1484,7 @@ def test_quitting_while_applications_are_sent_asks_once_and_escape_goes_back(hom
             await gate.wait()
             return Outcome("submitted", "ok")
 
-        import agent_automation.session as session_module
+        import agent_automation.agent.session as session_module
 
         session_module.apply_to_job = slow  # type: ignore[assignment]
         async with app.run_test(size=(80, 24)) as pilot:
@@ -1528,7 +1528,7 @@ def test_s_a_and_e_while_applications_are_sent_say_to_wait(home: Path, resume: P
             await gate.wait()
             return Outcome("submitted", "ok")
 
-        import agent_automation.session as session_module
+        import agent_automation.agent.session as session_module
 
         session_module.apply_to_job = slow  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
@@ -2128,7 +2128,7 @@ def test_ctrl_c_on_a_selected_answer_in_a_text_question_copies_it_and_a_password
 def test_ctrl_o_at_the_key_question_opens_the_address_in_the_browser_and_the_hint_says_so(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ORCAROUTER_API_KEY")
     opened: list[str] = []
-    import agent_automation.screens as screens_module
+    import agent_automation.ui.screens as screens_module
 
     monkeypatch.setattr(screens_module.webbrowser, "open", lambda url: opened.append(url) or True)
 
@@ -2190,7 +2190,7 @@ def test_an_application_that_fails_for_want_of_credit_says_so_and_the_batch_stop
             calls.append(job.company)
             raise status_error(APIStatusError, 402)
 
-        import agent_automation.session as session_module
+        import agent_automation.agent.session as session_module
 
         session_module.apply_to_job = broke  # type: ignore[assignment]
         async with app.run_test(size=(120, 40)) as pilot:
@@ -2224,7 +2224,7 @@ def test_what_an_application_waits_for_is_said_in_the_line_of_the_batch_and_the_
             note("")
             return Outcome("submitted", "ok")
 
-        import agent_automation.session as session_module
+        import agent_automation.agent.session as session_module
 
         session_module.apply_to_job = slowed  # type: ignore[assignment]
         async with app.run_test(size=(80, 24)) as pilot:

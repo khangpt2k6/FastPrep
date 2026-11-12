@@ -39,8 +39,8 @@ dependencies = [
 dev = ["pytest>=8", "ruff>=0.6", "pyarrow>=15"]  # pyarrow: the pipeline writes description files with it
 
 [project.scripts]
-agent-automation = "agent_automation.agent:run"
-agent-automation-tui = "agent_automation.cli:run"
+agent-automation = "agent_automation.ui.worker:run"
+agent-automation-tui = "agent_automation.ui.cli:run"
 
 [project.urls]
 Homepage = "https://github.com/khangpt2k6/agent-automation"
@@ -51,6 +51,10 @@ path = "src/agent_automation/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_automation"]
+
+# The project's .agent/ home goes inside the package, where agent_automation.home looks for it in an install.
+[tool.hatch.build.targets.wheel.force-include]
+".agent" = "agent_automation/_home"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

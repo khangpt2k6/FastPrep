@@ -14,8 +14,8 @@ import pytest
 from mcp import ClientSession
 from mcp.client.stdio import stdio_client
 
-from agent_automation.apply import _open_browser, _server, apply_to_job, server_parameters
-from agent_automation.database import Job
+from agent_automation.agent.apply import _open_browser, _server, apply_to_job, server_parameters
+from agent_automation.tools.database import Job
 from fakes import ScriptedModel, tool_call
 
 pytestmark = pytest.mark.browser

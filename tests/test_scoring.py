@@ -13,9 +13,9 @@ import httpx
 import pytest
 from openai import AsyncOpenAI
 
-from agent_automation.config import DEFAULT_BASE_URL, load_config
-from agent_automation.database import Job
-from agent_automation.scoring import DESCRIPTION_CHARS, MAX_CHARS, MAX_POSTINGS, NOT_JUDGED, fits, question, score
+from agent_automation.agent.scoring import DESCRIPTION_CHARS, MAX_CHARS, MAX_POSTINGS, NOT_JUDGED, fits, question, score
+from agent_automation.memory.config import DEFAULT_BASE_URL, load_config
+from agent_automation.tools.database import Job
 
 KEY = "sk-test-key"
 JOB = Job("g:a:1", "Acme", "Python Engineer", "Rome", "u", "a", "Build Python services.")
@@ -206,7 +206,7 @@ def test_a_credit_that_is_finished_is_told_in_plain_words_and_what_to_do() -> No
     import httpx as http
     from openai import APIStatusError
 
-    from agent_automation.llm import explain
+    from agent_automation.agent.llm import explain
 
     error = APIStatusError("Error code: 402", response=http.Response(402, request=http.Request("POST", "https://x.example")), body=None)
     assert explain(error) == "Your OrcaRouter credit is finished. Add credit at orcarouter.ai, then press → to go on."

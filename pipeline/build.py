@@ -85,7 +85,7 @@ COMMON = (
 
 # The posting's identity in its link: no scheme, no www, no tracking, no /apply step, in lower case.
 # The key a posting is known by, defined once for the build and for Agent Automation, which stores every job under it.
-KEY_SQL = Path(__file__).resolve().parents[1] / "src" / "agent_automation" / "key.sql"
+KEY_SQL = Path(__file__).resolve().parents[1] / "src" / "agent_automation" / "tools" / "key.sql"
 KEY = "posting_key(url)"
 
 # The country of a posting as ISO 3166's two letters, whatever a source writes: its name, in English or in its own language,

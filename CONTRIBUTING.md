@@ -1,6 +1,6 @@
 # Contributing
 
-Agent Automation is a command-line program in Python. The most useful contribution is a plugin for a job site: a Markdown file that tells the model how that site's application form works. Write one by following [docs/plugins.md](docs/plugins.md).
+Agent Automation is a command-line program in Python. The most useful contribution is a skill for a job site: a Markdown file that tells the model how that site's application form works. Write one by following [docs/skills.md](docs/skills.md).
 
 ## Setup
 
@@ -52,7 +52,7 @@ The other workflow, `.github/workflows/jobs-database.yml`, builds the job databa
 
 - Run `ruff check .` and `pytest -m "not browser"`. Run `pytest -m browser` too if your change touches `apply.py`, the browser or the forms.
 - Keep one change to one purpose. Say in the description what you tried and what you saw.
-- For a plugin, say which posting you tried it on and what the form did. See [docs/plugins.md](docs/plugins.md) for how to test one without sending anything.
+- For a skill, say which posting you tried it on and what the form did. See [docs/skills.md](docs/skills.md) for how to test one without sending anything.
 
 ## What not to send
 
