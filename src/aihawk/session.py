@@ -16,7 +16,7 @@ from openai import AsyncOpenAI
 from aihawk import errors
 from aihawk.apply import MAILBOXES, NOTE, Outcome, apply_to_job, signed_in, site_of
 from aihawk.apply import sign_in as sign_in_browser
-from aihawk.config import DEFAULT_BASE_URL, KEY_ENV, Config, ConfigError, load_config
+from aihawk.config import base_url, KEY_ENV, Config, ConfigError, load_config
 from aihawk.database import load_manifest, search
 from aihawk.library import Library
 from aihawk.llm import SPEND, Mark, make_client, no_credit, not_answering, refused
@@ -122,7 +122,7 @@ class Session:
 
     def key_client(self, key: str) -> AsyncOpenAI:
         """A client for a key not yet kept, to try it: no retries, and no waiting long on a service that does not answer."""
-        return AsyncOpenAI(base_url=DEFAULT_BASE_URL, api_key=key, max_retries=0, timeout=15.0)
+        return AsyncOpenAI(base_url=base_url(), api_key=key, max_retries=0, timeout=15.0)
 
     async def key_accepted(self, key: str) -> bool:
         """Whether the service takes this key: its list of models answers a key it does not know with 401 and nothing else is

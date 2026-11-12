@@ -23,6 +23,46 @@ DEFAULT_MODEL = "deepseek/deepseek-v4.1-flash"
 DEFAULT_QUICK_MODEL = "google/gemini-3.5-flash"
 # Answers, for each posting, whether it is in line with the candidate, and how sure it is: that is the posting's score.
 DEFAULT_DECISION_MODEL = "typesafe/jev-1.14"
+# OpenAI direct: used when AIHAWK_PROVIDER=openai, or when there is an OpenAI key and no OrcaRouter one.
+OPENAI_BASE_URL = "https://api.openai.com/v1"
+OPENAI_KEY_ENVS = ("OPENAI_API_KEY", "OPEN_AI_API_KEY")
+PROVIDER_ENV = "AIHAWK_PROVIDER"
+BASE_URL_ENV = "AIHAWK_BASE_URL"
+OPENAI_MODEL = "gpt-5.4-mini"
+OPENAI_QUICK_MODEL = "gpt-5.4-mini"
+OPENAI_DECISION_MODEL = "gpt-5.4-nano"
+
+
+def _openai_key() -> str:
+    return next((os.environ[name].strip() for name in OPENAI_KEY_ENVS if os.environ.get(name, "").strip()), "")
+
+
+def openai_mode() -> bool:
+    """Whether calls go straight to OpenAI instead of OrcaRouter."""
+    chosen = os.environ.get(PROVIDER_ENV, "").strip().lower()
+    if chosen:
+        return chosen == "openai"
+    return not os.environ.get(KEY_ENV, "").strip() and bool(_openai_key())
+
+
+def base_url() -> str:
+    return os.environ.get(BASE_URL_ENV, "").strip() or (OPENAI_BASE_URL if openai_mode() else DEFAULT_BASE_URL)
+
+
+def load_dotenv(*folders: Path) -> None:
+    """KEY=value lines of a .env in each folder, set only where the environment has none already."""
+    for folder in folders:
+        path = folder / ".env"
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8-sig").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            name, value = line.split("=", 1)
+            name, value = name.strip().removeprefix("export ").strip(), value.strip().strip("'\"")
+            if name and not os.environ.get(name):
+                os.environ[name] = value
 # The Hugging Face dataset the pipeline publishes to. It was GitHub's releases until 2026-11-08: see pipeline/publish.py.
 # Set in the environment, an application is a trial: the form is filled and the send control named, and nothing is sent, nor
 # counted. Read in one place, so what is sent and what is counted can never disagree about it.
@@ -124,18 +164,26 @@ class Config:
 
     def api_key(self) -> str:
         """The model's key: from the environment, or the one the person typed in."""
-        from_environment = os.environ.get(KEY_ENV, "").strip()
+        from_environment = (_openai_key() or os.environ.get(KEY_ENV, "").strip()) if openai_mode() else os.environ.get(KEY_ENV, "").strip()
         if from_environment:
             return from_environment
         return self.key_file.read_text(encoding="utf-8-sig").strip() if self.key_file.is_file() else ""
 
     def key_from_environment(self) -> bool:
-        return bool(os.environ.get(KEY_ENV, "").strip())
+        return bool(_openai_key() if openai_mode() else os.environ.get(KEY_ENV, "").strip())
 
     def save_key(self, key: str) -> None:
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.key_file.touch(mode=0o600, exist_ok=True)
         self.key_file.write_text(key.strip(), encoding="utf-8")
+
+
+def _model(value: Any, orca: str, openai: str) -> str:
+    """The model a setting names. In OpenAI mode an OrcaRouter name (vendor/model) falls back to the OpenAI default."""
+    named = str(value or "")
+    if openai_mode():
+        return named if named and "/" not in named else openai
+    return named or orca
 
 
 def dry_run() -> bool:
@@ -235,7 +283,13 @@ def load_config(workspace: Path) -> Config:
     """The settings in the folder. Nothing there yet is a new search, not an error."""
     path = workspace / CONFIG_FILE
     if not path.is_file():
-        return Config(workspace=workspace)
+        raw: dict[str, Any] = {}
+        return Config(
+            workspace=workspace,
+            model=_model(raw.get("model"), DEFAULT_MODEL, OPENAI_MODEL),
+            quick_model=_model(raw.get("quick_model"), DEFAULT_QUICK_MODEL, OPENAI_QUICK_MODEL),
+            decision_model=_model(raw.get("decision_model"), DEFAULT_DECISION_MODEL, OPENAI_DECISION_MODEL),
+        )
     try:
         raw = yaml.safe_load(path.read_text(encoding="utf-8-sig")) or {}
     except yaml.YAMLError as error:
@@ -251,9 +305,9 @@ def load_config(workspace: Path) -> Config:
         goals=str(raw.get("goals") or ""),
         database=DEFAULT_DATABASE if str(raw.get("database") or OLD_DATABASE) == OLD_DATABASE else str(raw["database"]),
         max_age_days=_days(raw.get("max_age_days", DEFAULT_MAX_AGE_DAYS), "max_age_days"),
-        model=str(raw.get("model") or DEFAULT_MODEL),
-        quick_model=str(raw.get("quick_model") or DEFAULT_QUICK_MODEL),
-        decision_model=str(raw.get("decision_model") or DEFAULT_DECISION_MODEL),
+        model=_model(raw.get("model"), DEFAULT_MODEL, OPENAI_MODEL),
+        quick_model=_model(raw.get("quick_model"), DEFAULT_QUICK_MODEL, OPENAI_QUICK_MODEL),
+        decision_model=_model(raw.get("decision_model"), DEFAULT_DECISION_MODEL, OPENAI_DECISION_MODEL),
         filters=Filters(
             _words(filters.get("include"), "filters.include"),
             _words(filters.get("exclude"), "filters.exclude"),

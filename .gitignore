@@ -12,3 +12,11 @@ build/
 aihawk.yaml
 cv.md
 answers.yaml
+
+# local secrets
+.env
+.env.*
+!.env.example
+
+# process docs
+docs/superpowers/

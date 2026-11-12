@@ -16,7 +16,7 @@ from openai import (
     RateLimitError,
 )
 
-from aihawk.config import DEFAULT_BASE_URL, KEY_ENV, KEY_URL, Config, ConfigError
+from aihawk.config import base_url, KEY_ENV, KEY_URL, Config, ConfigError
 
 # The SDK's own default is ten minutes a try, and a model that hangs would hold a request that long.
 TIMEOUT = 180.0
@@ -193,7 +193,7 @@ def make_client(config: Config) -> AsyncOpenAI:
     if not key:
         raise ConfigError(f"no model key: set {KEY_ENV} (create one at {KEY_URL})")
     # The SDK retries 429s and 5xx itself and honours Retry-After, which is all OrcaRouter sends about its limits.
-    return AsyncOpenAI(base_url=DEFAULT_BASE_URL, api_key=key, max_retries=5, timeout=TIMEOUT)
+    return AsyncOpenAI(base_url=base_url(), api_key=key, max_retries=5, timeout=TIMEOUT)
 
 
 async def structured(client: AsyncOpenAI, model: str, system: str, user: str, name: str, schema: dict[str, Any]) -> dict[str, Any]:

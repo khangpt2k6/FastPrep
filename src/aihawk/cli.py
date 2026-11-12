@@ -9,7 +9,7 @@ from pathlib import Path
 import click
 
 from aihawk import __version__
-from aihawk.config import ConfigError, default_home
+from aihawk.config import ConfigError, default_home, load_dotenv
 from aihawk.database import DatabaseError
 from aihawk.plugins import PluginError
 
@@ -30,6 +30,7 @@ def run() -> None:
     for stream in (sys.stdout, sys.stderr):
         if isinstance(stream, io.TextIOWrapper):
             stream.reconfigure(encoding="utf-8", errors="replace")
+    load_dotenv(Path.cwd(), default_home(), Path(__file__).resolve().parents[2])
     try:
         main()
     except (ConfigError, DatabaseError, PluginError) as error:

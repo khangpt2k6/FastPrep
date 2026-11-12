@@ -13,7 +13,8 @@ from openai import APIStatusError, AsyncOpenAI
 
 from aihawk import errors
 from aihawk.database import Job
-from aihawk.llm import account_problem, not_answering, refused
+from aihawk.config import openai_mode
+from aihawk.llm import account_problem, not_answering, refused, structured
 
 DESCRIPTION_CHARS = 24000
 DECISION_ENDPOINT = "/systemone"
@@ -22,6 +23,9 @@ DECISION_ENDPOINT = "/systemone"
 MAX_POSTINGS = 512
 MAX_CHARS = 180_000 * 4
 # The words an endpoint's refusal uses for a request or context that is too big, which a smaller batch can cure.
+# OpenAI has no /systemone endpoint: postings go through a plain structured chat call, in smaller batches.
+OPENAI_MAX_POSTINGS = 20
+OPENAI_DESCRIPTION_CHARS = 4000
 TOO_LARGE = re.compile(r"context|too (?:large|long|many)")
 
 
@@ -67,7 +71,7 @@ def groups(model: str, cv: str, jobs: list[Job], asked: str) -> list[list[Job]]:
     for job in jobs:
         index = len(out[-1]) if out else 0
         added = len(json.dumps({_name(index): _posting(job), **_question(index, job, asked)}, ensure_ascii=False)) + 8
-        if out and len(out[-1]) < MAX_POSTINGS and size + added <= MAX_CHARS:
+        if out and len(out[-1]) < (OPENAI_MAX_POSTINGS if openai_mode() else MAX_POSTINGS) and size + added <= MAX_CHARS:
             out[-1].append(job)
             size += added
         else:
@@ -88,7 +92,10 @@ async def _read(client: AsyncOpenAI, model: str, cv: str, jobs: list[Job], asked
     answer leaves its postings not judged. Any other failure ends the request at once, without a split: its postings have no
     verdict, and `why` says why."""
     try:
-        reply = await client.post(DECISION_ENDPOINT, body=request_body(model, cv, jobs, asked), cast_to=dict)
+        if openai_mode():
+            reply = await _ask_openai(client, model, cv, jobs, asked)
+        else:
+            reply = await client.post(DECISION_ENDPOINT, body=request_body(model, cv, jobs, asked), cast_to=dict)
     except Exception as error:
         # A refused key, or an account with no credit, fails every request alike: splitting would only ask again, so it is raised
         # for the screen, and no posting is set aside for it.
@@ -106,6 +113,38 @@ async def _read(client: AsyncOpenAI, model: str, cv: str, jobs: list[Job], asked
     if any(value is None for value in values):
         why("The AI service left some out.")
     return values
+
+
+VERDICTS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "answers": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"id": {"type": "string"}, "certainty": {"type": "number"}},
+                "required": ["id", "certainty"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["answers"],
+    "additionalProperties": False,
+}
+
+
+async def _ask_openai(client: AsyncOpenAI, model: str, cv: str, jobs: list[Job], asked: str) -> dict[str, Any]:
+    """The same verdicts from a plain OpenAI chat call, shaped like the /systemone reply."""
+    system = (
+        "You screen job postings for a candidate. For each posting, decide whether the statement below holds, and give "
+        "certainty from 0.0 (surely false) to 1.0 (surely true). Answer every posting id exactly once.\n\nStatement: " + asked
+    )
+    postings = "\n\n".join(
+        f"### {_name(i)}\n{job.title} at {job.company}. Location: {job.location}\n\n{job.description[:OPENAI_DESCRIPTION_CHARS]}" for i, job in enumerate(jobs)
+    )
+    user = f"## Candidate CV\n{cv}\n\n## Postings\n{postings}"
+    reply = await structured(client, model, system, user, "verdicts", VERDICTS_SCHEMA)
+    return {"answers": {f"{a['id']}_fit": {"noul": a["certainty"]} for a in reply.get("answers", []) if isinstance(a, dict) and "id" in a}}
 
 
 def request_body(model: str, cv: str, jobs: list[Job], asked: str) -> dict[str, Any]:
