@@ -393,6 +393,23 @@ class Agent:
                 break
         self.say("ready", f"Done with {len(job_ids)} application(s){mode}.")
 
+    async def recover(self) -> None:
+        """What an earlier run left half done when it stopped: its command ends as failed, and a job it was applying to
+        goes back to how this computer last recorded it, so nothing on the page says "applying" forever."""
+        mine = {"user_id": f"eq.{self.db.user_id}"}
+        try:
+            await self.db.update(
+                "automation_commands", {**mine, "status": "eq.running"},
+                {"status": "failed", "error": "The agent stopped before it finished. Select the jobs and apply again."},
+            )
+            for row in await self.db.select("automation_jobs", {**mine, "status": "eq.applying", "select": "id"}):
+                item = self.session.store.get(row["id"])
+                await self.db.update("automation_jobs", {**mine, "id": f"eq.{row['id']}"}, {
+                    "status": item.status if item else "scored", "updated_at": _now(),
+                })
+        except Exception as error:  # noqa: BLE001  The page catches up on the next push either way.
+            click.echo(f"recover: {error}")
+
     async def run(self) -> None:
         asyncio.get_running_loop().set_exception_handler(_quiet)
         await self.db.sign_in()
@@ -404,6 +421,7 @@ class Agent:
             if self.session.needs_resume():
                 raise ConfigError("no resume yet: run  agent-automation path/to/resume.pdf")
             self.say("starting", "Agent online")
+            await self.recover()
             # The profile first: its countries may change where the first search looks.
             try:
                 await self.sync_profile(first=True)
