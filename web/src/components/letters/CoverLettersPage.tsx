@@ -26,7 +26,8 @@ import {
 import { useSignedUrl } from '../../hooks/useSignedUrl';
 import { CompanyLogo } from '../CompanyLogo';
 import { EmptyState, SkeletonCards } from '../common';
-import { IconAlert, IconCheck, IconCopy, IconLetter, IconLink, IconPencil, IconPlus, IconSpark, IconTrash } from '../Icons';
+import { Dialog } from '../Dialog';
+import { IconAlert, IconCheck, IconCopy, IconLetter, IconLink, IconPencil, IconPlus, IconSpark, IconTrash, IconX } from '../Icons';
 import { SetupCard } from '../SetupCard';
 import type { ToastTone } from '../Toasts';
 
@@ -192,16 +193,55 @@ function PdfLink({ path, version }: { path: string; version: string }) {
   );
 }
 
-function LetterItem({ letter, job, templateName, now, online, toast, onChanged }: {
+/** One row in the rail. The letter itself opens at reading width in a dialog. */
+function LetterItem({ letter, job, templateName, now, open, onOpen }: {
   letter: CoverLetterRow;
   job: JobRow | undefined;
   templateName: string;
   now: number;
+  open: boolean;
+  onOpen: () => void;
+}) {
+  const name = job ? displayName(job) : letter.job_id;
+  return (
+    <li className={`cl-letter ${open ? 'is-open' : ''}`}>
+      <button type="button" className="cl-letter__head" onClick={onOpen} aria-haspopup="dialog" title="Read and edit">
+        <CompanyLogo name={name} domain={job?.company_domain} size={32} />
+        <span className="cl-letter__what">
+          <strong>{name}</strong>
+          <span>{job ? job.title : ''}</span>
+        </span>
+        <span className="cl-letter__meta">
+          <time className="mono">{timeAgo(letter.updated_at, now)}</time>
+          <span className="cl-letter__tags">
+            {letter.updated_by === 'web' ? <span className="softchip">edited</span> : null}
+            {letter.problems ? (
+              <span className="tag tag--dry" title={letter.problems}>
+                check
+              </span>
+            ) : null}
+            <span className="cl-letter__tpl" title="Template">
+              {templateName}
+            </span>
+          </span>
+        </span>
+      </button>
+    </li>
+  );
+}
+
+interface LetterViewProps {
+  letter: CoverLetterRow;
+  job: JobRow | undefined;
+  templateName: string;
   online: boolean;
   toast: Toast;
   onChanged: () => void;
-}) {
-  const [open, setOpen] = useState(false);
+  onClose: () => void;
+}
+
+/** The letter on paper, editable. Keyed by job, so another letter starts clean. */
+function LetterView({ letter, job, templateName, online, toast, onChanged, onClose }: LetterViewProps) {
   const [text, setText] = useState(letter.body);
   const [busy, setBusy] = useState(false);
   const dirty = text !== letter.body;
@@ -230,6 +270,7 @@ function LetterItem({ letter, job, templateName, now, online, toast, onChanged }
       await sendCoverLetters([letter.job_id], true);
       toast({ tone: 'ok', title: online ? 'Writing it again' : 'Rewrite queued for when the agent starts' });
       onChanged();
+      onClose();
     } catch (error) {
       toast({ tone: 'error', title: 'Could not ask for a new letter', detail: errorText(error) });
     } finally {
@@ -239,44 +280,48 @@ function LetterItem({ letter, job, templateName, now, online, toast, onChanged }
 
   const name = job ? displayName(job) : letter.job_id;
   return (
-    <li className={`cl-letter ${open ? 'is-open' : ''}`}>
-      <button type="button" className="cl-letter__head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        <CompanyLogo name={name} domain={job?.company_domain} size={32} />
-        <span className="cl-letter__what">
-          <strong>{name}</strong>
+    <>
+      <header className="letterview__head">
+        <CompanyLogo name={name} domain={job?.company_domain} size={36} />
+        <div className="letterview__who">
+          <h2 id="letter-title">{name}</h2>
           <span>{job ? job.title : ''}</span>
-        </span>
-        <span className="cl-letter__meta">
-          <time className="mono">{timeAgo(letter.updated_at, now)}</time>
-          <span className="cl-letter__tags">
-            {letter.updated_by === 'web' ? <span className="softchip">edited</span> : null}
-            {letter.problems ? (
-              <span className="tag tag--dry" title={letter.problems}>
-                check
-              </span>
-            ) : null}
-            <span className="cl-letter__tpl" title="Template">
-              {templateName}
-            </span>
-          </span>
-        </span>
-      </button>
-      {open ? (
-        <div className="cl-letter__body cl-letter__body--in">
-          <textarea className="input textarea cl-letter__text" rows={14} value={text} onChange={(e) => setText(e.target.value)} />
-          {letter.problems ? <p className="cl-letter__warn">The agent could not fix: {letter.problems}</p> : null}
-          <div className="cl-actions">
-            <PdfLink path={letter.pdf_path} version={letter.updated_at} />
-            <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy} title="Drop this letter and write a new one">
-              Write again
-            </button>
-            <button type="button" className="btn btn--primary btn--sm" onClick={save} disabled={!dirty || busy}>
-              <IconCheck size={14} /> Save my version
-            </button>
-          </div>
         </div>
-      ) : null}
-    </li>
+        <span className="softchip" title="Template">
+          {templateName}
+        </span>
+        <button type="button" className="icon-btn" onClick={onClose} aria-label="Close letter" title="Close" data-autofocus>
+          <IconX size={18} />
+        </button>
+      </header>
+      <div className="letterview__body">
+        <textarea className="input textarea cl-letter__text" value={text} onChange={(e) => setText(e.target.value)} aria-label="Letter text" spellCheck />
+        {letter.problems ? <p className="cl-letter__warn">The agent could not fix: {letter.problems}</p> : null}
+      </div>
+      <footer className="letterview__foot">
+        <span className="savestate">{dirty ? 'Unsaved changes' : letter.updated_by === 'web' ? 'Your version' : ''}</span>
+        <PdfLink path={letter.pdf_path} version={letter.updated_at} />
+        <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy} title="Drop this letter and write a new one">
+          Write again
+        </button>
+        <button type="button" className="btn btn--primary btn--sm" onClick={save} disabled={!dirty || busy}>
+          {busy ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />} Save my version
+        </button>
+      </footer>
+    </>
+  );
+}
+
+/** A letter at reading width over the page; the rail stays the list. */
+function LetterDialog({ view, onClose }: { view: Omit<LetterViewProps, 'onClose'> | null; onClose: () => void }) {
+  // Keep showing the last letter while the dialog animates out.
+  const last = useRef(view);
+  if (view) last.current = view;
+  const shown = last.current;
+  return (
+    <Dialog open={view !== null} onClose={onClose} labelledBy="letter-title" className="letterview">
+      {shown ? <LetterView key={shown.letter.job_id} {...shown} onClose={onClose} /> : null}
+    </Dialog>
   );
 }
 
@@ -294,8 +339,11 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
   const [focusId, setFocusId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
+  const [openLetter, setOpenLetter] = useState<string | null>(null);
 
   const focused = templates.find((t) => t.id === (focusId ?? inUse)) ?? templates[0];
+  // The open letter, read fresh from the live rows; it closes on its own if the letter goes away.
+  const opened = openLetter ? letters.find((l) => l.job_id === openLetter) ?? null : null;
   const names = useMemo(() => new Map(templates.map((t) => [t.id, t.name])), [templates]);
   const jobsById = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
 
@@ -478,15 +526,30 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                   job={jobsById.get(letter.job_id)}
                   templateName={names.get(letter.template_id) ?? letter.template_id}
                   now={now}
-                  online={online}
-                  toast={toast}
-                  onChanged={lettersT.reload}
+                  open={letter.job_id === openLetter}
+                  onOpen={() => setOpenLetter(letter.job_id)}
                 />
               ))}
             </ul>
           )}
         </section>
       </aside>
+
+      <LetterDialog
+        view={
+          opened
+            ? {
+                letter: opened,
+                job: jobsById.get(opened.job_id),
+                templateName: names.get(opened.template_id) ?? opened.template_id,
+                online,
+                toast,
+                onChanged: lettersT.reload,
+              }
+            : null
+        }
+        onClose={() => setOpenLetter(null)}
+      />
     </div>
   );
 }

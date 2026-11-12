@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, SPRING } from '../lib/motion';
 import { AnimatedNumber } from './motion/AnimatedNumber';
@@ -95,7 +95,31 @@ export function SkeletonCards({ count = 4 }: { count?: number }) {
   );
 }
 
-/** A row of pill toggles; exactly one is on. */
+/** Which ends of a sideways-scrolling row hide more, so the row can fade there. */
+function useScrollEdges<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [edges, setEdges] = useState({ start: false, end: false });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => {
+      const start = el.scrollLeft > 4;
+      const end = el.scrollWidth - el.clientWidth - el.scrollLeft > 4;
+      setEdges((e) => (e.start === start && e.end === end ? e : { start, end }));
+    };
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(check);
+    observer?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', check);
+      observer?.disconnect();
+    };
+  }, []);
+  return [ref, edges] as const;
+}
+
+/** A row of pill toggles; exactly one is on. On a narrow screen the row scrolls sideways and fades at the hidden end. */
 export function PillGroup<T extends string | number>({ label, options, value, onChange }: {
   label: string;
   options: { value: T; label: string; count?: number; title?: string }[];
@@ -103,8 +127,15 @@ export function PillGroup<T extends string | number>({ label, options, value, on
   onChange: (value: T) => void;
 }) {
   const group = useId();
+  const [ref, edges] = useScrollEdges<HTMLDivElement>();
   return (
-    <div className="pills" role="group" aria-label={label}>
+    <motion.div
+      ref={ref}
+      layoutScroll
+      className={`pills ${edges.start ? 'fade-start' : ''} ${edges.end ? 'fade-end' : ''}`}
+      role="group"
+      aria-label={label}
+    >
       {options.map((o) => (
         <button
           type="button"
@@ -119,6 +150,6 @@ export function PillGroup<T extends string | number>({ label, options, value, on
           {o.count !== undefined ? <AnimatedNumber className="pilltoggle__count mono" id={`pill-${label}-${String(o.value)}`} value={o.count} /> : null}
         </button>
       ))}
-    </div>
+    </motion.div>
   );
 }

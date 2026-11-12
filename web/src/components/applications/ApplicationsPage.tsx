@@ -7,7 +7,7 @@ import { displayName, reasonWords, timeAgo } from '../../lib/format';
 import { useSignedUrl } from '../../hooks/useSignedUrl';
 import { CompanyLogo } from '../CompanyLogo';
 import { EmptyState, PillGroup, SkeletonCards } from '../common';
-import { IconAlert, IconChevronDown, IconImage, IconLink, IconMemory, IconRepeat, IconSend } from '../Icons';
+import { IconAlert, IconChevronDown, IconImage, IconImageOff, IconLink, IconMemory, IconRepeat, IconSend } from '../Icons';
 import { StatusChip } from '../StatusChip';
 
 type Group = 'all' | 'live' | 'sent' | 'notsent' | 'bad';
@@ -43,9 +43,16 @@ function canApplyAgain(job: JobRow): boolean {
   return job.status === 'blocked' || job.status === 'failed' || job.status === 'refused';
 }
 
+/** The form's screenshot, dimmed until hovered. A card without one keeps an empty tile, so every row lines up. */
 function Thumb({ job, name, onOpen }: { job: JobRow; name: string; onOpen: (url: string) => void }) {
   const { url, failed } = useSignedUrl(job.screenshot_path, job.updated_at);
-  if (!job.screenshot_path) return null;
+  if (!job.screenshot_path) {
+    return (
+      <span className="thumb thumb--none" role="img" aria-label="No screenshot" title="No screenshot">
+        <IconImageOff size={17} />
+      </span>
+    );
+  }
   if (failed) {
     return (
       <span className="thumb thumb--empty" title="The screenshot could not be loaded">
@@ -122,16 +129,18 @@ function AppBody({ job, now, answers, dryRun, online, queued, onOpenShot, onOpen
             {reason ? <span className="appcard__reason">{reason}</span> : null}
           </div>
           <div className="appcard__actions">
-            <button
-              type="button"
-              className="icon-btn icon-btn--count"
-              onClick={onOpenAnswers}
-              aria-label={answers > 0 ? `Answers it wrote, ${answers}` : 'Answers it wrote'}
-              title={answers > 0 ? `Answers it wrote (${answers})` : 'Answers it wrote'}
-            >
-              <IconMemory size={17} />
-              {answers > 0 ? <span className="icon-btn__count mono">{answers}</span> : null}
-            </button>
+            {answers > 0 ? (
+              <button
+                type="button"
+                className="icon-btn icon-btn--count"
+                onClick={onOpenAnswers}
+                aria-label={`Answers it wrote, ${answers}`}
+                title={`Answers it wrote (${answers})`}
+              >
+                <IconMemory size={17} />
+                <span className="icon-btn__count mono">{answers}</span>
+              </button>
+            ) : null}
             {job.url ? (
               <a className="icon-btn" href={job.url} target="_blank" rel="noreferrer" aria-label={`Open the ${name} posting`} title="Open posting">
                 <IconLink size={16} />

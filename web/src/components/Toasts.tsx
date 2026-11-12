@@ -10,7 +10,7 @@ export interface Toast {
   tone: ToastTone;
   /** One short line. */
   title: string;
-  /** Only for errors: the reason, kept to a short second line. */
+  /** Only for errors: the reason, after the title on the same line (the full text is in the tooltip). */
   detail?: string;
 }
 
@@ -61,10 +61,10 @@ const ToastItem = forwardRef<HTMLDivElement, { toast: Toast; onDismiss: (id: num
       <span className="toast__icon" aria-hidden="true">
         {toast.tone === 'ok' ? <IconCheck size={14} /> : toast.tone === 'info' ? <IconSpark size={14} /> : <IconAlert size={14} />}
       </span>
-      <div className="toast__text" title={toast.detail ? `${toast.title}: ${toast.detail}` : toast.title}>
+      <p className="toast__text" title={toast.detail ? `${toast.title}: ${toast.detail}` : toast.title}>
         <strong>{toast.title}</strong>
-        {toast.detail ? <span>{toast.detail}</span> : null}
-      </div>
+        {toast.detail ? <span className="toast__detail">{toast.detail}</span> : null}
+      </p>
       <button className="icon-btn icon-btn--sm toast__close" type="button" onClick={() => onDismiss(toast.id)} aria-label="Dismiss" title="Dismiss">
         <IconX size={13} />
       </button>

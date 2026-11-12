@@ -86,6 +86,7 @@ html {
   background: var(--ink);
   scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
 }
 
 /* Toasts and cards slide in from the right edge; clip (not hidden) so sticky parts keep working. */
@@ -989,21 +990,50 @@ input:focus-visible + .switch {
 
 .pills {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
   gap: 2px;
+  min-width: 0;
+  max-width: 100%;
   padding: 3px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 3px;
+  scrollbar-width: none;
   border-radius: 999px;
   background: var(--well);
   border: 1px solid var(--hair);
+}
+
+.pills::-webkit-scrollbar {
+  display: none;
+}
+
+.pills.fade-end {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+}
+
+.pills.fade-start {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px);
+  mask-image: linear-gradient(90deg, transparent, #000 36px);
+}
+
+.pills.fade-start.fade-end {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
 }
 
 .pilltoggle {
   position: relative;
   isolation: isolate;
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 7px;
   height: 32px;
+  scroll-snap-align: start;
   padding: 0 13px;
   border: 0;
   border-radius: 999px;
@@ -1021,6 +1051,11 @@ input:focus-visible + .switch {
 
 .pilltoggle:active {
   transform: scale(0.96);
+}
+
+/* The row clips overflow, so the focus ring sits inside the pill. */
+.pilltoggle:focus-visible {
+  outline-offset: -2px;
 }
 
 .pilltoggle.is-on {
@@ -1279,11 +1314,21 @@ input:focus-visible + .switch {
   gap: 12px;
   min-height: var(--topbar);
   padding: 12px var(--gutter);
-  background: linear-gradient(180deg, rgba(6, 8, 11, 0.9), rgba(6, 8, 11, 0.66));
   border-bottom: 1px solid var(--hair);
+  transition: border-color 0.3s var(--ease);
+}
+
+/* The bar's glass lives on its own layer: a menu that drops out of the bar must not descend from a backdrop-filter,
+   or the page shows through the menu. */
+.topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 8, 11, 0.78), rgba(6, 8, 11, 0.55));
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
-  transition: border-color 0.3s var(--ease);
 }
 
 /* Live: an amber edge under the whole bar, so sending for real is never a surprise. */
@@ -1576,7 +1621,7 @@ input:focus-visible + .switch {
   gap: 6px;
   border-radius: 16px;
   border: 1px solid var(--hair-2);
-  background: rgba(14, 19, 27, 0.97);
+  background: rgba(13, 18, 25, 0.985);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   backdrop-filter: blur(24px) saturate(150%);
   box-shadow: var(--shadow-lg);
@@ -1888,7 +1933,7 @@ input:focus-visible + .switch {
   border-radius: 24%;
   background: transparent;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.09), 0 6px 16px -10px rgba(0, 0, 0, 0.9);
-  transition: transform 0.35s var(--spring), background-color 0.25s;
+  transition: transform 0.35s var(--spring), background-color 0.15s var(--ease);
 }
 
 .logo__mono {
@@ -1902,7 +1947,7 @@ input:focus-visible + .switch {
   line-height: 1;
   color: #f4f7fa;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-  transition: opacity 0.25s var(--ease);
+  transition: opacity 0.15s var(--ease);
 }
 
 .logo__img {
@@ -1913,7 +1958,7 @@ input:focus-visible + .switch {
   height: 76%;
   object-fit: contain;
   opacity: 0;
-  transition: opacity 0.3s var(--ease);
+  transition: opacity 0.15s var(--ease);
 }
 
 .logo--fill,
@@ -1921,6 +1966,20 @@ input:focus-visible + .switch {
   background: #fff;
 }
 
+.logo--loading {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.logo--loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  background-size: 220% 100%;
+  animation: shimmer 1.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.logo--loading .logo__mono,
 .logo--fill .logo__mono,
 .logo--small .logo__mono {
   opacity: 0;
@@ -1970,17 +2029,20 @@ input:focus-visible + .switch {
   fill: none;
   stroke-width: 3.5;
   stroke-linecap: round;
+  stroke-opacity: 0.72;
+  transition: stroke-width 0.25s var(--ease);
 }
 
 .ring__num {
   position: relative;
   font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 500;
+  color: var(--text-2);
 }
 
+/* 4.0 to 4.4: a cooler teal start, quieter than the 4.5+ rings. */
 .ring--strong .ring__from {
-  stop-color: #34e5a5;
+  stop-color: #2dd4bf;
 }
 
 .ring--strong .ring__to {
@@ -1988,7 +2050,7 @@ input:focus-visible + .switch {
 }
 
 .ring--good .ring__from {
-  stop-color: #22d3ee;
+  stop-color: #38bdf8;
 }
 
 .ring--good .ring__to {
@@ -2015,13 +2077,31 @@ input:focus-visible + .switch {
   color: var(--dim);
 }
 
-/* 4.5 and up glows. */
+/* 4.5 and up: the signature mint, a thicker arc, a real glow. */
+.ring.is-hot .ring__from {
+  stop-color: #34e5a5;
+}
+
+.ring.is-hot .ring__to {
+  stop-color: #5ef0c6;
+}
+
+.ring.is-hot .ring__arc {
+  stroke-width: 4.6;
+  stroke-opacity: 1;
+}
+
+.ring.is-hot .ring__track {
+  stroke: rgba(52, 229, 165, 0.12);
+}
+
 .ring.is-hot svg {
-  filter: drop-shadow(0 0 5px rgba(52, 229, 165, 0.6));
+  filter: drop-shadow(0 0 3px rgba(52, 229, 165, 0.9)) drop-shadow(0 0 10px rgba(52, 229, 165, 0.55));
 }
 
 .ring.is-hot .ring__num {
   color: var(--mint);
+  font-weight: 700;
 }
 
 /* Status chips */
@@ -2665,6 +2745,7 @@ input:focus-visible + .switch {
   gap: 7px;
   height: 36px;
   max-width: 100%;
+  white-space: nowrap;
   padding: 0 4px 0 12px;
   border-radius: 11px;
   border: 1px solid var(--hair-2);
@@ -2816,7 +2897,7 @@ input:focus-visible + .switch {
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  grid-template-columns: fit-content(440px) minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -2884,6 +2965,20 @@ input:focus-visible + .switch {
   padding: 26px 28px;
   border-left: 1px solid var(--hair);
   background: rgba(0, 0, 0, 0.22);
+}
+
+.hero--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hero__who .cmdchip {
+  margin-top: 4px;
+}
+
+.hero__log--past .logtail {
+  padding-top: 0;
+  border-top: 0;
+  opacity: 0.72;
 }
 
 .logline {
@@ -3257,6 +3352,7 @@ input:focus-visible + .switch {
 }
 
 .thumb {
+  position: relative;
   width: 128px;
   height: 84px;
   flex: none;
@@ -3277,19 +3373,46 @@ input:focus-visible + .switch {
   height: 100%;
   object-fit: cover;
   object-position: top;
-  transition: transform 0.4s var(--ease);
+  filter: brightness(0.72) saturate(0.85);
+  transition: transform 0.4s var(--ease), filter 0.3s var(--ease);
 }
 
-button.thumb:hover {
+/* An ink veil keeps the white pages calm until the pointer or focus is on them. */
+button.thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 8, 11, 0.05) 30%, rgba(6, 8, 11, 0.55));
+  transition: opacity 0.3s var(--ease);
+}
+
+button.thumb:hover,
+button.thumb:focus-visible {
   border-color: var(--mint-line);
 }
 
-button.thumb:hover img {
+button.thumb:hover img,
+button.thumb:focus-visible img {
+  filter: none;
   transform: scale(1.05);
 }
 
-.thumb--empty {
+button.thumb:hover::after,
+button.thumb:focus-visible::after {
+  opacity: 0;
+}
+
+.thumb--empty,
+.thumb--none {
   cursor: default;
+}
+
+.thumb--none {
+  border-style: dashed;
+  border-color: var(--hair-2);
+  background: transparent;
+  color: var(--dim);
 }
 
 /* Profile page */
@@ -4252,14 +4375,74 @@ a.infochip:hover {
   color: var(--text-2);
 }
 
-.cl-letter__body {
-  display: grid;
-  gap: 10px;
-  padding: 0 12px 12px;
+.letterview {
+  width: min(740px, 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.cl-letter__body--in {
-  animation: enter 0.24s var(--ease);
+.letterview__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 14px 18px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.letterview__who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.letterview__who h2 {
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.letterview__who span {
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.letterview__head .softchip {
+  max-width: 140px;
+}
+
+.letterview__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+}
+
+.letterview .cl-letter__text {
+  min-height: min(58vh, 560px);
+  padding: 28px 34px;
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+
+.letterview__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--hair);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .cl-letter__text {
@@ -5187,26 +5370,28 @@ a.infochip:hover {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .toast__text strong {
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 13.5px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.toast__text span {
-  font-size: 12px;
+.toast__detail {
+  flex: 1 1 0;
+  min-width: 48px;
+  font-size: 12.5px;
   color: var(--muted);
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .toast__close {
@@ -5727,13 +5912,9 @@ a.infochip:hover {
     padding: 0 13px;
   }
 
-  .pills {
-    border-radius: 18px;
-  }
-
   .pilltoggle {
     height: 32px;
-    padding: 0 9px;
+    padding: 0 10px;
     gap: 5px;
   }
 
@@ -5816,20 +5997,44 @@ a.infochip:hover {
     bottom: calc(var(--tabbar) + 150px + env(safe-area-inset-bottom));
   }
 
+  /* The card's text block opens up, so the status row and the actions get the full card width. */
   .appcard {
-    grid-template-columns: 40px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: 40px minmax(0, 1fr) 60px;
+    grid-template-areas:
+      'logo who thumb'
+      'row row row'
+      'note note note';
+    gap: 10px 12px;
     padding: 14px;
   }
 
-  .appcard .logo {
+  .appcard__main {
+    display: contents;
+  }
+
+  .appcard > .logo {
+    grid-area: logo;
     --logo: 40px !important;
   }
 
+  .appcard__who {
+    grid-area: who;
+    align-self: center;
+  }
+
+  .appcard__row {
+    grid-area: row;
+  }
+
+  .appcard__note {
+    grid-area: note;
+  }
+
   .thumb {
-    grid-column: 1 / -1;
-    width: 100%;
-    height: 150px;
+    grid-area: thumb;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
   }
 
   .appcard__actions {
@@ -5945,16 +6150,28 @@ a.infochip:hover {
     padding: 12px;
   }
 
-  .overlay:has(.wizard) {
+  .overlay:has(.wizard),
+  .overlay:has(.letterview) {
     padding: 0;
   }
 
-  .wizard {
+  .wizard,
+  .letterview {
     width: 100%;
     height: 100vh;
     height: 100dvh;
     max-height: none;
     border-radius: 0;
+  }
+
+  .letterview .cl-letter__text {
+    min-height: 60vh;
+    padding: 20px 18px;
+    font-size: 14.5px;
+  }
+
+  .letterview__body {
+    padding: 12px;
   }
 
   .wizard__head {

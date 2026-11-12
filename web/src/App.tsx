@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { configError } from './lib/supabase';
 import { useSession } from './hooks/useSession';
 import { Aurora } from './components/Aurora';
@@ -8,6 +8,20 @@ import { BootError, BootSplash } from './components/Splash';
 
 // Dev-only motion preview with mock data at #/__preview. Dropped from production builds.
 const Preview = import.meta.env.DEV ? lazy(() => import('./components/motion/Preview')) : null;
+
+const isPreviewHash = () => window.location.hash.startsWith('#/__preview');
+
+/** True while the address is #/__preview. Follows the hash, so leaving it never strands a demo on mock data. */
+function usePreviewMode(): boolean {
+  const [on, setOn] = useState(() => Boolean(Preview) && isPreviewHash());
+  useEffect(() => {
+    if (!Preview) return;
+    const sync = () => setOn(isPreviewHash());
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
+  }, []);
+  return on;
+}
 
 export default function App() {
   return (
@@ -19,7 +33,8 @@ export default function App() {
 }
 
 function Screen() {
-  if (Preview && window.location.hash.startsWith('#/__preview')) {
+  const preview = usePreviewMode();
+  if (Preview && preview) {
     return (
       <Suspense fallback={null}>
         <Preview />

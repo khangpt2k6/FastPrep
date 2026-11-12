@@ -37,54 +37,72 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
   const tone = agentTone(online, state);
   const word = loading ? 'Connecting' : stateLabel(state);
   const earlier = tail.slice(0, -1).reverse().slice(0, 5);
+  // Offline: the last lines seen this session stay, dimmed; with none, the hero is one column.
+  const lastLines = online ? [] : tail.slice(-3).reverse();
+  const hasLog = Boolean(error) || online || lastLines.length > 0;
   const recent = [...commands].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).slice(0, 10);
 
   return (
     <div className="page page--agent">
-      <section className={`card hero hero--${tone}`} aria-label="Agent status">
+      <section className={`card hero hero--${tone} ${hasLog ? '' : 'hero--single'}`} aria-label="Agent status">
         <div className="hero__status">
           <Orb tone={loading ? 'loading' : tone} size="lg" label={`Agent: ${word}`} />
           <div className="hero__who">
             <p className="hero__state">
               <Swap id={word}>{word}</Swap>
             </p>
-            <p className="hero__meta mono">
-              {agent?.last_seen ? <span>seen {timeAgo(agent.last_seen, now)}</span> : <span>never connected</span>}
-              {agent?.model ? <span>{agent.model}</span> : null}
-            </p>
+            {!loading ? (
+              <p className="hero__meta mono">
+                <span>{agent?.last_seen ? `seen ${timeAgo(agent.last_seen, now)}` : 'never connected'}</span>
+              </p>
+            ) : null}
             {online && current ? <CurrentJob job={current} /> : null}
+            {!online && !loading ? <StartHint /> : null}
           </div>
         </div>
 
-        <div className="hero__log">
-          {error ? (
-            <div className="inline-error">
-              <p>{error.message}</p>
-              <button type="button" className="btn btn--secondary btn--sm" onClick={onRetry}>
-                Try again
-              </button>
-            </div>
-          ) : online ? (
-            <>
-              <LogLine agent={agent} online={online} tone={tone} />
-              {earlier.length > 0 ? (
-                <ol className="logtail logtail--wide" aria-label="Earlier log lines">
-                  <AnimatePresence initial={false}>
-                    {earlier.map((e) => (
-                      <motion.li key={`${e.at}-${e.message}`} layout="position" {...logItem}>
-                        <time className="mono">{clock(e.at)}</time>
-                        <span className="logtail__state mono">{e.state}</span>
-                        <span className="logtail__msg">{e.message}</span>
-                      </motion.li>
-                    ))}
-                  </AnimatePresence>
+        {hasLog ? (
+          <div className={`hero__log ${online ? '' : 'hero__log--past'}`}>
+            {error ? (
+              <div className="inline-error">
+                <p>{error.message}</p>
+                <button type="button" className="btn btn--secondary btn--sm" onClick={onRetry}>
+                  Try again
+                </button>
+              </div>
+            ) : online ? (
+              <>
+                <LogLine agent={agent} online={online} tone={tone} />
+                {earlier.length > 0 ? (
+                  <ol className="logtail logtail--wide" aria-label="Earlier log lines">
+                    <AnimatePresence initial={false}>
+                      {earlier.map((e) => (
+                        <motion.li key={`${e.at}-${e.message}`} layout="position" {...logItem}>
+                          <time className="mono">{clock(e.at)}</time>
+                          <span className="logtail__state mono">{e.state}</span>
+                          <span className="logtail__msg">{e.message}</span>
+                        </motion.li>
+                      ))}
+                    </AnimatePresence>
+                  </ol>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <p className="eyebrow">Last log</p>
+                <ol className="logtail logtail--wide logtail--past" aria-label="Last log lines">
+                  {lastLines.map((e) => (
+                    <li key={`${e.at}-${e.message}`}>
+                      <time className="mono">{clock(e.at)}</time>
+                      <span className="logtail__state mono">{e.state}</span>
+                      <span className="logtail__msg">{e.message}</span>
+                    </li>
+                  ))}
                 </ol>
-              ) : null}
-            </>
-          ) : loading ? null : (
-            <StartHint />
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        ) : null}
       </section>
 
       <dl className="stats">

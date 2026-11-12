@@ -243,6 +243,14 @@ export const IconImage = (p: IconProps) => (
   </Svg>
 );
 
+export const IconImageOff = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M8.5 4.5h10a2 2 0 0 1 2 2v10M17.5 19.5H5.5a2 2 0 0 1-2-2v-11" />
+    <path d="M20.5 15.5l-3.2-3.2M14 13l-8 6.5" />
+    <path d="M3.5 3.5l17 17" />
+  </Svg>
+);
+
 export const IconLetter = (p: IconProps) => (
   <Svg {...p}>
     <path d="M6.5 3.5h7.5l4.5 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-10.5A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1.5-1.5z" />
