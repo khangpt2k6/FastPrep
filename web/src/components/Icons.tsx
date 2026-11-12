@@ -251,6 +251,14 @@ export const IconImage = (p: IconProps) => (
   </Svg>
 );
 
+export const IconLetter = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6.5 3.5h7.5l4.5 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-10.5A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1.5-1.5z" />
+    <path d="M14 3.5V8h4.5" />
+    <path d="M8.5 12.5h7M8.5 16h4.5" />
+  </Svg>
+);
+
 /** Original mark: a black tile with a mint cursor and a small spark. */
 export function Logo({ size = 36 }: { size?: number }) {
   return (

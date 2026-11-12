@@ -6,6 +6,7 @@ export type AgentState =
   | 'scoring'
   | 'ready'
   | 'applying'
+  | 'writing'
   | 'applied'
   | 'error'
   | 'offline';
@@ -51,7 +52,7 @@ export type CommandStatus = 'pending' | 'running' | 'done' | 'failed';
 
 export interface CommandRow {
   id: number;
-  kind: 'apply' | 'search';
+  kind: 'apply' | 'search' | 'cover_letter';
   job_ids: string[];
   dry_run: boolean;
   status: CommandStatus;

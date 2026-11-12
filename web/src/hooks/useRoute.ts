@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export const PAGES = ['jobs', 'applications', 'agent', 'profile', 'preferences', 'memory'] as const;
+export const PAGES = ['jobs', 'applications', 'agent', 'profile', 'preferences', 'memory', 'letters'] as const;
 export type Page = (typeof PAGES)[number];
 
 export interface Route {

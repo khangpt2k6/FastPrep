@@ -2,6 +2,8 @@ import type { AgentRow, CommandRow, LiveStatus, LoadError } from '../../lib/type
 import { clock, plural, stateLabel, timeAgo } from '../../lib/format';
 import { Beacon, LogLine, StartHint, agentTone, type LogEntry } from './live';
 
+const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters' };
+
 interface AgentPageProps {
   agent: AgentRow | null;
   online: boolean;
@@ -120,9 +122,9 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
           <ul className="cmdlist">
             {recent.map((c) => (
               <li className="cmd" key={c.id}>
-                <span className={`cmd__kind cmd__kind--${c.kind}`}>{c.kind === 'apply' ? 'Apply' : 'Search'}</span>
+                <span className={`cmd__kind cmd__kind--${c.kind}`}>{COMMAND_KIND[c.kind] ?? c.kind}</span>
                 <span className="cmd__what">
-                  {c.kind === 'apply' ? plural(c.job_ids.length, 'job') : 'Find more jobs'}
+                  {c.kind === 'apply' ? plural(c.job_ids.length, 'job') : c.kind === 'cover_letter' ? plural(c.job_ids.length, 'letter') : 'Find more jobs'}
                   {c.kind === 'apply' && c.dry_run ? <span className="tag tag--dry">Dry run</span> : null}
                 </span>
                 <span className={`pill pill--cmd-${c.status}`}>

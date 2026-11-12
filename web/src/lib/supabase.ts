@@ -20,6 +20,9 @@ export const TABLES = {
   profile: 'automation_profile',
   preferences: 'automation_preferences',
   memory: 'automation_memory',
+  coverTemplates: 'automation_cover_templates',
+  coverSettings: 'automation_cover_settings',
+  coverLetters: 'automation_cover_letters',
 } as const;
 
 export const PROOFS_BUCKET = 'automation-proofs';

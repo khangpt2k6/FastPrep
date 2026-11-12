@@ -1,6 +1,6 @@
 import type { ComponentType, MouseEvent, ReactNode, SVGProps } from 'react';
 import type { Page } from '../../hooks/useRoute';
-import { IconBot, IconBriefcase, IconLogout, IconMemory, IconSend, IconSliders, IconUser, Logo } from '../Icons';
+import { IconBot, IconBriefcase, IconLetter, IconLogout, IconMemory, IconSend, IconSliders, IconUser, Logo } from '../Icons';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
@@ -11,6 +11,7 @@ export const NAV: { page: Page; label: string; short: string; Icon: Icon }[] = [
   { page: 'profile', label: 'Profile', short: 'Profile', Icon: IconUser },
   { page: 'preferences', label: 'Preferences', short: 'Prefs', Icon: IconSliders },
   { page: 'memory', label: 'Memory', short: 'Memory', Icon: IconMemory },
+  { page: 'letters', label: 'Cover letters', short: 'Letters', Icon: IconLetter },
 ];
 
 interface SidebarProps {

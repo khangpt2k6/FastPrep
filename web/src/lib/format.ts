@@ -36,6 +36,7 @@ export const STATE_LABEL: Record<AgentState, string> = {
   scoring: 'Scoring',
   ready: 'Ready',
   applying: 'Applying',
+  writing: 'Writing letters',
   applied: 'Applied',
   error: 'Error',
   offline: 'Offline',

@@ -10,6 +10,8 @@ import { useFinishedApplications } from '../hooks/useFinishedApplications';
 import { useNewMemories } from '../hooks/useNewMemories';
 import { useNotifyPrefs } from '../hooks/useNotifyPrefs';
 import { useNow } from '../hooks/useNow';
+import { sendCoverLetters } from '../hooks/useCoverLetters';
+import { CoverLettersPage } from './letters/CoverLettersPage';
 import { useRoute, type Page } from '../hooks/useRoute';
 import { AgentCard, LiveStrip } from './agent/AgentCard';
 import { AgentPage } from './agent/AgentPage';
@@ -50,6 +52,10 @@ const HEADINGS: Record<Page, { title: string; subtitle: string }> = {
   memory: {
     title: 'Memory',
     subtitle: 'Answers the agent wrote or you taught it. When a form asks the same question, it reuses them. Pinned answers are used word for word.',
+  },
+  letters: {
+    title: 'Cover letters',
+    subtitle: 'Pick a template. For each job the agent writes only the highlighted parts, then attaches the letter to the application.',
   },
 };
 
@@ -98,6 +104,7 @@ export function Dashboard({ userId, email }: DashboardProps) {
   const [query, setQuery] = useState('');
   const [applyBusy, setApplyBusy] = useState(false);
   const [searchBusy, setSearchBusy] = useState(false);
+  const [lettersBusy, setLettersBusy] = useState(false);
   const [confirmJobs, setConfirmJobs] = useState<JobRow[] | null>(null);
   const [shot, setShot] = useState<{ job: JobRow; url: string } | null>(null);
   const [wizard, setWizard] = useState<{ open: boolean; key: number; step: number; reason: WizardReason }>({
@@ -259,6 +266,25 @@ export function Dashboard({ userId, email }: DashboardProps) {
     }
   }
 
+  async function writeLetters() {
+    if (chosen.length === 0) return;
+    setLettersBusy(true);
+    try {
+      await sendCoverLetters(chosen.map((j) => j.id));
+      push({
+        tone: 'ok',
+        title: `Writing ${plural(chosen.length, 'cover letter')}`,
+        detail: online ? 'Read and edit them on the Cover letters page. Nothing is sent.' : 'Queued. The agent writes them when it starts.',
+      });
+      commandsT.reload();
+      navigate('letters');
+    } catch (error) {
+      push({ tone: 'error', title: 'Could not ask for cover letters', detail: errorText(error) });
+    } finally {
+      setLettersBusy(false);
+    }
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
   }
@@ -362,6 +388,8 @@ export function Dashboard({ userId, email }: DashboardProps) {
               searching={searchBusy}
               onApply={requestApply}
               onSearch={search}
+              onLetters={writeLetters}
+              writing={lettersBusy}
               onClear={() => setSelected(new Set())}
             />
           }
@@ -434,6 +462,9 @@ export function Dashboard({ userId, email }: DashboardProps) {
       content = (
         <MemoryPage memory={memoryT} now={now} job={jobFilter} onClearJob={() => navigate('memory')} toast={push} />
       );
+      break;
+    case 'letters':
+      content = <CoverLettersPage userId={userId} jobs={jobsT.rows} online={online} now={now} toast={push} />;
       break;
   }
 
