@@ -135,9 +135,10 @@ VERDICTS_SCHEMA: dict[str, Any] = {
                     "location_fits": {"type": "boolean"},
                     "seniority_fits": {"type": "boolean"},
                     "timing_fits": {"type": "boolean"},
+                    "work_fits": {"type": "boolean"},
                     "certainty": {"type": "number"},
                 },
-                "required": ["id", "title", "real_opening", "location_fits", "seniority_fits", "timing_fits", "certainty"],
+                "required": ["id", "title", "real_opening", "location_fits", "seniority_fits", "timing_fits", "work_fits", "certainty"],
                 "additionalProperties": False,
             },
         }
@@ -146,11 +147,15 @@ VERDICTS_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
-# Caps on a verdict whose place, level or timing the model said does not fit, so one judgement cannot be talked over by another.
+# Caps on a verdict whose place, level, timing or work the model said does not fit, so one judgement cannot be talked over by another.
 NOT_A_JOB_CAP = 0.0
 LOCATION_CAP = 0.1
 SENIORITY_CAP = 0.15
 TIMING_CAP = 0.3
+# Measured on 2026-11-12: in a batch of 20 postings with no description, all of them other trades than the CV's, the model
+# gave a few of them 0.97, how sure it was of its no. Alone, the same postings got 0.0. A plain yes or no on the work does
+# not flip like that.
+WORK_CAP = 0.1
 
 OPENAI_SCORING_RULES = (
     "You screen job postings for a candidate, as a careful recruiter would. Judge each posting on its own, and answer every "
@@ -165,8 +170,12 @@ OPENAI_SCORING_RULES = (
     "- timing_fits: for a candidate still in school (a graduation date still to come), true for internships, co-ops, "
     "part-time roles, and new-grad roles for their graduation year or later; false for a full-time role that needs them before "
     "they graduate. For a candidate who has graduated, true.\n"
-    "- certainty, from 0.0 to 1.0: how sure you are that the statement below holds, judging the work itself: the same kind of "
-    "work, and the CV shows what the posting requires.\n\n"
+    "- work_fits: whether the posting is the same kind of work as the statement below asks for and the CV shows. With no "
+    "description, judge from the title alone: a title naming another field or trade is false, and so is a title too vague "
+    "to tell.\n"
+    "- certainty, from 0.0 to 1.0: how likely it is that the statement below holds, judging the work itself: the same kind of "
+    "work, and the CV shows what the posting requires. 0.0 means it surely does not hold and 1.0 that it surely does; it is "
+    "never how sure you are of a no.\n\n"
     "Statement: "
 )
 
@@ -181,8 +190,8 @@ def _same_title(said: str, title: str) -> bool:
 
 
 async def _ask_openai(client: AsyncOpenAI, model: str, cv: str, jobs: list[Job], asked: str) -> dict[str, Any]:
-    """The same verdicts from a plain OpenAI chat call, shaped like the /systemone reply. Level and timing are asked as
-    yes or no and cap the certainty; a verdict whose copied title is not its posting's is dropped."""
+    """The same verdicts from a plain OpenAI chat call, shaped like the /systemone reply. Level, timing and the kind of work
+    are asked as yes or no and cap the certainty; a verdict whose copied title is not its posting's is dropped."""
     postings = "\n\n".join(
         f"### {_name(i)}\n{job.title} at {job.company}. Location: {job.location}\n\n{job.description[:OPENAI_DESCRIPTION_CHARS]}" for i, job in enumerate(jobs)
     )
@@ -205,6 +214,8 @@ async def _ask_openai(client: AsyncOpenAI, model: str, cv: str, jobs: list[Job],
             certainty = min(certainty, SENIORITY_CAP)
         if answer.get("timing_fits") is False:
             certainty = min(certainty, TIMING_CAP)
+        if answer.get("work_fits") is False:
+            certainty = min(certainty, WORK_CAP)
         answers[f"{answer['id']}_fit"] = {"noul": certainty}
     return {"answers": answers}
 

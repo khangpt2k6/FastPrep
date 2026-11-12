@@ -224,12 +224,13 @@ def test_openai_verdicts_are_capped_by_their_yes_no_answers_and_dropped_when_the
 
     from agent_automation.agent import scoring
 
-    jobs = [Job(f"j{n}", "Firm", f"Engineer {n}", "Rome", "u", "a", "Build things.") for n in range(4)]
+    jobs = [Job(f"j{n}", "Firm", f"Engineer {n}", "Rome", "u", "a", "Build things.") for n in range(5)]
     reply = {"answers": [
-        {"id": "p00", "title": jobs[0].title, "real_opening": True, "location_fits": True, "seniority_fits": True, "timing_fits": True, "certainty": 0.9},
-        {"id": "p01", "title": jobs[1].title, "real_opening": True, "location_fits": False, "seniority_fits": True, "timing_fits": True, "certainty": 0.9},
-        {"id": "p02", "title": jobs[2].title, "real_opening": True, "location_fits": True, "seniority_fits": False, "timing_fits": True, "certainty": 0.9},
-        {"id": "p03", "title": "Some other posting", "real_opening": True, "location_fits": True, "seniority_fits": True, "timing_fits": True, "certainty": 0.9},
+        {"id": "p00", "title": jobs[0].title, "real_opening": True, "location_fits": True, "seniority_fits": True, "timing_fits": True, "work_fits": True, "certainty": 0.9},
+        {"id": "p01", "title": jobs[1].title, "real_opening": True, "location_fits": False, "seniority_fits": True, "timing_fits": True, "work_fits": True, "certainty": 0.9},
+        {"id": "p02", "title": jobs[2].title, "real_opening": True, "location_fits": True, "seniority_fits": False, "timing_fits": True, "work_fits": True, "certainty": 0.9},
+        {"id": "p04", "title": jobs[4].title, "real_opening": True, "location_fits": True, "seniority_fits": True, "timing_fits": True, "work_fits": False, "certainty": 0.97},
+        {"id": "p03", "title": "Some other posting", "real_opening": True, "location_fits": True, "seniority_fits": True, "timing_fits": True, "work_fits": True, "certainty": 0.9},
     ]}
 
     async def fake(*args: object, **kwargs: object) -> dict:
@@ -241,3 +242,4 @@ def test_openai_verdicts_are_capped_by_their_yes_no_answers_and_dropped_when_the
     assert answers["p01_fit"]["noul"] == scoring.LOCATION_CAP
     assert answers["p02_fit"]["noul"] == scoring.SENIORITY_CAP
     assert "p03_fit" not in answers
+    assert answers["p04_fit"]["noul"] == scoring.WORK_CAP
