@@ -199,7 +199,9 @@ begin
   begin alter publication supabase_realtime add table public.automation_cover_letters; exception when duplicate_object then null; end;
 end $$;
 
--- A command can also ask for cover letters alone, to read them before applying.
+-- A command can also ask for cover letters alone, to read them before applying, or read a resume uploaded on the page
+-- (kind 'resume', payload {"resume_id": n}).
+alter table public.automation_commands add column if not exists payload jsonb not null default '{}'::jsonb;
 do $$
 declare
   found record;
@@ -211,4 +213,62 @@ begin
     execute format('alter table public.automation_commands drop constraint %I', found.conname);
   end loop;
 end $$;
-alter table public.automation_commands add constraint automation_commands_kind_check check (kind in ('apply', 'search', 'cover_letter'));
+alter table public.automation_commands add constraint automation_commands_kind_check check (kind in ('apply', 'search', 'cover_letter', 'resume'));
+
+-- The agent's switches, set on the Agent page. paused: the agent keeps running but takes no command and fetches nothing
+-- until resumed. auto_fetch: every fetch_hours it brings the newest postings and scores at most fetch_limit new jobs.
+create table if not exists public.automation_settings (
+  user_id uuid primary key default auth.uid() references auth.users on delete cascade,
+  paused boolean not null default false,
+  auto_fetch boolean not null default true,
+  fetch_hours int not null default 3 check (fetch_hours between 1 and 48),
+  fetch_limit int not null default 40 check (fetch_limit between 0 and 200),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.automation_settings enable row level security;
+drop policy if exists "own settings" on public.automation_settings;
+create policy "own settings" on public.automation_settings for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+-- When the agent last brought new postings, when it will next, and how many new jobs that round found.
+alter table public.automation_agent add column if not exists fetched_at timestamptz;
+alter table public.automation_agent add column if not exists next_fetch_at timestamptz;
+alter table public.automation_agent add column if not exists fetched_new int not null default 0;
+
+-- When the agent first found a job, for the page's New badge.
+alter table public.automation_jobs add column if not exists found_at timestamptz;
+
+-- Resumes. The page uploads the file to automation-proofs under <user id>/resumes/ and adds a row; the agent reads it,
+-- keeps what it understood (text: the resume as plain text, data: {"search": ..., "profile": ...}) and makes it the
+-- active one, the resume every application sends. Older ones stay as 'old' so the page can show the history.
+create table if not exists public.automation_resumes (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  name text not null,
+  path text not null default '',
+  size int not null default 0,
+  status text not null default 'uploaded' check (status in ('uploaded', 'reading', 'active', 'failed', 'old')),
+  error text not null default '',
+  text text not null default '',
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists automation_resumes_user on public.automation_resumes (user_id, created_at desc);
+
+alter table public.automation_resumes enable row level security;
+drop policy if exists "own resumes" on public.automation_resumes;
+create policy "own resumes" on public.automation_resumes for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+-- Old resumes and letters can be removed from the page.
+drop policy if exists "automation proofs delete" on storage.objects;
+create policy "automation proofs delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'automation-proofs' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.automation_settings; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.automation_resumes; exception when duplicate_object then null; end;
+end $$;
