@@ -47,7 +47,8 @@ export const FIELDS: Record<string, string> = {
   hiring_manager: 'Hiring Team',
 };
 
-const PLACEHOLDER = /\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::([\s\S]*?))?\}\}/g;
+// A slot's note never holds {{ or }}: a slot left open must not swallow the text up to the next field.
+const PLACEHOLDER = /\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::((?:(?!\{\{|\}\})[\s\S])*?))?\}\}/g;
 
 export type Piece =
   | { kind: 'text'; text: string }

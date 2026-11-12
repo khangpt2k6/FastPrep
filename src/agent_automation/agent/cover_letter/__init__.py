@@ -56,7 +56,8 @@ PRIVATE_ANSWERS = frozenset({
     "authorized_to_work_in_us",
 })
 
-PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::(.*?))?\}\}", re.DOTALL)
+# A slot's note never holds {{ or }}: a slot left open must not swallow the text up to the next field.
+PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::((?:(?!\{\{|\}\}).)*?))?\}\}", re.DOTALL)
 SEPARATORS = " |·•,/"
 
 # What a slot must never say. Each is caught after the model writes, and the slot is written once more with the reason.

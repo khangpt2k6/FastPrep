@@ -66,7 +66,7 @@ def test_a_slot_keeps_its_instruction_a_field_is_not_a_slot_and_a_repeated_slot_
     ]
 
 
-@pytest.mark.parametrize("body", ["", "Hi {{name\nthere", "Hi {{first name}}", "Hi }} there"])
+@pytest.mark.parametrize("body", ["", "Hi {{name\nthere", "Hi {{first name}}", "Hi }} there", "{{hook: one line.\n\nBest,\n{{full_name}}"])
 def test_a_broken_template_says_what_is_wrong(body: str) -> None:
     assert check_body(body)
     with pytest.raises(CoverLetterError):

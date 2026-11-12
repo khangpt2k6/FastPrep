@@ -42,10 +42,17 @@ interface CoverLettersPageProps {
 
 /** The template as the page it becomes: fixed text in a serif, fields as chips, slots as the notes the agent writes from. */
 function Paper({ body }: { body: string }) {
+  const all = pieces(body);
   return (
     <div className="cl-paper" aria-label="Template preview">
-      {pieces(body).map((piece, index) => {
-        if (piece.kind === 'text') return <span key={index}>{piece.text}</span>;
+      {all.map((piece, index) => {
+        if (piece.kind === 'text') {
+          // A slot is drawn as its own block: the line breaks around it in the template would add a blank line each.
+          let text = piece.text;
+          if (all[index + 1]?.kind === 'slot') text = text.replace(/\n$/, '');
+          if (all[index - 1]?.kind === 'slot') text = text.replace(/^\n/, '');
+          return <span key={index}>{text}</span>;
+        }
         if (piece.kind === 'field')
           return (
             <span key={index} className="cl-field" title={`{{${piece.name}}} comes from your profile or the job`}>
