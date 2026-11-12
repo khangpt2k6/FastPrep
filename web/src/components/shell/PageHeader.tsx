@@ -1,37 +1,37 @@
-import type { ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { swapVariants } from '../../lib/motion';
+import type { ComponentType, ReactNode, SVGProps } from 'react';
 import { Logo } from '../Icons';
 
+type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
+
 interface PageHeaderProps {
+  icon: Icon;
   title: string;
-  /** The orb and its one-line ticker. */
-  agent: ReactNode;
-  /** The dry-run switch. */
-  mode: ReactNode;
-  /** The alerts bell. */
-  alerts: ReactNode;
-  /** Dry run is off: applications really go out, so the bar carries an amber edge. */
-  live: boolean;
+  /** Small page actions on the right, such as Find jobs or the Dry run switch. */
+  actions?: ReactNode;
 }
 
-/** The top bar: the page title, the agent's orb and live line, the dry-run switch and alerts. */
-export function PageHeader({ title, agent, mode, alerts, live }: PageHeaderProps) {
+/** A small line icon, the title, and the page's actions on the right. */
+export function PageHeader({ icon: Icon, title, actions }: PageHeaderProps) {
   return (
-    <header className={`topbar ${live ? 'is-live' : ''}`}>
-      <span className="topbar__mark" aria-hidden="true">
-        <Logo size={30} />
-      </span>
-      <div className="topbar__title">
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.h1 key={title} variants={swapVariants} initial="hidden" animate="shown" exit="gone">
-            {title}
-          </motion.h1>
-        </AnimatePresence>
+    <header className="pagehead">
+      <div className="pagehead__title">
+        <Icon size={22} className="pagehead__icon" />
+        <h1>{title}</h1>
       </div>
-      <div className="topbar__agent">{agent}</div>
-      <div className="topbar__mode">{mode}</div>
-      <div className="topbar__alerts">{alerts}</div>
+      {actions ? <div className="pagehead__actions">{actions}</div> : null}
     </header>
+  );
+}
+
+/** The phone's top bar: the mark, the agent's status and alerts. Hidden on wider screens. */
+export function MobileBar({ status, alerts }: { status: ReactNode; alerts: ReactNode }) {
+  return (
+    <div className="mobilebar">
+      <span className="mobilebar__mark" aria-hidden="true">
+        <Logo size={22} />
+      </span>
+      <div className="mobilebar__status">{status}</div>
+      <div className="mobilebar__alerts">{alerts}</div>
+    </div>
   );
 }

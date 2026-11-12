@@ -49,7 +49,22 @@ export function stateLabel(state: string): string {
 export const APPLICATION_STATUSES = ['applying', 'submitted', 'unconfirmed', 'refused', 'blocked', 'failed'];
 
 /** filled is a dry run that reached the send button and stopped there on purpose; stopped is any other stop. */
-export type StatusTone = 'applying' | 'sent' | 'unconfirmed' | 'filled' | 'bad' | 'stopped';
+export type StatusTone = 'applying' | 'sent' | 'unconfirmed' | 'filled' | 'bad' | 'stopped' | 'none';
+
+/** Notion-style tag colours. */
+export type TagColor = 'gray' | 'brown' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'red';
+
+/** The tag colour for each status: sent green, filled yellow, applying blue, unconfirmed purple, stopped orange,
+ * failed or refused red, anything else gray. */
+export const STATUS_COLOR: Record<StatusTone, TagColor> = {
+  sent: 'green',
+  filled: 'yellow',
+  applying: 'blue',
+  unconfirmed: 'purple',
+  stopped: 'orange',
+  bad: 'red',
+  none: 'gray',
+};
 
 /** A company as people say it. Some sources give a Workday tenant path ("cisco/wd5/cisco_careers") or a careers host
  * ("careers.cisco.com"): the company's own name is taken from it. */
@@ -87,94 +102,91 @@ export function firstLocation(location: string): { first: string; more: number }
   return { first: places[0] ?? '', more: Math.max(0, places.length - 1) };
 }
 
-/** The agent's one-word reason, in words for a card's meta line; empty when the status chip already says it. */
+/** The agent's one-word reason, as a short note for a row; empty when the status tag already says it. */
 export function reasonWords(reason: string): string {
   const words: Record<string, string> = {
-    sent_in_dry_run: 'sent during a dry run',
-    no_credit: 'out of model credit',
-    not_answering: 'AI service not answering',
-    refused_by_form: 'the form refused it',
-    form_not_loaded: 'form did not load',
-    mailbox_signed_out: 'sign in to your mailbox',
-    no_code: 'no code arrived by email',
+    sent_in_dry_run: 'Sent during a dry run',
+    no_credit: 'Out of model credit',
+    not_answering: 'AI service not responding',
+    refused_by_form: 'Refused by the form',
+    form_not_loaded: 'Form did not load',
+    mailbox_signed_out: 'Mailbox signed out',
+    no_code: 'No email code received',
   };
   return words[reason] ?? '';
 }
 
-/** Why a form was not sent, in words, from the agent's one-word reason. */
+/** Why a form was not sent, from the agent's one-word reason. missing_info reads as "Needs info"; the rest are blocks. */
 const STOP_REASONS: Record<string, string> = {
-  missing_info: 'needs your info',
-  captcha: 'captcha',
-  login: 'needs a login',
-  closed: 'posting closed',
-  broken_page: 'page did not work',
-  stuck: 'got stuck',
-  never_clicked: 'send not clicked',
+  missing_info: 'Needs info from you',
+  captcha: 'Captcha',
+  login: 'Login required',
+  closed: 'Posting closed',
+  broken_page: 'Page did not work',
+  stuck: 'Agent got stuck',
+  never_clicked: 'Send button not clicked',
 };
 
-/** The status as a short label for a pill. A dry run never sends, so its result never reads as sent. */
-export function statusInfo(job: Pick<JobRow, 'status' | 'dry_run'> & Partial<Pick<JobRow, 'reason'>>): { label: string; tone: StatusTone } {
+export interface StatusInfo {
+  label: string;
+  tone: StatusTone;
+  /** What the tag means, for its tooltip. */
+  hint: string;
+}
+
+/** The status as a short tag. A dry run never sends, so its result never reads as sent. */
+export function statusInfo(job: Pick<JobRow, 'status' | 'dry_run'> & Partial<Pick<JobRow, 'reason'>>): StatusInfo {
   if (job.status === 'blocked') {
     // Only a dry run that reached the send button was filled; any other stop is a stop, dry run or not.
-    if (job.reason === 'dry_run' || (job.dry_run && !job.reason)) return { label: 'Filled (dry run)', tone: 'filled' };
+    if (job.reason === 'dry_run' || (job.dry_run && !job.reason)) return { label: 'Filled (dry run)', tone: 'filled', hint: 'Form filled, not sent' };
+    if (job.reason === 'missing_info') return { label: 'Needs info', tone: 'stopped', hint: STOP_REASONS.missing_info };
     const why = job.reason ? STOP_REASONS[job.reason] : undefined;
-    return { label: why ? `Stopped: ${why}` : 'Stopped', tone: 'stopped' };
+    return { label: 'Blocked', tone: 'stopped', hint: why ?? 'Stopped before sending' };
   }
   switch (job.status) {
     case 'applying':
-      return { label: 'Applying', tone: 'applying' };
+      return { label: 'Applying', tone: 'applying', hint: 'Filling the form now' };
     case 'submitted':
-      return { label: 'Sent', tone: 'sent' };
+      return { label: 'Sent', tone: 'sent', hint: 'Sent to the employer' };
     case 'unconfirmed':
-      return { label: 'Sent, unconfirmed', tone: 'unconfirmed' };
+      return { label: 'Sent, unconfirmed', tone: 'unconfirmed', hint: 'Sent, no confirmation page seen' };
     case 'refused':
-      return { label: 'Refused by form', tone: 'bad' };
+      return { label: 'Refused', tone: 'bad', hint: 'Refused by the form' };
     case 'failed':
-      return { label: 'Failed', tone: 'bad' };
+      return { label: 'Failed', tone: 'bad', hint: 'Failed before sending' };
     default:
-      return { label: job.status, tone: 'stopped' };
+      return { label: 'Not tried', tone: 'none', hint: job.status };
   }
 }
 
-/** What a status pill means, for its tooltip. */
-export function statusHint(tone: StatusTone): string {
-  switch (tone) {
-    case 'filled':
-      return 'Dry run: the form was filled and never sent';
-    case 'sent':
-      return 'Sent to the employer';
-    case 'unconfirmed':
-      return 'Sent, but no confirmation page was seen';
-    case 'applying':
-      return 'The agent is filling this form now';
-    case 'bad':
-      return 'Not sent';
-    default:
-      return 'Stopped before sending';
-  }
+/** The reason a blocked form stopped, for the row's note; empty when the tag says enough. */
+export function stopReason(job: Pick<JobRow, 'status' | 'dry_run'> & Partial<Pick<JobRow, 'reason'>>): string {
+  if (job.status !== 'blocked' || !job.reason || job.reason === 'dry_run' || job.reason === 'missing_info') return '';
+  return STOP_REASONS[job.reason] ?? '';
 }
 
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** Calm two-stop gradients for monogram tiles on a dark page: deep enough for a white letter, never neon. */
+/** Pastel tag pairs for monogram tiles, as background and letter colour. */
 const MONOGRAMS: [string, string][] = [
-  ['#155e52', '#1f7f6e'],
-  ['#2e3a7a', '#4352a6'],
-  ['#5a2f6b', '#7a4290'],
-  ['#6e3b1c', '#94552c'],
-  ['#1f4f75', '#2c6d9e'],
-  ['#4a5a1f', '#66792d'],
-  ['#6b2440', '#8f3459'],
-  ['#2f4b56', '#426a79'],
+  ['#f1f1ef', '#787774'],
+  ['#f4eeee', '#976d57'],
+  ['#faebdd', '#b85d09'],
+  ['#fbf3db', '#9f7116'],
+  ['#edf3ec', '#448361'],
+  ['#e7f3f8', '#337ea9'],
+  ['#f6f3f9', '#9065b0'],
+  ['#fdebec', '#d44c47'],
 ];
 
-export function monogramGradient(name: string): string {
+/** A monogram's colours, picked by hashing the name so a company keeps its colour. */
+export function monogramColors(name: string): { background: string; color: string } {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  const [from, to] = MONOGRAMS[hash % MONOGRAMS.length];
-  return `linear-gradient(135deg, ${from}, ${to})`;
+  const [background, color] = MONOGRAMS[hash % MONOGRAMS.length];
+  return { background, color };
 }
 
 export function initialOf(name: string): string {
@@ -189,6 +201,13 @@ export function matchInfo(score: number): { label: string; tone: MatchTone } {
   if (score >= 3) return { label: 'Good match', tone: 'good' };
   if (score >= 2) return { label: 'Fair match', tone: 'fair' };
   return { label: 'Low match', tone: 'low' };
+}
+
+/** A score's tag colour: 4.5 and up green, 4.0 to 4.4 blue, below 4 gray. */
+export function scoreColor(score: number): TagColor {
+  if (score >= 4.5) return 'green';
+  if (score >= 4) return 'blue';
+  return 'gray';
 }
 
 /** "2024-08 → Present", with an arrow instead of a dash. */

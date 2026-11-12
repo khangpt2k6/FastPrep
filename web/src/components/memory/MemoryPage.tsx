@@ -31,7 +31,7 @@ function TeachDialog({ open, onClose, onSaved }: { open: boolean; onClose: () =>
 
   async function submit() {
     if (!question.trim() || !answer.trim()) {
-      setError('Write both the question and the answer.');
+      setError('Enter a question and an answer.');
       return;
     }
     setBusy(true);
@@ -51,7 +51,7 @@ function TeachDialog({ open, onClose, onSaved }: { open: boolean; onClose: () =>
   return (
     <Dialog open={open} onClose={onClose} labelledBy="teach-title" className="smalldialog">
       <header className="smalldialog__head">
-        <h2 id="teach-title">Teach an answer</h2>
+        <h2 id="teach-title">New answer</h2>
         <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
           <IconX size={18} />
         </button>
@@ -79,7 +79,7 @@ function TeachDialog({ open, onClose, onSaved }: { open: boolean; onClose: () =>
           rows={5}
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
-          placeholder="In your own words"
+          placeholder="Your answer"
         />
       </div>
       {error ? (
@@ -93,7 +93,7 @@ function TeachDialog({ open, onClose, onSaved }: { open: boolean; onClose: () =>
         </button>
         <button type="button" className="btn btn--primary" onClick={submit} disabled={busy}>
           {busy ? <span className="spinner" aria-hidden="true" /> : <IconPlus size={15} />}
-          Save answer
+          Save
         </button>
       </div>
     </Dialog>
@@ -141,7 +141,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
   async function confirmDelete() {
     if (!doomed) return;
     setDeleting(true);
-    const ok = await run(() => deleteAnswer(doomed.id), 'Could not delete the answer');
+    const ok = await run(() => deleteAnswer(doomed.id), 'Could not delete answer');
     setDeleting(false);
     if (ok) {
       setDoomed(null);
@@ -156,10 +156,10 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
     body = (
       <EmptyState
         icon={<IconAlert size={22} />}
-        title="Could not load memory"
+        title="Could not load answers."
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={memory.reload}>
-            Try again
+            Retry
           </button>
         }
       >
@@ -172,20 +172,20 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
     body = (
       <EmptyState
         icon={<IconMemory size={22} />}
-        title={job ? `No answers for ${job.company} yet` : 'No answers yet'}
+        title={job ? `No answers for ${job.company} yet.` : 'No answers yet.'}
         action={
           <button type="button" className="btn btn--primary btn--sm" onClick={() => setTeaching(true)}>
             <IconPlus size={15} />
-            Teach an answer
+            New answer
           </button>
         }
       />
     );
   } else if (shown.length === 0) {
-    body = <p className="empty-line">No matches.</p>;
+    body = <p className="empty-line">No matching answers.</p>;
   } else {
     body = (
-      <ul className="cardlist">
+      <ul className="dblist dblist__rows memlist">
         <AnimatePresence>
         {shown.map((row, i) => (
           <MemoryCard
@@ -193,8 +193,8 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
             index={i}
             row={row}
             now={now}
-            onSave={(answer) => run(() => editAnswer(row.id, answer), 'Could not save the answer')}
-            onPin={() => void run(() => setPinned(row.id, !row.pinned), 'Could not change the pin')}
+            onSave={(answer) => run(() => editAnswer(row.id, answer), 'Could not save answer')}
+            onPin={() => void run(() => setPinned(row.id, !row.pinned), 'Could not update pin')}
             onDelete={() => setDoomed(row)}
           />
         ))}
@@ -205,7 +205,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
 
   return (
     <div className="page page--memory">
-      <div className="toolbar">
+      <div className="dbbar">
         <PillGroup<Filter>
           label="Show"
           value={filter}
@@ -213,24 +213,26 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
           options={[
             { value: 'all', label: 'All', count: counts.all },
             { value: 'learned', label: 'Learned', count: counts.learned },
-            { value: 'user', label: 'Yours', count: counts.user },
-            { value: 'pinned', label: 'Pinned', count: counts.pinned, title: 'Pinned answers are used word for word' },
+            { value: 'user', label: 'Mine', count: counts.user },
+            { value: 'pinned', label: 'Pinned', count: counts.pinned, title: 'Used word for word' },
           ]}
         />
-        <label className="searchbox">
-          <IconSearch size={16} />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search"
-            aria-label="Search questions and answers"
-          />
-        </label>
-        <button type="button" className="btn btn--primary toolbar__more" onClick={() => setTeaching(true)} title="Teach the agent an answer">
-          <IconPlus size={16} />
-          Teach
-        </button>
+        <div className="dbbar__right">
+          <label className="searchbox">
+            <IconSearch size={14} />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search"
+              aria-label="Search questions and answers"
+            />
+          </label>
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => setTeaching(true)}>
+            <IconPlus size={14} />
+            New answer
+          </button>
+        </div>
       </div>
 
       {job ? (

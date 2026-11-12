@@ -21,18 +21,18 @@ export function ConfirmSubmit({ jobs: current, onCancel, onConfirm }: ConfirmSub
   return (
     <Dialog open={current !== null} onClose={onCancel} labelledBy="confirm-title" className="confirm">
       <span className="confirm__icon" aria-hidden="true">
-        <IconAlert size={20} />
+        <IconAlert size={18} />
       </span>
       <h2 id="confirm-title" className="confirm__title">
-        Submit {plural(n, 'real application')}?
+        Send {plural(n, 'live application')}?
       </h2>
-      <p className="confirm__text">Dry run is off. Employers receive these.</p>
+      <p className="confirm__text">Dry run is off. Employers will receive these.</p>
       <ul className="confirm__list">
         {(jobs ?? []).slice(0, 5).map((job) => {
           const name = displayName(job);
           return (
             <li key={job.id}>
-              <CompanyLogo name={name} domain={job.company_domain} size={28} />
+              <CompanyLogo name={name} domain={job.company_domain} size={24} />
               <span className="confirm__company">{name}</span>
               <span className="confirm__role">{job.title}</span>
             </li>
@@ -45,8 +45,8 @@ export function ConfirmSubmit({ jobs: current, onCancel, onConfirm }: ConfirmSub
           Cancel
         </button>
         <button type="button" className="btn btn--live" onClick={onConfirm}>
-          <IconSend size={15} />
-          Submit {plural(n, 'application')}
+          <IconSend size={14} />
+          Send {n}
         </button>
       </div>
     </Dialog>

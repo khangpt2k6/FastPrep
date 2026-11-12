@@ -182,7 +182,7 @@ export function ProfileWizard(props: ProfileWizardProps) {
           <h2 id="wizard-title" className="wizard__title">
             Profile
           </h2>
-          <button type="button" className="icon-btn" onClick={close} aria-label="Close profile (your draft is kept)" title="Close (draft is kept)">
+          <button type="button" className="icon-btn" onClick={close} aria-label="Close (draft is kept)" title="Close">
             <IconX size={18} />
           </button>
         </div>
@@ -191,13 +191,13 @@ export function ProfileWizard(props: ProfileWizardProps) {
           {STEPS.map((s, i) => (
             <li key={s.title} className={`wsteps__item ${i === step ? 'is-current' : i < step ? 'is-done' : ''}`}>
               <button type="button" onClick={() => goTo(i)} aria-current={i === step ? 'step' : undefined}>
-                <span className="wsteps__num mono">{i < step ? <IconCheck size={12} /> : i + 1}</span>
+                <span className="wsteps__num num">{i < step ? <IconCheck size={12} /> : i + 1}</span>
                 <span className="wsteps__name">{s.short}</span>
               </button>
             </li>
           ))}
         </ol>
-        <p className="wsteps__mobile mono" aria-hidden="true">
+        <p className="wsteps__mobile num" aria-hidden="true">
           Step {step + 1} of {STEPS.length}
         </p>
       </header>
@@ -206,7 +206,7 @@ export function ProfileWizard(props: ProfileWizardProps) {
         {reason === 'apply' ? (
           <p className="wbanner wbanner--warn">Finish your profile to apply.</p>
         ) : null}
-        {prefilled ? <p className="wbanner">Prefilled from your resume. Check each step.</p> : null}
+        {prefilled ? <p className="wbanner">Prefilled from your resume.</p> : null}
 
         <AnimatePresence mode="popLayout" initial={false} custom={direction.current}>
           <motion.div
@@ -243,26 +243,26 @@ export function ProfileWizard(props: ProfileWizardProps) {
 
         <span className={`saved saved--${save.state}`} role="status" aria-live="polite">
           {save.state === 'saving'
-            ? 'Saving draft'
+            ? 'Saving'
             : save.state === 'saved'
               ? `Draft saved ${clock(save.at)}`
               : save.state === 'error'
                 ? `Not saved: ${save.message}`
                 : row?.completed
-                  ? 'Profile complete'
+                  ? 'Complete'
                   : ''}
         </span>
 
         <div className="wizard__next">
           {backToReview && !isReview ? (
             <button type="button" className="btn btn--secondary" onClick={() => goTo(REVIEW_STEP)}>
-              Back to review
+              Review
             </button>
           ) : null}
           {isReview ? (
             <button type="button" className="btn btn--primary" onClick={finish} disabled={finishing}>
               {finishing ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={15} />}
-              Save profile
+              Save
             </button>
           ) : (
             <button type="button" className="btn btn--primary" onClick={() => goTo(step + 1)}>

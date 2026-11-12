@@ -4,28 +4,36 @@ import { useEffect, useMemo, useState } from 'react';
 import type { AgentRow, CommandRow, JobRow, MemoryRow } from '../../lib/types';
 import type { NotifyPrefs } from '../../hooks/useNotifyPrefs';
 import type { LiveTable } from '../../hooks/useLiveTable';
-import { useSpotlight } from '../../hooks/useSpotlight';
-import { AgentCard } from '../agent/AgentCard';
+import type { Page } from '../../hooks/useRoute';
 import { AgentPage } from '../agent/AgentPage';
 import { useLogTail } from '../agent/live';
 import { ApplicationsPage } from '../applications/ApplicationsPage';
+import { Callout } from '../common';
 import { ConfirmSubmit } from '../ConfirmSubmit';
+import { IconRadar, IconUser } from '../Icons';
 import { ActionBar } from '../jobs/ActionBar';
 import { JobsPage, type MinScore } from '../jobs/JobsPage';
+import { Lightbox } from '../Lightbox';
 import { MemoryPage } from '../memory/MemoryPage';
-import { ApplicationsSummaryCard, ProfileCard } from '../RailCards';
+import { LiveCallout, OfflineCallout } from '../shell/Notices';
 import { NotifyMenu } from '../shell/NotifyMenu';
-import { PageHeader } from '../shell/PageHeader';
-import { Sidebar } from '../shell/Sidebar';
-import { AgentTicker, DryRunSwitch } from '../shell/StatusControls';
+import { MobileBar, PageHeader } from '../shell/PageHeader';
+import { PAGE_ICON, PAGE_TITLE, Sidebar } from '../shell/Sidebar';
+import { AgentStatus, DryRunSwitch } from '../shell/StatusControls';
 import { BootError, BootSplash } from '../Splash';
 import { Toasts, useToasts } from '../Toasts';
 import { PageTransition } from './PageTransition';
-import type { Page } from '../../hooks/useRoute';
 
 const iso = (minsAgo: number) => new Date(Date.now() - minsAgo * 60000).toISOString();
 
-/** Real domains, so the logo sizes can be checked: cisco.com and boeing.com serve only 16px icons. */
+/** A stand-in screenshot: a plain form page drawn as an SVG. */
+const SHOT = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1000' viewBox='0 0 800 1000'><rect width='800' height='1000' fill='#ffffff'/><rect x='60' y='60' width='300' height='28' rx='4' fill='#37352f'/>${[160, 250, 340, 430, 520]
+    .map((y) => `<rect x='60' y='${y}' width='180' height='14' rx='3' fill='#c9c8c4'/><rect x='60' y='${y + 24}' width='680' height='40' rx='4' fill='none' stroke='#d7d6d2' stroke-width='2'/>`)
+    .join('')}<rect x='60' y='640' width='200' height='48' rx='6' fill='#2383e2'/></svg>`,
+)}`;
+
+/** Real domains, so logo sizes can be checked: cisco.com and boeing.com serve only 16px icons. */
 const COMPANIES: [raw: string, name: string, domain: string, title: string, location: string, score: number][] = [
   ['cisco/wd5/cisco_careers', 'Cisco', 'cisco.com', 'Software Engineer Full-Stack / Backend I (Intern), United States', 'San Jose, California, US, United States of America; Austin, Texas, US; RTP, North Carolina, US', 4.9],
   ['elevenlabs', 'ElevenLabs', 'elevenlabs.io', 'Backend Engineer, Voice Platform', 'Remote; London, United Kingdom', 4.7],
@@ -63,11 +71,12 @@ function mockJobs(): JobRow[] {
   const jobs = COMPANIES.map(([raw, name, domain, title, location, score], i) => job(`j${i}`, raw, name, domain, title, location, score));
   jobs.push(
     job('a1', 'Boeing', 'Boeing', 'boeing.com', 'Software Engineer, Associate', 'Seattle, WA', 4.2, { status: 'applying', updated_at: iso(1) }),
-    job('a2', 'Snap Inc.', 'Snap', 'snap.com', 'Software Engineer, Infrastructure', 'Seattle, WA', 4.4, { status: 'submitted', note: 'Confirmation page reached.', updated_at: iso(30) }),
+    job('a2', 'Snap Inc.', 'Snap', 'snap.com', 'Software Engineer, Infrastructure', 'Seattle, WA', 4.4, { status: 'submitted', note: 'Confirmation page reached.', screenshot_path: SHOT, updated_at: iso(30) }),
     job('a3', 'elevenlabs', 'ElevenLabs', 'elevenlabs.io', 'Software Engineer, Full Stack', 'Remote', 4.6, {
       status: 'blocked',
       reason: 'dry_run',
       dry_run: true,
+      screenshot_path: SHOT,
       note: "Dry run (AGENT_DRY_RUN is set): filled, send control button[type='submit'] found, nothing sent.\nFilled required fields with the profile name, email and phone. Uploaded resume.pdf. Answered 3 open questions from Memory.",
       updated_at: iso(80),
     }),
@@ -75,12 +84,13 @@ function mockJobs(): JobRow[] {
       status: 'blocked',
       reason: 'closed',
       dry_run: true,
-      note: "The requested Verkada job posting redirects to the employer's Greenhouse board error page saying the job is no longer open.",
+      note: "The posting redirects to the employer's job board error page.",
       updated_at: iso(140),
     }),
     job('a5', 'g2i', 'G2i', 'g2i.co', 'Senior Frontend Engineer', 'Remote', 3.8, { status: 'unconfirmed', note: 'Pressed submit; no confirmation page appeared.', updated_at: iso(220) }),
     job('a6', 'scopely', 'Scopely', 'scopely.com', 'Data Engineer', 'Culver City, CA', 3.5, { status: 'failed', reason: 'form_not_loaded', note: 'The form timed out on page 3.', updated_at: iso(400) }),
-    job('a7', 'Northwind Labs', '', '', 'QA Engineer', 'Remote', 3.1, { status: 'refused', note: 'The form rejected the phone number format.', updated_at: iso(900) }),
+    job('a7', 'Northwind Labs', '', '', 'QA Engineer', 'Remote', 3.1, { status: 'blocked', reason: 'missing_info', note: 'The form asks for a security clearance level.', updated_at: iso(900) }),
+    job('a8', 'jobgether', 'Jobgether', 'jobgether.com', 'Platform Engineer', 'Remote', 3.4, { status: 'refused', note: 'The form rejected the phone number format.', updated_at: iso(1300) }),
   );
   return jobs;
 }
@@ -107,7 +117,7 @@ const LINES = [
 const MEMORY: MemoryRow[] = [
   { id: 1, question: 'Why do you want to work at ElevenLabs?', answer: 'I have been building voice tools on the side for two years, and your API is the one I reach for first. I want to work on the platform that made those projects possible, and help it scale to the next million developers.', source: 'learned', pinned: true, company: 'elevenlabs', job_title: 'Software Engineer, Full Stack', job_id: 'a3', created_at: iso(80), updated_at: iso(80) },
   { id: 2, question: 'Are you legally authorized to work in the United States?', answer: 'Yes.', source: 'user', pinned: true, company: '', job_title: '', job_id: '', created_at: iso(3000), updated_at: iso(3000) },
-  { id: 3, question: 'Describe a project you are proud of.', answer: 'An agent that scores job postings against my resume and fills the applications in a real browser. It runs on my laptop, reports live to a dashboard, and never sends anything in dry run.', source: 'learned', pinned: false, company: 'cisco/wd5/cisco_careers', job_title: 'Software Engineer Intern', job_id: 'j0', created_at: iso(200), updated_at: iso(200) },
+  { id: 3, question: 'Describe a project you are proud of.', answer: 'An agent that scores job postings against my resume and fills the applications in a real browser. It runs on my laptop, reports to a dashboard, and never sends anything in dry run.', source: 'learned', pinned: false, company: 'cisco/wd5/cisco_careers', job_title: 'Software Engineer Intern', job_id: 'j0', created_at: iso(200), updated_at: iso(200) },
   { id: 4, question: 'How did you hear about this role?', answer: 'Company website.', source: 'learned', pinned: false, company: 'verkada', job_title: 'Software Engineer, Backend', job_id: 'a4', created_at: iso(140), updated_at: iso(140) },
 ];
 
@@ -124,11 +134,9 @@ const PREFS: NotifyPrefs = {
 type Tone = 'calm' | 'busy' | 'off' | 'bad';
 const TONE_STATE: Record<Tone, string> = { calm: 'ready', busy: 'applying', off: 'offline', bad: 'error' };
 const TONES: Tone[] = ['busy', 'calm', 'off', 'bad'];
-
-const TITLES: Partial<Record<Page, string>> = { jobs: 'Jobs', applications: 'Applications', agent: 'Agent', memory: 'Memory' };
+const PAGES: Page[] = ['jobs', 'applications', 'agent', 'memory'];
 
 export default function Preview() {
-  useSpotlight();
   const [page, setPage] = useState<Page>('jobs');
   const [screen, setScreen] = useState<'app' | 'splash' | 'error'>('app');
   const [jobs, setJobs] = useState<JobRow[]>(mockJobs);
@@ -139,10 +147,11 @@ export default function Preview() {
   const [query, setQuery] = useState('');
   const [dryRun, setDryRun] = useState(true);
   const [confirm, setConfirm] = useState<JobRow[] | null>(null);
+  const [shot, setShot] = useState<{ job: JobRow; url: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const { toasts, push, dismiss } = useToasts();
-  const shownAgent = useMemo<AgentRow>(() => ({ ...agent, state: TONE_STATE[tone] }), [agent, tone]);
   const online = tone !== 'off';
+  const shownAgent = useMemo<AgentRow>(() => ({ ...agent, state: TONE_STATE[tone], last_seen: online ? agent.last_seen : iso(180) }), [agent, tone, online]);
   const tail = useLogTail(shownAgent);
   const now = Date.now();
 
@@ -159,11 +168,12 @@ export default function Preview() {
     { id: 3, kind: 'cover_letter', job_ids: ['j1', 'j2'], dry_run: true, status: 'pending', error: '', created_at: iso(1) },
     { id: 2, kind: 'apply', job_ids: ['a1', 'a2'], dry_run: true, status: 'running', error: '', created_at: iso(2) },
     { id: 1, kind: 'search', job_ids: [], dry_run: false, status: 'done', error: '', created_at: iso(40) },
+    { id: 0, kind: 'apply', job_ids: ['a6'], dry_run: false, status: 'failed', error: 'The browser closed before the form loaded.', created_at: iso(400) },
   ];
   const memory: LiveTable<MemoryRow> = { rows: MEMORY, loading, error: null, live: 'live', reload: () => undefined };
 
   const finish = () => {
-    setJobs((list) => list.map((j) => (j.status === 'applying' ? { ...j, status: 'submitted', note: 'Confirmation page reached.', updated_at: iso(0) } : j)));
+    setJobs((list) => list.map((j) => (j.status === 'applying' ? { ...j, status: 'submitted', note: 'Confirmation page reached.', screenshot_path: SHOT, updated_at: iso(0) } : j)));
     push({ tone: 'ok', title: 'Sent to Boeing' });
   };
   const newJob = () => {
@@ -191,10 +201,26 @@ export default function Preview() {
     );
   }
 
-  const agentCard = <AgentCard agent={shownAgent} online={online} loading={false} now={now} current={current} onOpen={() => setPage('agent')} />;
+  const dryRunSwitch = <DryRunSwitch dryRun={dryRun} onChange={setDryRun} />;
+  const status = (compact: boolean) => (
+    <AgentStatus agent={shownAgent} online={online} loading={false} now={now} live="live" onOpen={() => setPage('agent')} compact={compact} />
+  );
+  const alerts = (variant: 'sidebar' | 'bar') => (
+    <NotifyMenu prefs={PREFS} recent={applications.slice(0, 5)} now={now} onOpenRecent={() => setPage('applications')} variant={variant} />
+  );
 
+  let actions = null;
   let content;
   if (page === 'jobs') {
+    actions = (
+      <>
+        <button type="button" className="btn btn--secondary btn--sm" onClick={newJob}>
+          <IconRadar size={14} />
+          Find jobs
+        </button>
+        {dryRunSwitch}
+      </>
+    );
     content = (
       <JobsPage
         candidates={candidates}
@@ -223,18 +249,21 @@ export default function Preview() {
         }}
         searching={false}
         onSearch={newJob}
-        rail={
+        notices={
           <>
-            {agentCard}
-            <ProfileCard
-              sections={[
-                { title: 'Personal', done: true, step: 0 },
-                { title: 'Education', done: true, step: 1 },
-                { title: 'Experience', done: true, step: 2 },
-                { title: 'Skills', done: false, step: 3 },
-              ]}
-              onContinue={() => undefined}
-            />
+            {!dryRun ? <LiveCallout /> : null}
+            {!online ? <OfflineCallout /> : null}
+            <Callout
+              tone="yellow"
+              icon={<IconUser size={16} />}
+              action={
+                <button type="button" className="btn btn--primary btn--sm">
+                  Finish
+                </button>
+              }
+            >
+              <strong>Profile incomplete.</strong> Needed before applying.
+            </Callout>
           </>
         }
         actionBar={
@@ -246,11 +275,11 @@ export default function Preview() {
             onApply={() => {
               const chosen = candidates.filter((j) => selected.has(j.id));
               if (dryRun) {
-                push({ tone: 'ok', title: `Dry run queued for ${chosen.length} jobs` });
+                push({ tone: 'ok', title: `${chosen.length} jobs queued for dry run` });
                 setSelected(new Set());
               } else setConfirm(chosen);
             }}
-            onLetters={() => push({ tone: 'ok', title: `Writing ${selected.size} cover letters` })}
+            onLetters={() => push({ tone: 'ok', title: `Writing ${selected.size} letters` })}
             writing={false}
             onClear={() => setSelected(new Set())}
           />
@@ -258,6 +287,7 @@ export default function Preview() {
       />
     );
   } else if (page === 'applications') {
+    actions = dryRunSwitch;
     content = (
       <ApplicationsPage
         items={applications}
@@ -265,19 +295,14 @@ export default function Preview() {
         error={null}
         onRetry={() => undefined}
         now={now}
-        onOpenShot={() => undefined}
+        onOpenShot={(j, url) => setShot({ job: j, url })}
         onOpenAnswers={() => setPage('memory')}
         answerCounts={new Map([['a3', 3], ['a2', 4]])}
-        rail={
-          <>
-            {agentCard}
-            <ApplicationsSummaryCard items={applications} />
-          </>
-        }
         dryRun={dryRun}
         online={online}
-        queued={new Set(['a7'])}
-        onApplyAgain={(j) => (dryRun ? push({ tone: 'ok', title: 'Dry run queued for 1 job' }) : setConfirm([j]))}
+        queued={new Set(['a8'])}
+        notices={!dryRun ? <LiveCallout /> : null}
+        onApplyAgain={(j) => (dryRun ? push({ tone: 'ok', title: '1 job queued for dry run' }) : setConfirm([j]))}
       />
     );
   } else if (page === 'memory') {
@@ -285,7 +310,7 @@ export default function Preview() {
   } else {
     content = (
       <AgentPage
-        agent={online ? shownAgent : { ...shownAgent, last_seen: iso(180) }}
+        agent={shownAgent}
         online={online}
         loading={false}
         error={null}
@@ -300,74 +325,62 @@ export default function Preview() {
     );
   }
 
-  const go = (target: Page) => setPage(TITLES[target] ? target : 'jobs');
-
   return (
     <div className={`shell ${dryRun ? '' : 'is-live'}`}>
       <Sidebar
         page={page}
-        onNavigate={go}
+        onNavigate={(target) => setPage(PAGES.includes(target) ? target : 'jobs')}
         marks={{
-          applications: { node: <span className="navitem__badge mono">1</span>, label: '1 in progress' },
-          ...(online ? { agent: { node: <span className="navitem__live" />, label: 'online' } } : {}),
-          profile: { node: <span className="navitem__dot navitem__dot--warn" />, label: 'needs setup' },
+          applications: { node: <span className="navcount num">1</span>, label: '1 in progress' },
+          profile: { node: <span className="navdot navdot--orange" />, label: 'incomplete' },
         }}
+        alerts={alerts('sidebar')}
+        status={status(false)}
       />
       <div className="shell__main">
-        <PageHeader
-          title={TITLES[page] ?? 'Preview'}
-          live={!dryRun}
-          agent={
-            <AgentTicker
-              agent={online ? shownAgent : { ...shownAgent, last_seen: iso(180) }}
-              online={online}
-              loading={false}
-              now={now}
-              live="live"
-              onOpen={() => setPage('agent')}
-            />
-          }
-          mode={<DryRunSwitch dryRun={dryRun} onChange={setDryRun} />}
-          alerts={<NotifyMenu prefs={PREFS} recent={applications.slice(0, 5)} now={now} onOpenRecent={() => setPage('applications')} />}
-        />
-        <div className="devbar" aria-label="Preview controls">
-          <span className="devbar__label mono">preview</span>
-          <button type="button" className="btn btn--sm btn--primary" onClick={finish}>
-            Finish
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={newJob}>
-            New job
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={logLine}>
-            Log line
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={nextTone}>
-            Orb: {tone}
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={() => setLoading((v) => !v)}>
-            {loading ? 'Loaded' : 'Loading'}
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'info', title: 'Learned: Why do you want to work here?' })}>
-            Toast
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'error', title: 'Could not queue the apply', detail: 'JWT expired' })}>
-            Error
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('splash')}>
-            Splash
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('error')}>
-            Boot error
-          </button>
-          <button type="button" className="btn btn--sm btn--ghost" onClick={reset}>
-            Reset
-          </button>
-        </div>
+        <MobileBar status={status(true)} alerts={alerts('bar')} />
         <main className="shell__content">
-          <PageTransition pageKey={page}>{content}</PageTransition>
+          <div className="devbar" aria-label="Preview controls">
+            <span className="devbar__label">Preview</span>
+            <button type="button" className="btn btn--sm btn--primary" onClick={finish}>
+              Finish
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={newJob}>
+              New job
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={logLine}>
+              Log line
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={nextTone}>
+              Agent: {TONE_STATE[tone]}
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={() => setLoading((v) => !v)}>
+              {loading ? 'Loaded' : 'Loading'}
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'info', title: 'New answer learned', detail: 'Why do you want to work here?' })}>
+              Toast
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'error', title: 'Could not queue jobs', detail: 'JWT expired' })}>
+              Error
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('splash')}>
+              Splash
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('error')}>
+              Boot error
+            </button>
+            <button type="button" className="btn btn--sm btn--ghost" onClick={reset}>
+              Reset
+            </button>
+          </div>
+          <PageTransition pageKey={page}>
+            <PageHeader icon={PAGE_ICON[page]} title={PAGE_TITLE[page]} actions={actions} />
+            {content}
+          </PageTransition>
         </main>
       </div>
       <ConfirmSubmit jobs={confirm} onCancel={() => setConfirm(null)} onConfirm={() => setConfirm(null)} />
+      <Lightbox shot={shot} onClose={() => setShot(null)} />
       <Toasts toasts={toasts} onDismiss={dismiss} />
     </div>
   );

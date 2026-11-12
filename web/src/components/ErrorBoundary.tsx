@@ -24,16 +24,19 @@ export class ErrorBoundary extends Component<{ children: ReactNode; resetKey: st
   render() {
     if (!this.state.error) return this.props.children;
     return (
-      <section className="card setupcard" role="alert">
-        <span className="setupcard__icon" aria-hidden="true">
-          <IconAlert size={20} />
+      <div className="callout callout--red" role="alert">
+        <span className="callout__icon" aria-hidden="true">
+          <IconAlert size={16} />
         </span>
-        <h2>This page hit an error</h2>
-        <p>{this.state.error.message}</p>
-        <button type="button" className="btn btn--secondary btn--sm" onClick={() => this.setState({ error: null })}>
-          Try again
-        </button>
-      </section>
+        <div className="callout__body">
+          <strong>Page error.</strong> {this.state.error.message}
+        </div>
+        <div className="callout__action">
+          <button type="button" className="btn btn--secondary btn--sm" onClick={() => this.setState({ error: null })}>
+            Retry
+          </button>
+        </div>
+      </div>
     );
   }
 }

@@ -11,15 +11,15 @@ export interface LogEntry {
   message: string;
 }
 
-/** Props for an earlier log line: it drops in at the top, older lines slide down. */
+/** Props for an earlier log line: it fades in at the top, older lines slide down. */
 export const logItem = {
-  initial: { opacity: 0, y: -8, filter: 'blur(3px)' },
-  animate: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: DUR.slow, ease: EASE } },
+  initial: { opacity: 0, y: -4 },
+  animate: { opacity: 1, y: 0, transition: { duration: DUR.slow, ease: EASE } },
   exit: { opacity: 0, transition: { duration: DUR.fast } },
   transition: { layout: SPRING },
 };
 
-/** States where the agent is doing work: the orb spins faster and its dots come out. */
+/** States where the agent is doing work: its status dot turns blue and pulses. */
 export const BUSY_STATES = ['starting', 'reading', 'searching', 'scoring', 'applying', 'writing'];
 export const START_COMMAND = 'agent-automation';
 
@@ -47,23 +47,20 @@ export function useLogTail(agent: AgentRow | null, keep = 6): LogEntry[] {
   return entries;
 }
 
-/** The one line that changes every few seconds while the agent works. Each new line types itself in. */
+/** The agent's current log line. */
 export function LogLine({ agent, online, tone }: { agent: AgentRow | null; online: boolean; tone: AgentTone }) {
   const text = agent?.message || `${stateLabel(online ? agent?.state ?? 'idle' : 'offline')}.`;
   return (
-    <p className={`logline ${tone === 'bad' ? 'logline--bad' : ''}`} aria-live="polite">
+    <p className={`logline code ${tone === 'bad' ? 'logline--bad' : ''}`} aria-live="polite">
       <span className="logline__prompt" aria-hidden="true">
         &rsaquo;
       </span>
-      <span className="logline__text typein" key={text}>
-        {text}
-        <span className="caret" aria-hidden="true" />
-      </span>
+      <span className="logline__text">{text}</span>
     </p>
   );
 }
 
-/** The start command as a chip with a copy button: shown only while the agent is offline. */
+/** The start command as a code chip with a copy button. */
 export function StartHint() {
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -76,12 +73,9 @@ export function StartHint() {
     }
   }
   return (
-    <span className="cmdchip" title="Run this on your computer to start the agent">
-      <span className="cmdchip__prompt" aria-hidden="true">
-        $
-      </span>
-      <code>{START_COMMAND}</code>
-      <button type="button" className="icon-btn icon-btn--sm" onClick={copy} aria-label={copied ? 'Copied' : 'Copy the start command'} title={copied ? 'Copied' : 'Copy'}>
+    <span className="cmdchip">
+      <code className="code">{START_COMMAND}</code>
+      <button type="button" className="icon-btn icon-btn--sm" onClick={copy} aria-label={copied ? 'Copied' : 'Copy command'} title={copied ? 'Copied' : 'Copy'}>
         {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
       </button>
     </span>
@@ -92,10 +86,10 @@ export function StartHint() {
 export function CurrentJob({ job }: { job: JobRow }) {
   const name = displayName(job);
   return (
-    <p className="nowjob" title={`${name}: ${job.title}`}>
-      <CompanyLogo name={name} domain={job.company_domain} size={24} />
+    <span className="nowjob" title={`${name}: ${job.title}`}>
+      <CompanyLogo name={name} domain={job.company_domain} size={20} />
       <span className="nowjob__name">{name}</span>
       <span className="nowjob__title">{job.title}</span>
-    </p>
+    </span>
   );
 }

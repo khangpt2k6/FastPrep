@@ -25,7 +25,8 @@ interface JobsPageProps {
   onClearFilters: () => void;
   searching: boolean;
   onSearch: () => void;
-  rail: ReactNode;
+  /** Callouts above the list: agent offline, Live mode, profile incomplete. */
+  notices?: ReactNode;
   actionBar: ReactNode;
 }
 
@@ -37,17 +38,9 @@ function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Se
     if (ref.current) ref.current.indeterminate = count > 0 && !all;
   }, [count, all]);
   return (
-    <label className="check check--text selectall" title={all ? 'Clear the selection' : 'Select every job shown'}>
-      <input
-        ref={ref}
-        type="checkbox"
-        checked={all}
-        disabled={ids.length === 0}
-        onChange={() => onToggleAll(ids, !all)}
-        aria-label="Select all jobs shown"
-      />
+    <label className="check" title={all ? 'Clear selection' : 'Select all'}>
+      <input ref={ref} type="checkbox" checked={all} disabled={ids.length === 0} onChange={() => onToggleAll(ids, !all)} aria-label="Select all jobs shown" />
       <CheckBox />
-      <span aria-hidden="true">All</span>
     </label>
   );
 }
@@ -63,11 +56,11 @@ export function JobsPage(props: JobsPageProps) {
     state = 'error';
     body = (
       <EmptyState
-        icon={<IconAlert size={22} />}
-        title="Could not load jobs"
+        icon={<IconAlert size={20} />}
+        title="Could not load jobs."
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={props.onRetry}>
-            Try again
+            Retry
           </button>
         }
       >
@@ -76,16 +69,16 @@ export function JobsPage(props: JobsPageProps) {
     );
   } else if (loading) {
     state = 'loading';
-    body = <SkeletonCards count={5} />;
+    body = <SkeletonCards count={6} />;
   } else if (candidates.length === 0) {
     state = 'none';
     body = (
       <EmptyState
-        icon={<IconBriefcase size={22} />}
-        title="No scored jobs yet"
+        icon={<IconBriefcase size={20} />}
+        title="No scored jobs yet."
         action={
           <button type="button" className="btn btn--primary btn--sm" onClick={props.onSearch} disabled={props.searching}>
-            {props.searching ? <span className="spinner" aria-hidden="true" /> : <IconRadar size={15} />}
+            {props.searching ? <span className="spinner" aria-hidden="true" /> : <IconRadar size={14} />}
             Find jobs
           </button>
         }
@@ -95,8 +88,8 @@ export function JobsPage(props: JobsPageProps) {
     state = 'filtered';
     body = (
       <EmptyState
-        icon={<IconSearch size={22} />}
-        title="No matches"
+        icon={<IconSearch size={20} />}
+        title="No matching jobs."
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={props.onClearFilters}>
             Clear filters
@@ -106,75 +99,53 @@ export function JobsPage(props: JobsPageProps) {
     );
   } else {
     body = (
-      <ul className="cardlist">
-        <AnimatePresence>
-          {visible.map((job, i) => (
-            <JobCard
-              key={job.id}
-              index={i}
-              job={job}
-              selected={selected.has(job.id)}
-              queued={queued.has(job.id)}
-              onToggle={props.onToggle}
-            />
-          ))}
-        </AnimatePresence>
-      </ul>
+      <div className="dblist">
+        <div className="dblist__head jobrow__grid">
+          <SelectAll ids={selectable} selected={selected} onToggleAll={props.onToggleAll} />
+          <span className="dblist__col dblist__col--name">Job</span>
+          <span className="dblist__col dblist__col--end">Score</span>
+          <span />
+        </div>
+        <ul className="dblist__rows">
+          <AnimatePresence>
+            {visible.map((job, i) => (
+              <JobCard key={job.id} index={i} job={job} selected={selected.has(job.id)} queued={queued.has(job.id)} onToggle={props.onToggle} />
+            ))}
+          </AnimatePresence>
+        </ul>
+      </div>
     );
   }
 
   return (
-    <div className="page page--rail">
-      <div className="page__main">
-        <div className="toolbar">
-          <SelectAll ids={selectable} selected={selected} onToggleAll={props.onToggleAll} />
-          <PillGroup<MinScore>
-            label="Minimum match"
-            value={minScore}
-            onChange={props.onMinScore}
-            options={[
-              { value: 0, label: 'Any', title: 'Any match' },
-              { value: 3, label: '3+', title: 'Match 3 or more' },
-              { value: 4, label: '4+', title: 'Match 4 or more' },
-            ]}
-          />
+    <div className="page page--jobs">
+      {props.notices}
+      <div className="dbbar">
+        <PillGroup<MinScore>
+          label="Minimum score"
+          value={minScore}
+          onChange={props.onMinScore}
+          options={[
+            { value: 0, label: 'All', title: 'Any score' },
+            { value: 3, label: '3+', title: 'Score 3 or more' },
+            { value: 4, label: '4+', title: 'Score 4 or more' },
+          ]}
+        />
+        <div className="dbbar__right">
           <label className="searchbox">
-            <IconSearch size={16} />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => props.onQuery(e.target.value)}
-              placeholder="Search"
-              aria-label="Search jobs by title or company"
-            />
+            <IconSearch size={14} />
+            <input type="search" value={query} onChange={(e) => props.onQuery(e.target.value)} placeholder="Search" aria-label="Search jobs by title or company" />
           </label>
           {!loading && !error && candidates.length > 0 ? (
-            <span
-              className="count mono"
-              title={filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}
-              aria-label={filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}
-            >
-              <AnimatedNumber value={visible.length} from={visible.length} duration={0.4} />
-              {filtered ? <span className="count__of"> / {candidates.length}</span> : null}
+            <span className="count num" aria-label={filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}>
+              <AnimatedNumber value={visible.length} from={visible.length} duration={0.3} />
+              {filtered ? ` of ${candidates.length}` : ' jobs'}
             </span>
           ) : null}
-          <button
-            type="button"
-            className="btn btn--secondary toolbar__more"
-            onClick={props.onSearch}
-            disabled={props.searching}
-            title="Ask the agent for more jobs"
-          >
-            {props.searching ? <span className="spinner" aria-hidden="true" /> : <IconRadar size={16} />}
-            Find more
-          </button>
         </div>
-        <StateFade state={state}>{body}</StateFade>
-        {props.actionBar}
       </div>
-      <aside className="rail" aria-label="Agent and profile">
-        {props.rail}
-      </aside>
+      <StateFade state={state}>{body}</StateFade>
+      {props.actionBar}
     </div>
   );
 }

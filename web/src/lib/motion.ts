@@ -1,91 +1,84 @@
 import type { Transition, Variants } from 'motion/react';
 
-/** Shared motion language: quick, springy, never cartoonish. Matches --ease in styles.css. */
+/** Shared motion language: quiet and quick, 120 to 200 ms. Matches --ease in styles.css. */
 export const EASE = [0.2, 0.7, 0.3, 1] as const;
 export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
 export const DUR = {
-  fast: 0.15,
-  base: 0.26,
-  slow: 0.45,
-  count: 0.8,
+  fast: 0.12,
+  base: 0.16,
+  slow: 0.2,
+  count: 0.6,
 } as const;
 
-/** Snappy spring for things that move (indicators, toasts, layout). */
-export const SPRING: Transition = { type: 'spring', stiffness: 520, damping: 40, mass: 0.9 };
-/** A touch softer, for panels and dialogs. */
-export const SPRING_SOFT: Transition = { type: 'spring', stiffness: 380, damping: 34, mass: 0.9 };
-/** The selection dock: a heavier glide up from the bottom edge. */
-export const SPRING_DOCK: Transition = { type: 'spring', stiffness: 300, damping: 30, mass: 1 };
+/** A short, firm spring for indicators that slide (the active nav row, the active view tab). */
+export const SPRING: Transition = { type: 'spring', stiffness: 700, damping: 50, mass: 0.8 };
+/** Toasts and other small floating things. */
+export const SPRING_SOFT: Transition = { type: 'spring', stiffness: 520, damping: 42, mass: 0.9 };
 
-/** Only the first few items stagger; the rest appear at once so long lists stay fast. */
+/** Only the first few rows stagger; the rest appear at once so long lists stay fast. */
 export const STAGGER_CAP = 12;
-export const STAGGER_STEP = 0.035;
+export const STAGGER_STEP = 0.02;
 /** Layout animation is measured on every render, so only the top of a long list gets it. */
 export const LAYOUT_CAP = 24;
 
 export const staggerDelay = (index: number) => (index < STAGGER_CAP ? index * STAGGER_STEP : 0);
 
-/** Rise out of the dark: fade, a short lift and blur to sharp. `custom` is the item index. */
+/** A row fades in with a short rise. `custom` is the row index. */
 export const riseItem: Variants = {
-  hidden: { opacity: 0, y: 14, filter: 'blur(6px)' },
+  hidden: { opacity: 0, y: 4 },
   shown: (index: number = 0) => ({
     opacity: 1,
     y: 0,
-    filter: 'blur(0px)',
     transition: { duration: DUR.slow, ease: EASE_OUT, delay: staggerDelay(index) },
-    transitionEnd: { filter: 'none' },
   }),
-  gone: { opacity: 0, scale: 0.97, filter: 'blur(3px)', transition: { duration: DUR.fast, ease: EASE } },
+  gone: { opacity: 0, transition: { duration: DUR.fast, ease: EASE } },
 };
 
-/** A whole page: incoming rises in, outgoing fades quickly. */
+/** A whole page: incoming fades up a few pixels, outgoing fades quickly. */
 export const pageVariants: Variants = {
-  hidden: { opacity: 0, y: 10, filter: 'blur(6px)' },
-  shown: {
-    opacity: 1,
-    y: 0,
-    filter: 'blur(0px)',
-    transition: { duration: DUR.slow, ease: EASE_OUT },
-    // A leftover filter would make this wrapper the containing block for fixed children.
-    transitionEnd: { filter: 'none' },
-  },
-  gone: { opacity: 0, y: -6, filter: 'blur(4px)', transition: { duration: DUR.fast, ease: EASE } },
+  hidden: { opacity: 0, y: 6 },
+  shown: { opacity: 1, y: 0, transition: { duration: DUR.slow, ease: EASE_OUT } },
+  gone: { opacity: 0, transition: { duration: DUR.fast, ease: EASE } },
 };
 
-/** Dialog backdrop and panel. */
+/** Dialog backdrop and panel: a gentle fade and scale. */
 export const backdropVariants: Variants = {
   hidden: { opacity: 0 },
   shown: { opacity: 1, transition: { duration: DUR.base, ease: EASE } },
-  gone: { opacity: 0, transition: { duration: DUR.fast, ease: EASE, delay: 0.04 } },
+  gone: { opacity: 0, transition: { duration: DUR.fast, ease: EASE } },
 };
 
 export const panelVariants: Variants = {
-  hidden: { opacity: 0, y: 18, scale: 0.97 },
-  shown: { opacity: 1, y: 0, scale: 1, transition: SPRING_SOFT },
-  gone: { opacity: 0, y: 10, scale: 0.98, transition: { duration: DUR.fast, ease: EASE } },
+  hidden: { opacity: 0, scale: 0.98, y: 4 },
+  shown: { opacity: 1, scale: 1, y: 0, transition: { duration: DUR.slow, ease: EASE_OUT } },
+  gone: { opacity: 0, scale: 0.98, transition: { duration: DUR.fast, ease: EASE } },
 };
 
-/** Wizard steps slide by direction: 1 forward, -1 back. */
+/** Wizard steps slide a little by direction: 1 forward, -1 back. */
 export const stepVariants: Variants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir * 28 }),
-  center: { opacity: 1, x: 0, transition: { duration: DUR.base, ease: EASE } },
-  exit: (dir: number) => ({ opacity: 0, x: dir * -20, transition: { duration: DUR.fast, ease: EASE } }),
+  enter: (dir: number) => ({ opacity: 0, x: dir * 12 }),
+  center: { opacity: 1, x: 0, transition: { duration: DUR.slow, ease: EASE_OUT } },
+  exit: (dir: number) => ({ opacity: 0, x: dir * -8, transition: { duration: DUR.fast, ease: EASE } }),
 };
 
-/** Small text that changes in place (status words, counts). */
+/** Small text that changes in place (status words, counts): a plain crossfade. */
 export const swapVariants: Variants = {
-  hidden: { opacity: 0, y: 6, filter: 'blur(3px)' },
-  shown: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: DUR.base, ease: EASE } },
-  gone: { opacity: 0, y: -6, filter: 'blur(3px)', transition: { duration: DUR.fast, ease: EASE } },
+  hidden: { opacity: 0 },
+  shown: { opacity: 1, transition: { duration: DUR.base, ease: EASE } },
+  gone: { opacity: 0, transition: { duration: DUR.fast, ease: EASE } },
 };
 
-/** The selection dock rises from the bottom edge and sinks back. */
+/** The selection dock rises a little from the bottom edge. */
 export const dockVariants: Variants = {
-  hidden: { opacity: 0, y: 56, scale: 0.96 },
-  shown: { opacity: 1, y: 0, scale: 1, transition: SPRING_DOCK },
-  gone: { opacity: 0, y: 40, scale: 0.97, transition: { duration: DUR.base, ease: EASE } },
+  hidden: { opacity: 0, y: 12 },
+  shown: { opacity: 1, y: 0, transition: { duration: DUR.slow, ease: EASE_OUT } },
+  gone: { opacity: 0, y: 8, transition: { duration: DUR.fast, ease: EASE } },
 };
 
-/** Hover lift for cards that are motion elements (CSS transforms would be overridden by inline styles). */
-export const cardHover = { y: -2, transition: { duration: DUR.fast, ease: EASE } };
+/** Floating menus drop in from their anchor. */
+export const menuVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.98, y: -2 },
+  shown: { opacity: 1, scale: 1, y: 0, transition: { duration: DUR.base, ease: EASE_OUT } },
+  gone: { opacity: 0, transition: { duration: DUR.fast, ease: EASE } },
+};

@@ -1,64 +1,69 @@
 import { stateLabel, timeAgo } from '../../lib/format';
 import type { AgentRow, LiveStatus } from '../../lib/types';
 import { Swap } from '../motion';
-import { agentTone } from '../agent/live';
-import { Orb } from '../agent/Orb';
+import { agentTone, type AgentTone } from '../agent/live';
 
-interface AgentTickerProps {
+/** Gray when offline, green when ready, blue and pulsing while working, red on error. */
+export function StatusDot({ tone }: { tone: AgentTone }) {
+  return <span className={`sdot sdot--${tone}`} aria-hidden="true" />;
+}
+
+interface AgentStatusProps {
   agent: AgentRow | null;
   online: boolean;
   loading: boolean;
   now: number;
   live: LiveStatus;
   onOpen: () => void;
+  /** Phones: only the dot and the state word. */
+  compact?: boolean;
 }
 
-/** The orb and the agent's live line in the top bar. Each new line types itself in; the orb opens the agent page. */
-export function AgentTicker({ agent, online, loading, now, live, onOpen }: AgentTickerProps) {
+/** One quiet line for the agent, such as "Agent offline · 4h ago". Opens the agent page. */
+export function AgentStatus({ agent, online, loading, now, live, onOpen, compact = false }: AgentStatusProps) {
   const state = online ? agent?.state ?? 'idle' : 'offline';
-  const tone = agentTone(online, state);
-  const word = loading ? 'Connecting' : stateLabel(state);
+  const tone: AgentTone = loading ? 'off' : agentTone(online, state);
+  const word = loading ? 'Connecting' : online ? `Agent ${stateLabel(state).toLowerCase()}` : 'Agent offline';
+  const text = compact ? (loading ? 'Connecting' : online ? stateLabel(state) : 'Offline') : word;
+  const seen = !online && !loading && agent?.last_seen ? timeAgo(agent.last_seen, now) : '';
   const message = online ? agent?.message ?? '' : '';
-  const seen = !online && !loading ? (agent?.last_seen ? `seen ${timeAgo(agent.last_seen, now)}` : 'not started yet') : '';
-
   return (
-    <div className={`ticker ticker--${loading ? 'loading' : tone}`}>
-      <button type="button" className="ticker__orb" onClick={onOpen} title="Open the agent page" aria-label={`Agent: ${word}. Open the agent page`}>
-        <Orb tone={loading ? 'loading' : tone} size="sm" />
-        <span className="ticker__state" aria-hidden="true">
-          <Swap id={word}>{word}</Swap>
-        </span>
-      </button>
-      {message ? (
-        <span className="ticker__line" aria-live="polite" title={message}>
-          <span className="ticker__text typein" key={message}>
-            {message}
-          </span>
-          <span className="caret" aria-hidden="true" />
-        </span>
-      ) : seen ? (
-        <span className="ticker__line ticker__line--quiet mono">{seen}</span>
-      ) : null}
+    <button
+      type="button"
+      className={`agentstatus agentstatus--${tone} ${compact ? 'agentstatus--compact' : ''}`}
+      onClick={onOpen}
+      title={message || 'Open the agent page'}
+    >
+      <StatusDot tone={tone} />
+      <span className="agentstatus__word">
+        <Swap id={text}>{text}</Swap>
+      </span>
+      {seen && !compact ? <span className="agentstatus__seen">· {seen}</span> : null}
       {live === 'down' ? (
-        <span className="ticker__warn" title="Live updates dropped. Retrying.">
+        <span className="tag tag--orange" title="Live updates paused, retrying">
           Reconnecting
         </span>
       ) : null}
-    </div>
+    </button>
   );
 }
 
-/** Dry run fills forms and never sends. Off means Live: real applications go out, so it turns amber. */
+/** Dry run fills forms and never sends. Off means Live: real applications go out, so a red Live tag appears. */
 export function DryRunSwitch({ dryRun, onChange }: { dryRun: boolean; onChange: (value: boolean) => void }) {
   return (
-    <label className={`mode ${dryRun ? 'is-dry' : 'is-live'}`} title={dryRun ? 'Fills forms, never sends' : 'Live: applications are really sent'}>
-      <input type="checkbox" role="switch" checked={dryRun} onChange={(e) => onChange(e.target.checked)} aria-label="Dry run" />
-      <span className="switch" aria-hidden="true">
-        <span className="switch__thumb" />
-      </span>
-      <span className="mode__word" aria-hidden="true">
-        <Swap id={dryRun ? 'dry' : 'live'}>{dryRun ? 'Dry run' : 'Live'}</Swap>
-      </span>
-    </label>
+    <div className="dryrun">
+      {!dryRun ? (
+        <span className="tag tag--red tag--strong" title="Applications are sent to employers">
+          Live
+        </span>
+      ) : null}
+      <label className="switchrow" title={dryRun ? 'Fills forms, never sends' : 'Turn on to stop sending'}>
+        <span className="switchrow__label">Dry run</span>
+        <input type="checkbox" role="switch" checked={dryRun} onChange={(e) => onChange(e.target.checked)} />
+        <span className="switch" aria-hidden="true">
+          <span className="switch__thumb" />
+        </span>
+      </label>
+    </div>
   );
 }

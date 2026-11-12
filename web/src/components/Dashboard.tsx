@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { errorText } from '../lib/errors';
-import { APPLICATION_STATUSES, companyName, displayName, isOnline, plural, statusInfo } from '../lib/format';
+import { APPLICATION_STATUSES, companyName, displayName, isOnline, plural, statusInfo, stopReason } from '../lib/format';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
 import { playChime, showBrowserNotification } from '../lib/notify';
 import type { JobRow, LiveStatus } from '../lib/types';
@@ -9,17 +9,16 @@ import { useFinishedApplications } from '../hooks/useFinishedApplications';
 import { useNewMemories } from '../hooks/useNewMemories';
 import { useNotifyPrefs } from '../hooks/useNotifyPrefs';
 import { useNow } from '../hooks/useNow';
-import { useSpotlight } from '../hooks/useSpotlight';
 import { sendCoverLetters } from '../hooks/useCoverLetters';
 import { CoverLettersPage } from './letters/CoverLettersPage';
 import { useRoute, type Page } from '../hooks/useRoute';
-import { AgentCard } from './agent/AgentCard';
 import { AgentPage } from './agent/AgentPage';
 import { useLogTail } from './agent/live';
 import { ApplicationsPage } from './applications/ApplicationsPage';
-import { SkeletonCards } from './common';
+import { Callout, SkeletonCards } from './common';
 import { ConfirmSubmit } from './ConfirmSubmit';
 import { ErrorBoundary } from './ErrorBoundary';
+import { IconAlert, IconPencil, IconRadar, IconUser } from './Icons';
 import { ActionBar } from './jobs/ActionBar';
 import { JobsPage, type MinScore } from './jobs/JobsPage';
 import { Lightbox } from './Lightbox';
@@ -28,11 +27,11 @@ import { Notice } from './Notice';
 import { PreferencesPage } from './PreferencesPage';
 import { ProfilePage } from './profile/ProfilePage';
 import { ProfileWizard, REVIEW_STEP, type WizardReason } from './profile/ProfileWizard';
-import { ApplicationsSummaryCard, ProfileCard } from './RailCards';
 import { NotifyMenu } from './shell/NotifyMenu';
-import { PageHeader } from './shell/PageHeader';
-import { Sidebar } from './shell/Sidebar';
-import { AgentTicker, DryRunSwitch } from './shell/StatusControls';
+import { MobileBar, PageHeader } from './shell/PageHeader';
+import { LiveCallout, OfflineCallout } from './shell/Notices';
+import { PAGE_ICON, PAGE_TITLE, Sidebar } from './shell/Sidebar';
+import { AgentStatus, DryRunSwitch } from './shell/StatusControls';
 import { Toasts, useToasts, type ToastTone } from './Toasts';
 import { PageTransition } from './motion';
 
@@ -42,15 +41,6 @@ interface DashboardProps {
   email: string;
 }
 
-const TITLES: Record<Page, string> = {
-  jobs: 'Jobs',
-  applications: 'Applications',
-  agent: 'Agent',
-  profile: 'Profile',
-  preferences: 'Preferences',
-  memory: 'Memory',
-  letters: 'Cover letters',
-};
 
 function combineLive(statuses: LiveStatus[]): LiveStatus {
   if (statuses.every((s) => s === 'live')) return 'live';
@@ -62,19 +52,20 @@ function combineLive(statuses: LiveStatus[]): LiveStatus {
 const MAX_PER_APPLY = 25;
 
 /** Toast and notification text for a finished application. A dry run never reads as sent. */
-function finishedMessage(job: JobRow): { title: string; tone: ToastTone; good: boolean } {
+function finishedMessage(job: JobRow): { title: string; detail?: string; tone: ToastTone; good: boolean } {
   const name = displayName(job);
   switch (job.status) {
     case 'submitted':
       return { title: `Sent to ${name}`, tone: 'ok', good: true };
     case 'unconfirmed':
       return { title: `Sent to ${name}, unconfirmed`, tone: 'ok', good: true };
-    case 'blocked':
-      return statusInfo(job).tone === 'filled'
-        ? { title: `Filled at ${name} (dry run)`, tone: 'ok', good: true }
-        : { title: `${statusInfo(job).label} at ${name}`, tone: 'warn', good: false };
+    case 'blocked': {
+      const info = statusInfo(job);
+      if (info.tone === 'filled') return { title: `Filled at ${name} (dry run)`, tone: 'ok', good: true };
+      return { title: `${info.label} at ${name}`, detail: stopReason(job) || undefined, tone: 'warn', good: false };
+    }
     case 'refused':
-      return { title: `Refused by form at ${name}`, tone: 'error', good: false };
+      return { title: `Refused at ${name}`, tone: 'error', good: false };
     default:
       return { title: `Failed at ${name}`, tone: 'error', good: false };
   }
@@ -91,7 +82,6 @@ export function Dashboard({ userId, email }: DashboardProps) {
   const notify = useNotifyPrefs();
   const { toasts, push, dismiss } = useToasts();
   const tail = useLogTail(agentT.agent);
-  useSpotlight();
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [dryRun, setDryRun] = useState(true);
@@ -144,7 +134,7 @@ export function Dashboard({ userId, email }: DashboardProps) {
     [jobsT.rows],
   );
 
-  // The form the agent is filling right now, shown with its logo next to the orb.
+  // The form the agent is filling right now, shown on the agent page.
   const current = useMemo(() => applications.find((j) => j.status === 'applying') ?? null, [applications]);
 
   // Jobs already handed to the agent in a command it has not finished.
@@ -179,7 +169,7 @@ export function Dashboard({ userId, email }: DashboardProps) {
   const onFinish = useCallback(
     (job: JobRow) => {
       const msg = finishedMessage(job);
-      push({ tone: msg.tone, title: msg.title });
+      push({ tone: msg.tone, title: msg.title, detail: msg.detail });
       if (notify.enabled) showBrowserNotification(msg.title, job.title, `job-${job.id}`);
       if (notify.sound) playChime(msg.good);
     },
@@ -188,10 +178,7 @@ export function Dashboard({ userId, email }: DashboardProps) {
   useFinishedApplications(jobsT.rows, !jobsT.loading && !jobsT.error, onFinish);
 
   useNewMemories(memoryT.rows, !memoryT.loading && !memoryT.error, (fresh) => {
-    push({
-      tone: 'info',
-      title: fresh.length === 1 ? `Learned: ${fresh[0].question}` : `${fresh.length} answers learned`,
-    });
+    push({ tone: 'info', title: fresh.length === 1 ? 'New answer learned' : `${fresh.length} answers learned`, detail: fresh.length === 1 ? fresh[0].question : undefined });
   });
 
   const toggle = useCallback((id: string) => {
@@ -220,13 +207,10 @@ export function Dashboard({ userId, email }: DashboardProps) {
         dryRun,
       );
       setSelected(new Set());
-      push({
-        tone: 'ok',
-        title: dryRun ? `Dry run queued for ${plural(jobs.length, 'job')}` : `Live apply queued for ${plural(jobs.length, 'job')}`,
-      });
+      push({ tone: 'ok', title: dryRun ? `${plural(jobs.length, 'job')} queued for dry run` : `${plural(jobs.length, 'job')} queued to send` });
       commandsT.reload();
     } catch (error) {
-      push({ tone: 'error', title: 'Could not queue the apply', detail: errorText(error) });
+      push({ tone: 'error', title: 'Could not queue jobs', detail: errorText(error) });
     } finally {
       setApplyBusy(false);
     }
@@ -235,7 +219,7 @@ export function Dashboard({ userId, email }: DashboardProps) {
   function requestApply() {
     if (chosen.length === 0 || !online) return;
     if (chosen.length > MAX_PER_APPLY) {
-      push({ tone: 'warn', title: `Pick ${MAX_PER_APPLY} or fewer jobs at a time` });
+      push({ tone: 'warn', title: `Select ${MAX_PER_APPLY} or fewer jobs` });
       return;
     }
     if (!profileComplete) {
@@ -251,10 +235,10 @@ export function Dashboard({ userId, email }: DashboardProps) {
     setSearchBusy(true);
     try {
       await sendSearch();
-      push({ tone: 'ok', title: online ? 'Searching for more jobs' : 'Search queued for when the agent starts' });
+      push({ tone: 'ok', title: online ? 'Searching for jobs' : 'Search queued' });
       commandsT.reload();
     } catch (error) {
-      push({ tone: 'error', title: 'Could not ask for more jobs', detail: errorText(error) });
+      push({ tone: 'error', title: 'Could not start search', detail: errorText(error) });
     } finally {
       setSearchBusy(false);
     }
@@ -265,11 +249,11 @@ export function Dashboard({ userId, email }: DashboardProps) {
     setLettersBusy(true);
     try {
       await sendCoverLetters(chosen.map((j) => j.id));
-      push({ tone: 'ok', title: online ? `Writing ${plural(chosen.length, 'cover letter')}` : 'Letters queued for when the agent starts' });
+      push({ tone: 'ok', title: online ? `Writing ${plural(chosen.length, 'letter')}` : 'Letters queued' });
       commandsT.reload();
       navigate('letters');
     } catch (error) {
-      push({ tone: 'error', title: 'Could not ask for cover letters', detail: errorText(error) });
+      push({ tone: 'error', title: 'Could not queue letters', detail: errorText(error) });
     } finally {
       setLettersBusy(false);
     }
@@ -289,7 +273,7 @@ export function Dashboard({ userId, email }: DashboardProps) {
         }
       >
         <p>
-          Run <code>supabase/schema.sql</code> in the Supabase SQL editor, then reload.
+          Run <code className="code">supabase/schema.sql</code> in the SQL editor.
         </p>
       </Notice>
     );
@@ -297,13 +281,16 @@ export function Dashboard({ userId, email }: DashboardProps) {
 
   const applyingCount = applications.filter((j) => j.status === 'applying').length;
   const marks: Partial<Record<Page, { node: ReactNode; label: string }>> = {};
-  if (applyingCount > 0) marks.applications = { node: <span className="navitem__badge mono">{applyingCount}</span>, label: `${applyingCount} in progress` };
-  if (online) marks.agent = { node: <span className="navitem__live" />, label: 'online' };
-  if (profileReady && !profileComplete) marks.profile = { node: <span className="navitem__dot navitem__dot--warn" />, label: 'needs setup' };
+  if (applyingCount > 0) marks.applications = { node: <span className="navcount num">{applyingCount}</span>, label: `${applyingCount} in progress` };
+  if (profileReady && !profileComplete) marks.profile = { node: <span className="navdot navdot--orange" />, label: 'incomplete' };
 
-  const agentCard = (
-    <AgentCard agent={agent} online={online} loading={agentT.loading} now={now} current={current} onOpen={() => navigate('agent')} />
+  const status = (compact: boolean) => (
+    <AgentStatus agent={agent} online={online} loading={agentT.loading} now={now} live={live} onOpen={() => navigate('agent')} compact={compact} />
   );
+  const alerts = (variant: 'sidebar' | 'bar') => (
+    <NotifyMenu prefs={notify} recent={applications.slice(0, 5)} now={now} onOpenRecent={() => navigate('applications')} variant={variant} />
+  );
+  const dryRunSwitch = <DryRunSwitch dryRun={dryRun} onChange={setDryRun} />;
 
   const jobParam = page === 'memory' ? params.get('job') : null;
   const jobRow = jobParam ? jobsT.rows.find((j) => j.id === jobParam) : undefined;
@@ -316,9 +303,19 @@ export function Dashboard({ userId, email }: DashboardProps) {
       }
     : null;
 
+  let actions: ReactNode = null;
   let content: ReactNode;
   switch (page) {
     case 'jobs':
+      actions = (
+        <>
+          <button type="button" className="btn btn--secondary btn--sm" onClick={search} disabled={searchBusy} title="Ask the agent for more jobs">
+            {searchBusy ? <span className="spinner" aria-hidden="true" /> : <IconRadar size={14} />}
+            Find jobs
+          </button>
+          {dryRunSwitch}
+        </>
+      );
       content = (
         <JobsPage
           candidates={candidates}
@@ -340,10 +337,23 @@ export function Dashboard({ userId, email }: DashboardProps) {
           }}
           searching={searchBusy}
           onSearch={search}
-          rail={
+          notices={
             <>
-              {agentCard}
-              {profileReady && !profileComplete ? <ProfileCard sections={sections} onContinue={() => openWizard(0)} /> : null}
+              {!dryRun ? <LiveCallout /> : null}
+              {!online && !agentT.loading ? <OfflineCallout /> : null}
+              {profileReady && !profileComplete ? (
+                <Callout
+                  tone="yellow"
+                  icon={<IconUser size={16} />}
+                  action={
+                    <button type="button" className="btn btn--primary btn--sm" onClick={() => openWizard(0)}>
+                      Finish
+                    </button>
+                  }
+                >
+                  <strong>Profile incomplete.</strong> Needed before applying.
+                </Callout>
+              ) : null}
             </>
           }
           actionBar={
@@ -362,6 +372,7 @@ export function Dashboard({ userId, email }: DashboardProps) {
       );
       break;
     case 'applications':
+      actions = dryRunSwitch;
       content = (
         <ApplicationsPage
           items={applications}
@@ -372,15 +383,10 @@ export function Dashboard({ userId, email }: DashboardProps) {
           onOpenShot={(job, url) => setShot({ job, url })}
           onOpenAnswers={(job) => navigate('memory', { job: job.id })}
           answerCounts={answerCounts}
-          rail={
-            <>
-              {agentCard}
-              <ApplicationsSummaryCard items={applications} />
-            </>
-          }
           dryRun={dryRun}
           online={online}
           queued={queued}
+          notices={!dryRun ? <LiveCallout /> : null}
           onApplyAgain={(job) => {
             if (!online) return;
             if (dryRun) void apply([job]);
@@ -407,10 +413,18 @@ export function Dashboard({ userId, email }: DashboardProps) {
       );
       break;
     case 'profile':
+      actions = profileReady ? (
+        <button type="button" className="btn btn--secondary btn--sm" onClick={() => openWizard(profileComplete ? REVIEW_STEP : 0)}>
+          <IconPencil size={14} />
+          Edit profile
+        </button>
+      ) : null;
       content = profileT.error ? (
-        <p className="card inline-error inline-error--card">{profileT.error.message}</p>
+        <Callout tone="red" icon={<IconAlert size={16} />}>
+          {profileT.error.message}
+        </Callout>
       ) : profileT.loading ? (
-        <SkeletonCards count={2} />
+        <SkeletonCards count={3} />
       ) : (
         <ProfilePage profile={profile} row={profileRow} onEdit={(step) => openWizard(step)} />
       );
@@ -428,17 +442,12 @@ export function Dashboard({ userId, email }: DashboardProps) {
 
   return (
     <div className={`shell ${dryRun ? '' : 'is-live'}`}>
-      <Sidebar page={page} onNavigate={(target) => navigate(target)} marks={marks} />
+      <Sidebar page={page} onNavigate={(target) => navigate(target)} marks={marks} alerts={alerts('sidebar')} status={status(false)} />
       <div className="shell__main">
-        <PageHeader
-          title={TITLES[page]}
-          live={!dryRun}
-          agent={<AgentTicker agent={agent} online={online} loading={agentT.loading} now={now} live={live} onOpen={() => navigate('agent')} />}
-          mode={<DryRunSwitch dryRun={dryRun} onChange={setDryRun} />}
-          alerts={<NotifyMenu prefs={notify} recent={applications.slice(0, 5)} now={now} onOpenRecent={() => navigate('applications')} />}
-        />
+        <MobileBar status={status(true)} alerts={alerts('bar')} />
         <main className="shell__content" id="main">
           <PageTransition pageKey={page}>
+            <PageHeader icon={PAGE_ICON[page]} title={PAGE_TITLE[page]} actions={actions} />
             <ErrorBoundary resetKey={page}>{content}</ErrorBoundary>
           </PageTransition>
         </main>

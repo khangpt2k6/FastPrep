@@ -79,13 +79,13 @@ export function slotNames(body: string): string[] {
 /** What is wrong with a template, in plain words; empty when the agent can use it. */
 export function checkTemplate(name: string, body: string): string[] {
   const problems: string[] = [];
-  if (!name.trim()) problems.push('Give the template a name.');
-  if (!body.trim()) problems.push('The template is empty.');
+  if (!name.trim()) problems.push('Name required.');
+  if (!body.trim()) problems.push('Template is empty.');
   const rest = body.replace(PLACEHOLDER, '');
   if (rest.includes('{{') || rest.includes('}}'))
-    problems.push('A {{ has no matching }}, or a name inside {{ }} has spaces or symbols. Use letters and _ only.');
+    problems.push('Unmatched {{ }} or invalid name. Use letters and _.');
   if (body.trim() && slotNames(body).length === 0)
-    problems.push('No slot for the agent to write. Add one like {{why_you: two sentences on the best match}}.');
+    problems.push('Add a generated part, such as {{why_you: two sentences}}.');
   return problems;
 }
 

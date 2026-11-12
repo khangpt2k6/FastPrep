@@ -1,33 +1,27 @@
-import { Orb } from './agent/Orb';
-import { IconRepeat } from './Icons';
+import { IconRepeat, Logo } from './Icons';
 
-/** The splash while the page signs in as the agent's account by itself. */
+/** Shown while the page signs in as the agent's account by itself: the mark and a small spinner. */
 export function BootSplash() {
   return (
     <div className="splash" role="status" aria-live="polite">
-      <Orb tone="calm" size="xl" />
-      <p className="splash__title">Agent Automation</p>
-      <p className="splash__status mono">
+      <Logo size={40} />
+      <p className="splash__status">
+        <span className="spinner" aria-hidden="true" />
         Connecting
-        <span className="splash__dots" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </span>
       </p>
     </div>
   );
 }
 
-/** Signing in failed: the message and a way to try again. */
+/** Signing in failed: the reason and a way to try again. */
 export function BootError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="splash splash--error" role="alert">
-      <Orb tone="bad" size="xl" />
+    <div className="splash" role="alert">
+      <Logo size={40} />
       <p className="splash__title">Could not connect</p>
-      <p className="splash__msg mono">{message}</p>
+      <p className="splash__msg">{message}</p>
       <button type="button" className="btn btn--primary" onClick={onRetry}>
-        <IconRepeat size={15} />
+        <IconRepeat size={14} />
         Retry
       </button>
     </div>

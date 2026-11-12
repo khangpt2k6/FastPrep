@@ -1,55 +1,45 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
-import { EASE_OUT, SPRING } from '../lib/motion';
+import { motion } from 'motion/react';
+import { SPRING } from '../lib/motion';
 import { AnimatedNumber } from './motion/AnimatedNumber';
-import { matchInfo } from '../lib/format';
+import { matchInfo, scoreColor, type TagColor } from '../lib/format';
 
-const RING_R = 20;
+/** A Notion-style tag: a pastel fill with matching text. */
+export function Tag({ color = 'gray', children, title, className = '' }: { color?: TagColor; children: ReactNode; title?: string; className?: string }) {
+  return (
+    <span className={`tag tag--${color} ${className}`} title={title}>
+      {children}
+    </span>
+  );
+}
 
-/**
- * The 1 to 5 match score as a ring with the number inside. The colour says the strength, the tooltip says it in
- * words, the arc draws in when the ring scrolls into view, and 4.5 and up glows.
- */
-export function ScoreRing({ score }: { score: number | null }) {
-  const gradient = `ring${useId().replace(/:/g, '')}`;
-  const reduce = useReducedMotion();
+/** The 1 to 5 match score as a tag: 4.5 and up green, 4.0 to 4.4 blue, below 4 gray. */
+export function ScoreTag({ score }: { score: number | null }) {
   if (score === null || !Number.isFinite(score)) {
     return (
-      <span className="ring ring--none" title="Not scored yet" role="img" aria-label="Not scored yet">
-        <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-          <circle className="ring__track" cx="24" cy="24" r={RING_R} />
-        </svg>
-        <span className="ring__num mono">?</span>
-      </span>
+      <Tag color="gray" title="Not scored" className="scoretag">
+        None
+      </Tag>
     );
   }
-  const { label, tone } = matchInfo(score);
-  const share = Math.max(0.02, Math.min(1, score / 5));
-  const tip = `${label}, ${score.toFixed(1)} of 5`;
+  const tip = `${matchInfo(score).label}, ${score.toFixed(1)} of 5`;
   return (
-    <span className={`ring ring--${tone} ${score >= 4.5 ? 'is-hot' : ''}`} role="img" aria-label={tip} title={tip}>
-      <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-        <defs>
-          <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
-            <stop className="ring__from" offset="0" />
-            <stop className="ring__to" offset="1" />
-          </linearGradient>
-        </defs>
-        <circle className="ring__track" cx="24" cy="24" r={RING_R} />
-        <motion.circle
-          className="ring__arc"
-          cx="24"
-          cy="24"
-          r={RING_R}
-          stroke={`url(#${gradient})`}
-          initial={reduce ? { pathLength: share, opacity: 1 } : { pathLength: 0, opacity: 0 }}
-          whileInView={{ pathLength: share, opacity: 1 }}
-          viewport={{ once: true, margin: '0px 0px -40px 0px' }}
-          transition={{ duration: 1, ease: EASE_OUT, delay: 0.08 }}
-        />
-      </svg>
-      <AnimatedNumber className="ring__num mono" value={score} decimals={1} from={score * 0.6} duration={0.7} />
+    <span className={`tag tag--${scoreColor(score)} scoretag`} title={tip} role="img" aria-label={tip}>
+      {score.toFixed(1)}
     </span>
+  );
+}
+
+/** A Notion-style callout: a tinted block with an icon, for the few notices that must stay. */
+export function Callout({ tone = 'gray', icon, children, action }: { tone?: 'gray' | 'yellow' | 'red'; icon: ReactNode; children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className={`callout callout--${tone}`}>
+      <span className="callout__icon" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="callout__body">{children}</div>
+      {action ? <div className="callout__action">{action}</div> : null}
+    </div>
   );
 }
 
@@ -64,9 +54,10 @@ export function CheckBox() {
   );
 }
 
+/** One short line, an icon and at most one button. */
 export function EmptyState({ icon, title, children, action }: { icon: ReactNode; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="card emptystate">
+    <div className="emptystate">
       <span className="emptystate__icon" aria-hidden="true">
         {icon}
       </span>
@@ -77,18 +68,19 @@ export function EmptyState({ icon, title, children, action }: { icon: ReactNode;
   );
 }
 
-/** Placeholder cards in the shape of a job card while data loads. */
+/** Placeholder rows in the shape of a list row while data loads. */
 export function SkeletonCards({ count = 4 }: { count?: number }) {
   return (
-    <ul className="cardlist" aria-hidden="true">
+    <ul className="skellist" aria-hidden="true">
       {Array.from({ length: count }, (_, i) => (
-        <li className="card skelcard" key={i}>
+        <li className="skelrow" key={i}>
+          <span className="skeleton skeleton--box" />
           <span className="skeleton skeleton--tile" />
-          <span className="skelcard__lines">
-            <span className="skeleton skeleton--line" style={{ width: `${68 - i * 7}%` }} />
-            <span className="skeleton skeleton--line skeleton--thin" style={{ width: `${40 - i * 4}%` }} />
+          <span className="skelrow__lines">
+            <span className="skeleton skeleton--line" style={{ width: `${62 - i * 7}%` }} />
+            <span className="skeleton skeleton--line skeleton--thin" style={{ width: `${34 - i * 3}%` }} />
           </span>
-          <span className="skeleton skeleton--circle" />
+          <span className="skeleton skeleton--tag" />
         </li>
       ))}
     </ul>
@@ -119,7 +111,7 @@ function useScrollEdges<T extends HTMLElement>() {
   return [ref, edges] as const;
 }
 
-/** A row of pill toggles; exactly one is on. On a narrow screen the row scrolls sideways and fades at the hidden end. */
+/** View tabs, like a Notion database: exactly one is on and it carries a sliding underline. Scrolls sideways when narrow. */
 export function PillGroup<T extends string | number>({ label, options, value, onChange }: {
   label: string;
   options: { value: T; label: string; count?: number; title?: string }[];
@@ -132,7 +124,7 @@ export function PillGroup<T extends string | number>({ label, options, value, on
     <motion.div
       ref={ref}
       layoutScroll
-      className={`pills ${edges.start ? 'fade-start' : ''} ${edges.end ? 'fade-end' : ''}`}
+      className={`viewtabs ${edges.start ? 'fade-start' : ''} ${edges.end ? 'fade-end' : ''}`}
       role="group"
       aria-label={label}
     >
@@ -140,14 +132,14 @@ export function PillGroup<T extends string | number>({ label, options, value, on
         <button
           type="button"
           key={String(o.value)}
-          className={`pilltoggle ${value === o.value ? 'is-on' : ''}`}
+          className={`viewtab ${value === o.value ? 'is-on' : ''}`}
           aria-pressed={value === o.value}
           title={o.title}
           onClick={() => onChange(o.value)}
         >
-          {value === o.value ? <motion.span className="pilltoggle__pill" layoutId={`pill-${group}`} transition={SPRING} aria-hidden="true" /> : null}
-          <span className="pilltoggle__label">{o.label}</span>
-          {o.count !== undefined ? <AnimatedNumber className="pilltoggle__count mono" id={`pill-${label}-${String(o.value)}`} value={o.count} /> : null}
+          <span>{o.label}</span>
+          {o.count !== undefined ? <AnimatedNumber className="viewtab__count num" id={`tab-${label}-${String(o.value)}`} value={o.count} /> : null}
+          {value === o.value ? <motion.span className="viewtab__bar" layoutId={`tab-${group}`} transition={SPRING} aria-hidden="true" /> : null}
         </button>
       ))}
     </motion.div>

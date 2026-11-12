@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { configError } from './lib/supabase';
 import { useSession } from './hooks/useSession';
-import { Aurora } from './components/Aurora';
 import { Dashboard } from './components/Dashboard';
 import { Notice } from './components/Notice';
 import { BootError, BootSplash } from './components/Splash';
@@ -24,15 +23,6 @@ function usePreviewMode(): boolean {
 }
 
 export default function App() {
-  return (
-    <>
-      <Aurora />
-      <Screen />
-    </>
-  );
-}
-
-function Screen() {
   const preview = usePreviewMode();
   if (Preview && preview) {
     return (
@@ -43,10 +33,10 @@ function Screen() {
   }
   if (configError) {
     return (
-      <Notice title="Supabase is not configured">
-        <p className="mono">{configError}</p>
+      <Notice title="Supabase not configured">
+        <p>{configError}</p>
         <p>
-          Add them to the repo root <code>.env</code>, then restart the dev server.
+          Add them to <code className="code">.env</code> and restart.
         </p>
       </Notice>
     );

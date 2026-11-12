@@ -84,7 +84,7 @@ export function TextArea({ label, value, onChange, placeholder, hint, rows = 4 }
   );
 }
 
-export function SelectField<T extends string>({ label, value, options, onChange, placeholder = 'Choose one' }: {
+export function SelectField<T extends string>({ label, value, options, onChange, placeholder = 'Select' }: {
   label: string;
   value: T;
   options: readonly string[];
@@ -157,7 +157,7 @@ export function MultiChoice({ label, values, options, onChange }: {
   return (
     <div className="field field--wide">
       <span className="field__label" id={id}>
-        {label} <span className="field__aside">Pick any that apply</span>
+        {label} <span className="field__aside">Any that apply</span>
       </span>
       <div className="choice" role="group" aria-labelledby={id}>
         {options.map((o) => (
@@ -243,7 +243,7 @@ export function TagInput({ label, values, onChange, placeholder, suggestions = [
           id={id}
           className="tags__input"
           value={draft}
-          placeholder={values.length === 0 ? placeholder : 'Add another'}
+          placeholder={values.length === 0 ? placeholder : 'Add'}
           onChange={(e) => {
             const value = e.target.value;
             if (value.endsWith(',')) {
@@ -264,7 +264,7 @@ export function TagInput({ label, values, onChange, placeholder, suggestions = [
       </div>
       {open.length > 0 ? (
         <div className="tags__suggest">
-          <span className="field__aside">Suggested:</span>
+          <span className="field__aside">Suggested</span>
           {open.map((s) => (
             <button type="button" key={s} className="pill-btn pill-btn--sm" onClick={() => add(s)}>
               + {s}

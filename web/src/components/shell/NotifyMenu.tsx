@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { NotifyPrefs } from '../../hooks/useNotifyPrefs';
 import type { JobRow } from '../../lib/types';
 import { displayName, timeAgo } from '../../lib/format';
-import { DUR, EASE, SPRING_SOFT } from '../../lib/motion';
+import { menuVariants } from '../../lib/motion';
 import { CompanyLogo } from '../CompanyLogo';
 import { IconBell } from '../Icons';
 import { StatusChip } from '../StatusChip';
@@ -14,10 +14,12 @@ interface NotifyMenuProps {
   recent: JobRow[];
   now: number;
   onOpenRecent: (job: JobRow) => void;
+  /** sidebar: a nav row that opens a menu to its right; bar: a bell in the phone's top bar. */
+  variant: 'sidebar' | 'bar';
 }
 
-/** The bell: alert settings plus the latest application results. Asks for permission only on a click, never on load. */
-export function NotifyMenu({ prefs, recent, now, onOpenRecent }: NotifyMenuProps) {
+/** Alerts: notification settings and the latest results. Asks for permission only on a click, never on load. */
+export function NotifyMenu({ prefs, recent, now, onOpenRecent, variant }: NotifyMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -39,55 +41,50 @@ export function NotifyMenu({ prefs, recent, now, onOpenRecent }: NotifyMenuProps
   }, [open]);
 
   const on = prefs.enabled;
+  const toggle = () => setOpen((v) => !v);
 
   return (
-    <div className="notify" ref={ref}>
-      <button
-        type="button"
-        className={`icon-btn notify__bell ${open ? 'is-open' : ''}`}
-        aria-expanded={open}
-        aria-controls={id}
-        aria-label={on ? 'Alerts, on' : 'Alerts'}
-        title="Alerts"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <IconBell size={19} />
-        {on ? <span className="icon-btn__dot" aria-hidden="true" /> : null}
-      </button>
+    <div className={`notify notify--${variant}`} ref={ref}>
+      {variant === 'sidebar' ? (
+        <button type="button" className={`navitem ${open ? 'is-open' : ''}`} aria-expanded={open} aria-controls={id} onClick={toggle}>
+          <span className="navitem__icon" aria-hidden="true">
+            <IconBell size={18} />
+          </span>
+          <span className="navitem__label">Alerts</span>
+          {on ? <span className="navitem__mark" aria-label="on"><span className="navdot navdot--blue" /></span> : null}
+        </button>
+      ) : (
+        <button type="button" className="icon-btn" aria-expanded={open} aria-controls={id} aria-label={on ? 'Alerts, on' : 'Alerts'} title="Alerts" onClick={toggle}>
+          <IconBell size={18} />
+          {on ? <span className="icon-btn__dot" aria-hidden="true" /> : null}
+        </button>
+      )}
       <AnimatePresence>
         {open ? (
-          <motion.div
-            className="popover"
-            id={id}
-            role="dialog"
-            aria-label="Alerts"
-            initial={{ opacity: 0, y: -6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1, transition: SPRING_SOFT }}
-            exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: DUR.fast, ease: EASE } }}
-          >
-            <p className="popover__title">Alerts</p>
+          <motion.div className="menu" id={id} role="dialog" aria-label="Alerts" variants={menuVariants} initial="hidden" animate="shown" exit="gone">
+            <p className="menu__title">Alerts</p>
 
             {prefs.permission === 'default' ? (
               <button type="button" className="btn btn--secondary btn--sm btn--block" onClick={prefs.request}>
-                <IconBell size={15} />
+                <IconBell size={14} />
                 Turn on notifications
               </button>
             ) : prefs.permission === 'granted' ? (
-              <label className="row-switch">
-                <span>Browser notifications</span>
+              <label className="switchrow switchrow--full">
+                <span className="switchrow__label">Notifications</span>
                 <input type="checkbox" role="switch" checked={!prefs.muted} onChange={(e) => prefs.setMuted(!e.target.checked)} />
                 <span className="switch" aria-hidden="true">
                   <span className="switch__thumb" />
                 </span>
               </label>
             ) : prefs.permission === 'denied' ? (
-              <p className="popover__note">Notifications are blocked in this browser's site settings.</p>
+              <p className="menu__note">Blocked in browser settings.</p>
             ) : (
-              <p className="popover__note">This browser has no notifications.</p>
+              <p className="menu__note">Not supported in this browser.</p>
             )}
 
-            <label className="row-switch">
-              <span>Sound</span>
+            <label className="switchrow switchrow--full">
+              <span className="switchrow__label">Sound</span>
               <input type="checkbox" role="switch" checked={prefs.sound} onChange={(e) => prefs.setSound(e.target.checked)} />
               <span className="switch" aria-hidden="true">
                 <span className="switch__thumb" />
@@ -95,8 +92,8 @@ export function NotifyMenu({ prefs, recent, now, onOpenRecent }: NotifyMenuProps
             </label>
 
             {recent.length > 0 ? (
-              <div className="popover__recent">
-                <p className="popover__sub">Recent</p>
+              <div className="menu__section">
+                <p className="menu__label">Recent</p>
                 <ul className="recent">
                   {recent.map((job) => {
                     const name = displayName(job);
@@ -111,10 +108,10 @@ export function NotifyMenu({ prefs, recent, now, onOpenRecent }: NotifyMenuProps
                           }}
                           title={`${name}: ${job.title}`}
                         >
-                          <CompanyLogo name={name} domain={job.company_domain} size={28} />
+                          <CompanyLogo name={name} domain={job.company_domain} size={24} />
                           <span className="recent__who">
                             <span className="recent__name">{name}</span>
-                            <time className="recent__time mono">{timeAgo(job.updated_at, now)}</time>
+                            <time className="recent__time num">{timeAgo(job.updated_at, now)}</time>
                           </span>
                           <StatusChip job={job} />
                         </button>

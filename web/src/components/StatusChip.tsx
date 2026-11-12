@@ -1,25 +1,14 @@
 import type { JobRow } from '../lib/types';
-import { statusHint, statusInfo } from '../lib/format';
-import { IconCheck } from './Icons';
-import { Burst, Swap, useJustSettled } from './motion';
+import { STATUS_COLOR, statusInfo } from '../lib/format';
+import { Swap } from './motion';
 
-const FINISHED = ['submitted', 'unconfirmed', 'blocked', 'refused', 'failed'];
-const SENT = ['submitted', 'unconfirmed'];
-
+/** A job's status as a Notion-style status tag: a dot and a short label, the meaning in the tooltip. */
 export function StatusChip({ job }: { job: Pick<JobRow, 'status' | 'dry_run'> & Partial<Pick<JobRow, 'reason'>> }) {
-  const { label, tone } = statusInfo(job);
-  // The agent just finished this one: the chip lands, and a real send gets the burst.
-  const settled = useJustSettled(job.status, 'applying', FINISHED);
-  const sent = SENT.includes(job.status);
+  const { label, tone, hint } = statusInfo(job);
   return (
-    <span className={`chip chip--${tone} ${settled ? 'is-landing' : ''}`} title={statusHint(tone)}>
-      {tone === 'sent' || tone === 'unconfirmed' ? (
-        <IconCheck size={12} className="chip__check" />
-      ) : (
-        <span className="chip__dot" aria-hidden="true" />
-      )}
+    <span className={`tag tag--${STATUS_COLOR[tone]} tag--status ${tone === 'applying' ? 'is-live' : ''}`} title={hint}>
+      <span className="tag__dot" aria-hidden="true" />
       <Swap id={label}>{label}</Swap>
-      {settled && sent ? <Burst tone="mint" /> : null}
     </span>
   );
 }

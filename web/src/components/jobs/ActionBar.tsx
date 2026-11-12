@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { dockVariants } from '../../lib/motion';
 import { AnimatedNumber } from '../motion';
-import { IconLetter, IconPlay, IconX } from '../Icons';
+import { IconLetter, IconPlay } from '../Icons';
 
 interface ActionBarProps {
   count: number;
@@ -16,9 +16,9 @@ interface ActionBarProps {
   onClear: () => void;
 }
 
-/** A floating glass dock that rises from the bottom once something is selected. */
+/** A slim white bar that sticks to the bottom once jobs are selected. Live mode gives it a red top edge. */
 export function ActionBar(props: ActionBarProps) {
-  // Keep the last non-zero count so the dock does not read "0" while it sinks away.
+  // Keep the last non-zero count so the bar does not read "0" while it leaves.
   const last = useRef(props.count);
   if (props.count > 0) last.current = props.count;
   return (
@@ -44,39 +44,35 @@ export function ActionBar(props: ActionBarProps) {
 function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, onClear }: ActionBarProps) {
   return (
     <>
-      <div className="dock__count">
-        <AnimatedNumber className="dock__num mono" value={count} from={count} duration={0.35} />
-        <span className="dock__label">selected</span>
-        <button type="button" className="icon-btn icon-btn--sm" onClick={onClear} aria-label="Clear the selection" title="Clear">
-          <IconX size={14} />
-        </button>
-      </div>
-      <span className={`modepill ${dryRun ? '' : 'is-live'}`} title={dryRun ? 'Fills forms, never sends' : 'Live: applications are really sent'}>
-        <span className="modepill__dot" aria-hidden="true" />
+      <span className="dock__count">
+        <AnimatedNumber className="num" value={count} from={count} duration={0.3} /> selected
+      </span>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={onClear}>
+        Clear
+      </button>
+      <span className="dock__spacer" />
+      {!online ? (
+        <span className="dock__note" title="Start the agent to apply">
+          Agent offline
+        </span>
+      ) : null}
+      <span className={`tag ${dryRun ? 'tag--blue' : 'tag--red tag--strong'}`} title={dryRun ? 'Fills forms, never sends' : 'Applications are sent to employers'}>
         {dryRun ? 'Dry run' : 'Live'}
       </span>
-      <div className="dock__buttons">
-        {!online ? (
-          <span className="dock__why" title="Start the agent on your computer first">
-            Agent offline
-          </span>
-        ) : null}
-        <button type="button" className="btn btn--secondary" onClick={onLetters} disabled={writing} title="Write cover letters for these jobs, to read before applying">
-          {writing ? <span className="spinner" aria-hidden="true" /> : <IconLetter size={16} />}
-          <span className="hide-phone">Write letters</span>
-          <span className="show-phone">Letters</span>
-        </button>
-        <button
-          type="button"
-          className={`btn ${dryRun ? 'btn--primary btn--shimmer' : 'btn--live'}`}
-          onClick={onApply}
-          disabled={!online || applying}
-          title={dryRun ? 'Dry run: fill the forms, send nothing' : 'Live: fill and send the applications'}
-        >
-          {applying ? <span className="spinner" aria-hidden="true" /> : <IconPlay size={14} />}
-          Apply <AnimatedNumber className="mono" value={count} from={count} duration={0.35} />
-        </button>
-      </div>
+      <button type="button" className="btn btn--secondary btn--sm" onClick={onLetters} disabled={writing} title="Write cover letters for these jobs">
+        {writing ? <span className="spinner" aria-hidden="true" /> : <IconLetter size={14} />}
+        Write letters
+      </button>
+      <button
+        type="button"
+        className={`btn btn--sm ${dryRun ? 'btn--primary' : 'btn--danger'}`}
+        onClick={onApply}
+        disabled={!online || applying}
+        title={dryRun ? 'Fill the forms, send nothing' : 'Fill and send the applications'}
+      >
+        {applying ? <span className="spinner" aria-hidden="true" /> : <IconPlay size={12} />}
+        Apply <AnimatedNumber className="num" value={count} from={count} duration={0.3} />
+      </button>
     </>
   );
 }

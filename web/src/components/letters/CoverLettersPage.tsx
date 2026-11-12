@@ -57,16 +57,16 @@ function Paper({ body }: { body: string }) {
         }
         if (piece.kind === 'field')
           return (
-            <span key={index} className="cl-field" title={`{{${piece.name}}}: from your profile or the job`}>
+            <span key={index} className="cl-field" title={`{{${piece.name}}}, filled from your profile or the job`}>
               {piece.label}
             </span>
           );
         return (
-          <span key={index} className="cl-slot" title="The agent writes this part for each job">
+          <span key={index} className="cl-slot" title="Written for each job">
             <span className="cl-slot__name">
               <IconSpark size={12} /> {piece.name.replace(/_/g, ' ')}
             </span>
-            {piece.instruction || 'Two to four sentences that fit here.'}
+            {piece.instruction || 'Two to four sentences.'}
           </span>
         );
       })}
@@ -109,14 +109,14 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
         </div>
         <div className="field">
           <label className="field__label" htmlFor={descId}>
-            When to use it
+            Use for
           </label>
           <input
             id={descId}
             className="input"
             value={draft.description}
             maxLength={140}
-            placeholder="Startups, design roles, internships..."
+            placeholder="Startups, internships"
             onChange={(e) => onChange({ ...draft, description: e.target.value })}
           />
         </div>
@@ -130,8 +130,8 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
               {label}
             </button>
           ))}
-          <button type="button" className="choice__btn cl-chip cl-chip--slot" onClick={() => insert('{{new_part: what the agent should write here}}')}>
-            <IconSpark size={13} /> Part the agent writes
+          <button type="button" className="choice__btn cl-chip cl-chip--slot" onClick={() => insert('{{new_part: what to write here}}')}>
+            <IconSpark size={13} /> Generated part
           </button>
         </div>
       </div>
@@ -149,9 +149,7 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
           value={draft.body}
           onChange={(e) => onChange({ ...draft, body: e.target.value })}
         />
-        <span className="field__hint">
-          Text outside {'{{ }}'} stays as written. {'{{part: note}}'} is written for each job.
-        </span>
+        <span className="field__hint">{'{{part: note}}'} is generated for each job.</span>
       </div>
 
       {problems.length ? (
@@ -167,15 +165,15 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
       )}
 
       <footer className="prefs__foot">
-        <span className="savestate" title="Parts the agent writes for each job">
+        <span className="savestate" title="Generated parts">
           <IconSpark size={13} /> {slotNames(draft.body).length}
         </span>
         <button type="button" className="btn btn--ghost" onClick={onCancel}>
           Cancel
         </button>
         <button type="button" className="btn btn--primary" onClick={onSave} disabled={problems.length > 0 || saving}>
-          {saving ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={16} />}
-          {draft.isNew ? 'Save template' : 'Save changes'}
+          {saving ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />}
+          Save
         </button>
       </footer>
     </div>
@@ -212,12 +210,12 @@ function LetterItem({ letter, job, templateName, now, open, onOpen }: {
           <span>{job ? job.title : ''}</span>
         </span>
         <span className="cl-letter__meta">
-          <time className="mono">{timeAgo(letter.updated_at, now)}</time>
+          <time className="num">{timeAgo(letter.updated_at, now)}</time>
           <span className="cl-letter__tags">
-            {letter.updated_by === 'web' ? <span className="softchip">edited</span> : null}
+            {letter.updated_by === 'web' ? <span className="tag tag--gray">Edited</span> : null}
             {letter.problems ? (
-              <span className="tag tag--dry" title={letter.problems}>
-                check
+              <span className="tag tag--yellow" title={letter.problems}>
+                Review
               </span>
             ) : null}
             <span className="cl-letter__tpl" title="Template">
@@ -258,7 +256,7 @@ function LetterView({ letter, job, templateName, online, toast, onChanged, onClo
       toast({ tone: 'ok', title: 'Letter saved' });
       onChanged();
     } catch (error) {
-      toast({ tone: 'error', title: 'Could not save the letter', detail: errorText(error) });
+      toast({ tone: 'error', title: 'Could not save letter', detail: errorText(error) });
     } finally {
       setBusy(false);
     }
@@ -268,11 +266,11 @@ function LetterView({ letter, job, templateName, online, toast, onChanged, onClo
     setBusy(true);
     try {
       await sendCoverLetters([letter.job_id], true);
-      toast({ tone: 'ok', title: online ? 'Writing it again' : 'Rewrite queued for when the agent starts' });
+      toast({ tone: 'ok', title: online ? 'Rewriting letter' : 'Rewrite queued' });
       onChanged();
       onClose();
     } catch (error) {
-      toast({ tone: 'error', title: 'Could not ask for a new letter', detail: errorText(error) });
+      toast({ tone: 'error', title: 'Could not rewrite letter', detail: errorText(error) });
     } finally {
       setBusy(false);
     }
@@ -287,7 +285,7 @@ function LetterView({ letter, job, templateName, online, toast, onChanged, onClo
           <h2 id="letter-title">{name}</h2>
           <span>{job ? job.title : ''}</span>
         </div>
-        <span className="softchip" title="Template">
+        <span className="tag tag--gray" title="Template">
           {templateName}
         </span>
         <button type="button" className="icon-btn" onClick={onClose} aria-label="Close letter" title="Close" data-autofocus>
@@ -296,16 +294,16 @@ function LetterView({ letter, job, templateName, online, toast, onChanged, onClo
       </header>
       <div className="letterview__body">
         <textarea className="input textarea cl-letter__text" value={text} onChange={(e) => setText(e.target.value)} aria-label="Letter text" spellCheck />
-        {letter.problems ? <p className="cl-letter__warn">The agent could not fix: {letter.problems}</p> : null}
+        {letter.problems ? <p className="cl-letter__warn">Review: {letter.problems}</p> : null}
       </div>
       <footer className="letterview__foot">
-        <span className="savestate">{dirty ? 'Unsaved changes' : letter.updated_by === 'web' ? 'Your version' : ''}</span>
+        <span className="savestate">{dirty ? 'Unsaved changes' : letter.updated_by === 'web' ? 'Edited' : ''}</span>
         <PdfLink path={letter.pdf_path} version={letter.updated_at} />
-        <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy} title="Drop this letter and write a new one">
-          Write again
+        <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy} title="Replace with a new letter">
+          Rewrite
         </button>
         <button type="button" className="btn btn--primary btn--sm" onClick={save} disabled={!dirty || busy}>
-          {busy ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />} Save my version
+          {busy ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />} Save
         </button>
       </footer>
     </>
@@ -359,7 +357,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
       settingsT.reload();
       toast({ tone: 'ok', title: on ? `Using "${names.get(templateId) ?? templateId}"` : 'Cover letters off' });
     } catch (error) {
-      toast({ tone: 'error', title: 'Could not save the choice', detail: errorText(error) });
+      toast({ tone: 'error', title: 'Could not save setting', detail: errorText(error) });
     }
   }
 
@@ -373,7 +371,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
       templatesT.reload();
       toast({ tone: 'ok', title: 'Template saved' });
     } catch (error) {
-      toast({ tone: 'error', title: 'Could not save the template', detail: errorText(error) });
+      toast({ tone: 'error', title: 'Could not save template', detail: errorText(error) });
     } finally {
       setSaving(false);
     }
@@ -387,7 +385,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
       setFocusId(null);
       reloadAll();
     } catch (error) {
-      toast({ tone: 'error', title: 'Could not delete the template', detail: errorText(error) });
+      toast({ tone: 'error', title: 'Could not delete template', detail: errorText(error) });
     }
   }
 
@@ -395,13 +393,13 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
   if (missing) return <SetupCard table="automation_cover_templates" />;
 
   return (
-    <div className="page page--prefs page--letters">
+    <div className="page page--letters">
       <div className="cl-main">
-        <section className="card cl-card" aria-label="Cover letter templates">
+        <section className="cl-card" aria-label="Cover letter templates">
           <label className="row-switch row-switch--card">
             <span className="row-switch__text">
-              <strong>Letter with every application</strong>
-              <span>{enabled ? `Using "${names.get(inUse) ?? inUse}"` : 'Off'}</span>
+              <strong>Attach letters</strong>
+              <span>{enabled ? `Template: ${names.get(inUse) ?? inUse}` : 'Off'}</span>
             </span>
             <input type="checkbox" role="switch" checked={enabled} onChange={(e) => void choose(inUse, e.target.checked)} />
             <span className="switch" aria-hidden="true">
@@ -411,7 +409,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
 
           {templatesT.loading && templates.length === 0 ? <SkeletonCards count={2} /> : null}
           {!templatesT.loading && templates.length === 0 ? (
-            <p className="cl-empty">Bundled templates appear once the agent runs.</p>
+            <p className="cl-empty">No templates yet.</p>
           ) : null}
 
           <div className="cl-gallery" role="list">
@@ -431,11 +429,11 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                 >
                   <span className="cl-tile__top">
                     <span className="cl-tile__name">{t.name}</span>
-                    {t.id === inUse ? <span className="cl-inuse">{enabled ? 'In use' : 'Picked'}</span> : null}
+                    {t.id === inUse ? <span className="tag tag--blue">{enabled ? 'In use' : 'Selected'}</span> : null}
                   </span>
-                  <span className="cl-tile__desc">{t.description || 'Your template'}</span>
-                  <span className="cl-tile__foot" title="Parts the agent writes for each job">
-                    {t.builtin ? 'Bundled' : 'Yours'} · <IconSpark size={11} /> {slotNames(t.body).length}
+                  <span className="cl-tile__desc">{t.description || 'Custom template'}</span>
+                  <span className="cl-tile__foot" title="Generated parts">
+                    {t.builtin ? 'Built in' : 'Custom'} · <IconSpark size={11} /> {slotNames(t.body).length}
                   </span>
                 </button>
               );
@@ -451,7 +449,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
           </div>
         </section>
 
-        <section className="card cl-card" aria-label={draft ? 'Edit template' : 'Template preview'}>
+        <section className="cl-card" aria-label={draft ? 'Edit template' : 'Template preview'}>
           {draft ? (
             <Editor draft={draft} onChange={setDraft} onSave={saveDraft} onCancel={() => setDraft(null)} saving={saving} />
           ) : focused ? (
@@ -487,16 +485,16 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                     disabled={focused.id === inUse && enabled}
                     onClick={() => void choose(focused.id, true)}
                   >
-                    <IconCheck size={14} /> {focused.id === inUse && enabled ? 'In use' : 'Use'}
+                    <IconCheck size={14} /> {focused.id === inUse && enabled ? 'In use' : 'Use template'}
                   </button>
                 </div>
               </div>
               <p className="cl-legend">
-                <span className="cl-field">Field</span> from your profile
+                <span className="cl-field">Field</span> Profile or job
                 <span className="cl-slot cl-slot--inline">
-                  <IconSpark size={12} /> Part
+                  <IconSpark size={12} /> Generated
                 </span>
-                written per job
+                Written per job
               </p>
               <Paper body={focused.body} />
             </>
@@ -505,16 +503,16 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
       </div>
 
       <aside className="prefs-side">
-        <section className="card cl-card cl-letters" aria-labelledby="letters-title">
+        <section className="cl-letters" aria-labelledby="letters-title">
           <div className="card__head">
             <h2 className="card__title" id="letters-title">
               Letters
             </h2>
-            <span className="mono cl-count">{letters.length}</span>
+            <span className="num cl-count">{letters.length}</span>
           </div>
           {lettersT.loading && letters.length === 0 ? <SkeletonCards count={2} /> : null}
           {!lettersT.loading && letters.length === 0 ? (
-            <EmptyState icon={<IconLetter size={22} />} title="No letters yet">
+            <EmptyState icon={<IconLetter size={20} />} title="No letters yet.">
               Select jobs, then Write letters.
             </EmptyState>
           ) : (

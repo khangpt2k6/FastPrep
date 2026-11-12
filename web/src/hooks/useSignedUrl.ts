@@ -3,6 +3,9 @@ import { PROOFS_BUCKET, supabase } from '../lib/supabase';
 
 const cache = new Map<string, { url: string; expires: number }>();
 
+/** A path that is already a URL (the dev preview's mock screenshots) is used as it is. */
+const isDirect = (path: string) => /^(data:|https?:)/.test(path);
+
 /** A one-hour signed link to a screenshot in the private proofs bucket. `version` busts the cache on re-apply. */
 export function useSignedUrl(path: string, version: string): { url: string | null; failed: boolean } {
   const key = `${path}@${version}`;
@@ -12,7 +15,7 @@ export function useSignedUrl(path: string, version: string): { url: string | nul
   });
 
   useEffect(() => {
-    if (!path) return;
+    if (!path || isDirect(path)) return;
     const hit = cache.get(key);
     if (hit && hit.expires > Date.now()) {
       setState({ key, url: hit.url, failed: false });
@@ -37,5 +40,6 @@ export function useSignedUrl(path: string, version: string): { url: string | nul
   }, [key, path]);
 
   if (!path) return { url: null, failed: false };
+  if (isDirect(path)) return { url: path, failed: false };
   return state.key === key ? { url: state.url, failed: state.failed } : { url: null, failed: false };
 }

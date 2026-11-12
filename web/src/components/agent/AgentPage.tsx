@@ -1,12 +1,26 @@
+import type { ComponentType, ReactNode, SVGProps } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { AgentRow, CommandRow, JobRow, LiveStatus, LoadError } from '../../lib/types';
 import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
 import { AnimatedNumber, Swap } from '../motion';
-import { clock, plural, stateLabel, timeAgo } from '../../lib/format';
-import { CurrentJob, LogLine, StartHint, agentTone, logItem, type LogEntry } from './live';
-import { Orb } from './Orb';
+import { clock, plural, stateLabel, timeAgo, type TagColor } from '../../lib/format';
+import { Callout, Tag } from '../common';
+import { IconActivity, IconAlert, IconBriefcase, IconClock, IconFile, IconHash, IconRadar, IconSearch, IconSend, IconSpark, IconTerminal } from '../Icons';
+import { StatusDot } from '../shell/StatusControls';
+import { CurrentJob, StartHint, agentTone, logItem, type LogEntry } from './live';
+
+type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
 const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters' };
+
+const COMMAND_STATUS: Record<CommandRow['status'], { label: string; color: TagColor }> = {
+  pending: { label: 'Waiting', color: 'gray' },
+  running: { label: 'Running', color: 'blue' },
+  done: { label: 'Done', color: 'green' },
+  failed: { label: 'Failed', color: 'red' },
+};
+
+const LIVE_WORD: Record<LiveStatus, string> = { live: 'Connected', down: 'Reconnecting', connecting: 'Connecting' };
 
 interface AgentPageProps {
   agent: AgentRow | null;
@@ -23,164 +37,158 @@ interface AgentPageProps {
   current: JobRow | null;
 }
 
-const COMMAND_STATUS: Record<CommandRow['status'], string> = {
-  pending: 'Waiting',
-  running: 'Running',
-  done: 'Done',
-  failed: 'Failed',
-};
-
-const LIVE_WORD: Record<LiveStatus, string> = { live: 'Connected', down: 'Reconnecting', connecting: 'Connecting' };
+/** One property row, like a Notion page property: an icon and a name, then the value. */
+function Prop({ icon: Icon, label, children }: { icon: Icon; label: string; children: ReactNode }) {
+  return (
+    <div className="prop">
+      <dt className="prop__name">
+        <Icon size={15} />
+        {label}
+      </dt>
+      <dd className="prop__value">{children}</dd>
+    </div>
+  );
+}
 
 export function AgentPage({ agent, online, loading, error, onRetry, now, tail, commands, live, sent, current }: AgentPageProps) {
   const state = online ? agent?.state ?? 'idle' : 'offline';
   const tone = agentTone(online, state);
   const word = loading ? 'Connecting' : stateLabel(state);
-  const earlier = tail.slice(0, -1).reverse().slice(0, 5);
-  // Offline: the last lines seen this session stay, dimmed; with none, the hero is one column.
-  const lastLines = online ? [] : tail.slice(-3).reverse();
-  const hasLog = Boolean(error) || online || lastLines.length > 0;
+  const lines = [...tail].reverse();
   const recent = [...commands].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).slice(0, 10);
 
   return (
     <div className="page page--agent">
-      <section className={`card hero hero--${tone} ${hasLog ? '' : 'hero--single'}`} aria-label="Agent status">
-        <div className="hero__status">
-          <Orb tone={loading ? 'loading' : tone} size="lg" label={`Agent: ${word}`} />
-          <div className="hero__who">
-            <p className="hero__state">
-              <Swap id={word}>{word}</Swap>
-            </p>
-            {!loading ? (
-              <p className="hero__meta mono">
-                <span>{agent?.last_seen ? `seen ${timeAgo(agent.last_seen, now)}` : 'never connected'}</span>
-              </p>
-            ) : null}
-            {online && current ? <CurrentJob job={current} /> : null}
-            {!online && !loading ? <StartHint /> : null}
-          </div>
-        </div>
+      {error ? (
+        <Callout
+          tone="red"
+          icon={<IconAlert size={16} />}
+          action={
+            <button type="button" className="btn btn--secondary btn--sm" onClick={onRetry}>
+              Retry
+            </button>
+          }
+        >
+          {error.message}
+        </Callout>
+      ) : null}
+      {!online && !loading ? (
+        <Callout tone="gray" icon={<IconTerminal size={16} />}>
+          <span className="callout__line">
+            Start the agent: <StartHint />
+          </span>
+        </Callout>
+      ) : null}
 
-        {hasLog ? (
-          <div className={`hero__log ${online ? '' : 'hero__log--past'}`}>
-            {error ? (
-              <div className="inline-error">
-                <p>{error.message}</p>
-                <button type="button" className="btn btn--secondary btn--sm" onClick={onRetry}>
-                  Try again
-                </button>
-              </div>
-            ) : online ? (
-              <>
-                <LogLine agent={agent} online={online} tone={tone} />
-                {earlier.length > 0 ? (
-                  <ol className="logtail logtail--wide" aria-label="Earlier log lines">
-                    <AnimatePresence initial={false}>
-                      {earlier.map((e) => (
-                        <motion.li key={`${e.at}-${e.message}`} layout="position" {...logItem}>
-                          <time className="mono">{clock(e.at)}</time>
-                          <span className="logtail__state mono">{e.state}</span>
-                          <span className="logtail__msg">{e.message}</span>
-                        </motion.li>
-                      ))}
-                    </AnimatePresence>
-                  </ol>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <p className="eyebrow">Last log</p>
-                <ol className="logtail logtail--wide logtail--past" aria-label="Last log lines">
-                  {lastLines.map((e) => (
-                    <li key={`${e.at}-${e.message}`}>
-                      <time className="mono">{clock(e.at)}</time>
-                      <span className="logtail__state mono">{e.state}</span>
-                      <span className="logtail__msg">{e.message}</span>
-                    </li>
-                  ))}
-                </ol>
-              </>
-            )}
-          </div>
+      <dl className="props">
+        <Prop icon={IconActivity} label="State">
+          <span className="propstate">
+            <StatusDot tone={loading ? 'off' : tone} />
+            <Swap id={word}>{word}</Swap>
+          </span>
+        </Prop>
+        <Prop icon={IconClock} label="Last seen">
+          {agent?.last_seen ? timeAgo(agent.last_seen, now) : <span className="muted">Never</span>}
+        </Prop>
+        {online && current ? (
+          <Prop icon={IconBriefcase} label="Current job">
+            <CurrentJob job={current} />
+          </Prop>
         ) : null}
-      </section>
-
-      <dl className="stats">
-        <div className="card stat">
-          <dt>Found</dt>
-          <dd className="stat__num">
-            <AnimatedNumber id="agent-found" value={agent?.jobs_found ?? 0} />
-          </dd>
-        </div>
-        <div className="card stat">
-          <dt>Scored</dt>
-          <dd className="stat__num">
-            <AnimatedNumber id="agent-scored" value={agent?.jobs_scored ?? 0} />
-          </dd>
-        </div>
-        <div className="card stat">
-          <dt>Sent</dt>
-          <dd className="stat__num">
-            <AnimatedNumber id="apps-sent" value={sent} />
-          </dd>
-        </div>
-        <div className="card stat">
-          <dt>Resume</dt>
-          <dd className="stat__text" title={agent?.resume_name || undefined}>
-            {agent?.resume_name || <span className="muted">Not loaded</span>}
-          </dd>
-        </div>
-        <div className="card stat">
-          <dt>Model</dt>
-          <dd className="stat__text mono">{agent?.model || <span className="muted">Unknown</span>}</dd>
-        </div>
-        <div className="card stat">
-          <dt>Realtime</dt>
-          <dd className={`stat__text live-${live}`}>
+        <Prop icon={IconFile} label="Resume">
+          {agent?.resume_name || <span className="muted">Not loaded</span>}
+        </Prop>
+        <Prop icon={IconSpark} label="Model">
+          {agent?.model || <span className="muted">Unknown</span>}
+        </Prop>
+        <Prop icon={IconSearch} label="Found">
+          <AnimatedNumber className="num" id="agent-found" value={agent?.jobs_found ?? 0} />
+        </Prop>
+        <Prop icon={IconHash} label="Scored">
+          <AnimatedNumber className="num" id="agent-scored" value={agent?.jobs_scored ?? 0} />
+        </Prop>
+        <Prop icon={IconSend} label="Sent">
+          <AnimatedNumber className="num" id="apps-sent" value={sent} />
+        </Prop>
+        <Prop icon={IconRadar} label="Realtime">
+          <span className={`live-${live}`}>
             <Swap id={live}>{LIVE_WORD[live]}</Swap>
-          </dd>
-        </div>
+          </span>
+        </Prop>
       </dl>
 
-      <section className="card cmds" aria-labelledby="cmds-title">
-        <header className="card__head">
-          <h2 id="cmds-title" className="card__title">
-            Commands
-          </h2>
-        </header>
-        {recent.length === 0 ? (
-          <p className="empty-line">None yet.</p>
+      <section className="section" aria-labelledby="log-title">
+        <h2 id="log-title" className="section__label">
+          Log
+        </h2>
+        {lines.length === 0 ? (
+          <p className="empty-line">No log lines yet.</p>
         ) : (
-          <ul className="cmdlist">
+          <ol className={`logtail code ${online ? '' : 'is-past'}`} aria-live="polite">
             <AnimatePresence initial={false}>
-              {recent.map((c, i) => (
-                <motion.li
-                  className="cmd"
-                  key={c.id}
-                  layout={i < LAYOUT_CAP ? 'position' : false}
-                  variants={riseItem}
-                  custom={0}
-                  initial="hidden"
-                  animate="shown"
-                  exit="gone"
-                  transition={{ layout: SPRING }}
-                >
-                  <span className={`cmd__kind cmd__kind--${c.kind}`}>{COMMAND_KIND[c.kind] ?? c.kind}</span>
-                  <span className="cmd__what">
-                    {c.kind === 'apply' ? plural(c.job_ids.length, 'job') : c.kind === 'cover_letter' ? plural(c.job_ids.length, 'letter') : 'More jobs'}
-                    {c.kind === 'apply' ? (
-                      c.dry_run ? <span className="tag tag--dry">Dry run</span> : <span className="tag tag--live">Live</span>
-                    ) : null}
-                  </span>
-                  <span className={`pill pill--cmd-${c.status}`}>
-                    <Swap id={`${c.status}-${online}`}>{c.status === 'pending' && !online ? 'Waiting for agent' : COMMAND_STATUS[c.status]}</Swap>
-                  </span>
-                  <time className="cmd__time mono">{timeAgo(c.created_at, now)}</time>
-                  {c.status === 'failed' && c.error ? <p className="cmd__error">{c.error}</p> : null}
+              {lines.map((e, i) => (
+                <motion.li key={`${e.at}-${e.message}`} className={i === 0 && online ? 'is-current' : ''} layout="position" {...logItem}>
+                  <time>{clock(e.at)}</time>
+                  <span className="logtail__state">{e.state}</span>
+                  <span className="logtail__msg">{e.message}</span>
                 </motion.li>
               ))}
             </AnimatePresence>
-          </ul>
+          </ol>
+        )}
+      </section>
+
+      <section className="section" aria-labelledby="cmds-title">
+        <h2 id="cmds-title" className="section__label">
+          Commands
+        </h2>
+        {recent.length === 0 ? (
+          <p className="empty-line">No commands yet.</p>
+        ) : (
+          <div className="dblist">
+            <div className="dblist__head cmd__grid" aria-hidden="true">
+              <span className="dblist__col">Type</span>
+              <span className="dblist__col">Detail</span>
+              <span className="dblist__col">Status</span>
+              <span className="dblist__col dblist__col--end">Created</span>
+            </div>
+            <ul className="dblist__rows">
+              <AnimatePresence initial={false}>
+                {recent.map((c, i) => {
+                  const status = c.status === 'pending' && !online ? { label: 'Waiting for agent', color: 'gray' as TagColor } : COMMAND_STATUS[c.status];
+                  return (
+                    <motion.li
+                      className="dbrow cmd"
+                      key={c.id}
+                      layout={i < LAYOUT_CAP ? 'position' : false}
+                      variants={riseItem}
+                      custom={0}
+                      initial="hidden"
+                      animate="shown"
+                      exit="gone"
+                      transition={{ layout: SPRING }}
+                    >
+                      <div className="cmd__grid">
+                        <span className="cmd__kind">{COMMAND_KIND[c.kind] ?? c.kind}</span>
+                        <span className="cmd__what">
+                          {c.kind === 'apply' ? plural(c.job_ids.length, 'job') : c.kind === 'cover_letter' ? plural(c.job_ids.length, 'letter') : 'More jobs'}
+                          {c.kind === 'apply' ? c.dry_run ? <Tag color="blue">Dry run</Tag> : <Tag color="red">Live</Tag> : null}
+                        </span>
+                        <span>
+                          <span className={`tag tag--${status.color} tag--status ${c.status === 'running' ? 'is-live' : ''}`}>
+                            <span className="tag__dot" aria-hidden="true" />
+                            <Swap id={`${status.label}`}>{status.label}</Swap>
+                          </span>
+                        </span>
+                        <time className="cmd__time num">{timeAgo(c.created_at, now)}</time>
+                      </div>
+                      {c.status === 'failed' && c.error ? <p className="cmd__error">{c.error}</p> : null}
+                    </motion.li>
+                  );
+                })}
+              </AnimatePresence>
+            </ul>
+          </div>
         )}
       </section>
     </div>

@@ -277,12 +277,12 @@ export type PersonalErrors = Partial<Record<'first_name' | 'last_name' | 'email'
 
 export function validatePersonal(p: Profile['personal']): PersonalErrors {
   const errors: PersonalErrors = {};
-  if (!p.first_name.trim()) errors.first_name = 'First name is required.';
-  if (!p.last_name.trim()) errors.last_name = 'Last name is required.';
-  if (!p.email.trim()) errors.email = 'Email is required.';
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email.trim())) errors.email = 'That email does not look right.';
-  if (!p.phone.trim()) errors.phone = 'Phone is required.';
-  else if (p.phone.replace(/\D/g, '').length < 7) errors.phone = 'That phone number looks too short.';
+  if (!p.first_name.trim()) errors.first_name = 'Required';
+  if (!p.last_name.trim()) errors.last_name = 'Required';
+  if (!p.email.trim()) errors.email = 'Required';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email.trim())) errors.email = 'Invalid email';
+  if (!p.phone.trim()) errors.phone = 'Required';
+  else if (p.phone.replace(/\D/g, '').length < 7) errors.phone = 'Too short';
   return errors;
 }
 

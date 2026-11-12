@@ -56,14 +56,14 @@ export function ReviewStep({ profile, onEdit }: ReviewStepProps) {
 
       <Block title="Education" step={1} onEdit={onEdit}>
         {profile.education.length === 0 ? (
-          <p className="muted rnone">No schools added.</p>
+          <p className="muted rnone">None</p>
         ) : (
           <ul className="rlist">
             {profile.education.map((ed, i) => (
               <li key={i}>
                 <strong>{ed.school || 'School'}</strong>
                 <span>{[ed.degree, ed.field].filter(Boolean).join(', ')}</span>
-                <span className="mono">{[range(ed.start, ed.end), ed.gpa ? `GPA ${ed.gpa}` : ''].filter(Boolean).join('  ')}</span>
+                <span className="num">{[range(ed.start, ed.end), ed.gpa ? `GPA ${ed.gpa}` : ''].filter(Boolean).join(' · ')}</span>
               </li>
             ))}
           </ul>
@@ -72,21 +72,21 @@ export function ReviewStep({ profile, onEdit }: ReviewStepProps) {
 
       <Block title="Experience" step={2} onEdit={onEdit}>
         {profile.experience.length === 0 ? (
-          <p className="muted rnone">No experience added.</p>
+          <p className="muted rnone">None</p>
         ) : (
           <ul className="rlist">
             {profile.experience.map((ex, i) => (
               <li key={i}>
                 <strong>{[ex.title, ex.company].filter(Boolean).join(' at ') || 'Role'}</strong>
                 <span>{ex.location}</span>
-                <span className="mono">{range(ex.start, ex.end)}</span>
+                <span className="num">{range(ex.start, ex.end)}</span>
               </li>
             ))}
           </ul>
         )}
       </Block>
 
-      <Block title="Skills and preferences" step={3} onEdit={onEdit}>
+      <Block title="Skills" step={3} onEdit={onEdit}>
         <dl className="rgrid">
           <dt>Skills</dt>
           <Value>{profile.skills.join(', ')}</Value>
@@ -100,8 +100,8 @@ export function ReviewStep({ profile, onEdit }: ReviewStepProps) {
           <Value>{[pr.earliest_start, pr.notice_period].filter(Boolean).join(', ')}</Value>
           <dt>Salary</dt>
           <Value>{pr.desired_salary}</Value>
-          <dt>Extra answers</dt>
-          <Value>{extras > 0 ? `${extras} added` : ''}</Value>
+          <dt>Other</dt>
+          <Value>{extras > 0 ? `${extras} answers` : ''}</Value>
         </dl>
       </Block>
 
@@ -111,7 +111,7 @@ export function ReviewStep({ profile, onEdit }: ReviewStepProps) {
           <Value>{a.countries.join(', ')}</Value>
           <dt>US citizen</dt>
           <Value>{a.citizen_us}</Value>
-          <dt>Authorized (US)</dt>
+          <dt>US work authorization</dt>
           <Value>{a.authorized_us}</Value>
           <dt>Sponsorship</dt>
           <Value>{a.needs_sponsorship}</Value>
@@ -122,7 +122,7 @@ export function ReviewStep({ profile, onEdit }: ReviewStepProps) {
 
       <Block title="Self-identification" step={5} onEdit={onEdit}>
         <p className="rnone">
-          <span className="mono">{eeoAnswered}</span> of 8 answered. <span className="muted">Kept private to your forms.</span>
+          <span className="num">{eeoAnswered}</span> of 8 answered.
         </p>
       </Block>
     </div>

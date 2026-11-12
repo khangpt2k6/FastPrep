@@ -4,6 +4,7 @@ import { errorText } from '../lib/errors';
 import { clock } from '../lib/format';
 import { DEFAULT_PREFERENCES, savePreferences, usePreferences } from '../hooks/useAutomationData';
 import { IconAlert, IconCheck, IconSpark } from './Icons';
+import { Callout } from './common';
 import { SetupCard } from './SetupCard';
 
 const TONES = ['Professional', 'Warm', 'Confident', 'Concise', 'Enthusiastic'];
@@ -11,7 +12,7 @@ const TONES = ['Professional', 'Warm', 'Confident', 'Concise', 'Enthusiastic'];
 const LENGTHS: { value: Exclude<AnswerLength, ''>; label: string; hint: string }[] = [
   { value: 'Short', label: 'Short', hint: '1 to 2 sentences' },
   { value: 'Medium', label: 'Medium', hint: '3 to 5 sentences' },
-  { value: 'Detailed', label: 'Detailed', hint: 'up to 150 words' },
+  { value: 'Detailed', label: 'Detailed', hint: 'Up to 150 words' },
 ];
 
 /** Illustrations only: the agent writes a fresh answer for every form. */
@@ -33,9 +34,9 @@ function summary(p: Preferences): string[] {
   const parts: string[] = [];
   parts.push(p.tone || 'Default tone');
   parts.push(p.length || 'Default length');
-  if (p.highlight.trim()) parts.push(`emphasizes: ${firstPhrase(p.highlight)}`);
-  if (p.avoid.trim()) parts.push(`avoids: ${firstPhrase(p.avoid)}`);
-  if (p.sample.trim()) parts.push('matches your sample');
+  if (p.highlight.trim()) parts.push(`Emphasize: ${firstPhrase(p.highlight)}`);
+  if (p.avoid.trim()) parts.push(`Forbidden: ${firstPhrase(p.avoid)}`);
+  if (p.sample.trim()) parts.push('Matches sample');
   return parts;
 }
 
@@ -119,13 +120,17 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
   if (error?.kind === 'missing-table') return <SetupCard table="automation_preferences" />;
   if (error) {
     return (
-      <div className="card inline-error inline-error--card">
-        <IconAlert size={18} />
-        <p>{error.message}</p>
-        <button type="button" className="btn btn--secondary btn--sm" onClick={() => void reload()}>
-          Try again
-        </button>
-      </div>
+      <Callout
+        tone="red"
+        icon={<IconAlert size={16} />}
+        action={
+          <button type="button" className="btn btn--secondary btn--sm" onClick={() => void reload()}>
+            Retry
+          </button>
+        }
+      >
+        {error.message}
+      </Callout>
     );
   }
 
@@ -134,7 +139,7 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
 
   return (
     <div className="page page--prefs">
-      <section className="card prefs" aria-label="Answer preferences" aria-busy={loading}>
+      <section className="prefs" aria-label="Answer preferences" aria-busy={loading}>
         <div className="field">
           <span className="field__label" id="tone-label">
             Tone
@@ -177,32 +182,32 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
 
         <div className="prefs__grid">
           <Area
-            label="What to emphasize"
+            label="Emphasize"
             value={form.highlight}
             onChange={(v) => set('highlight', v)}
-            placeholder="AI agents, distributed systems, shipping to real users"
+            placeholder="AI agents, distributed systems"
           />
           <Area
-            label="What to never say"
+            label="Forbidden"
             value={form.avoid}
             onChange={(v) => set('avoid', v)}
-            placeholder="Do not mention salary expectations unless asked"
+            placeholder="Salary expectations"
           />
         </div>
-        <Area label="Other instructions" value={form.notes} onChange={(v) => set('notes', v)} placeholder="Keep it in first person. Use American spelling." />
+        <Area label="Notes" value={form.notes} onChange={(v) => set('notes', v)} placeholder="First person, American spelling" />
         <Area
-          label="A sample answer in your voice"
+          label="Writing sample"
           value={form.sample}
           onChange={(v) => set('sample', v)}
-          placeholder="Paste an answer you wrote and liked."
-          hint="The agent matches this style."
+          placeholder="Paste an answer you wrote"
+          hint="Used to match your style"
           rows={5}
         />
 
         <label className="row-switch row-switch--card">
           <span className="row-switch__text">
-            <strong>Learn from applications</strong>
-            <span>Saves its answers to Memory</span>
+            <strong>Learn from answers</strong>
+            <span>Save new answers to Memory</span>
           </span>
           <input type="checkbox" role="switch" checked={form.learn} onChange={(e) => set('learn', e.target.checked)} />
           <span className="switch" aria-hidden="true">
@@ -221,19 +226,19 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
                   : save.state === 'saved'
                     ? `Saved ${clock(save.at)}`
                     : row
-                      ? 'All changes saved'
-                      : 'Using the defaults'}
+                      ? 'Saved'
+                      : 'Defaults'}
           </span>
           <button type="button" className="btn btn--primary" onClick={submit} disabled={!dirty || save.state === 'saving' || loading}>
-            {save.state === 'saving' ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={16} />}
-            Save preferences
+            {save.state === 'saving' ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />}
+            Save
           </button>
         </footer>
       </section>
 
       <aside className="prefs-side">
-        <section className="card preview" aria-labelledby="preview-title">
-          <p className="eyebrow" id="preview-title">
+        <section className="preview" aria-labelledby="preview-title">
+          <p className="section__label" id="preview-title">
             Preview
           </p>
           <p className="preview__q">Why are you interested in this role?</p>
@@ -245,7 +250,7 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
             ))}
           </div>
           <blockquote className="preview__a">{example}</blockquote>
-          <p className="preview__note" title="The agent writes a fresh answer for each form">
+          <p className="preview__note" title="Each form gets a fresh answer">
             <IconSpark size={14} />
             Example only
           </p>
