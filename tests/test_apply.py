@@ -881,7 +881,7 @@ class SendsOnClick(ScriptedBrowser):
 
 
 def test_a_dry_run_that_the_page_says_was_sent_ends_at_once_as_sent(monkeypatch: pytest.MonkeyPatch) -> None:
-    from agent_automation.apply import SENT_IN_DRY_RUN
+    from agent_automation.agent.apply import SENT_IN_DRY_RUN
 
     monkeypatch.setenv("AGENT_DRY_RUN", "1")
     browser = SendsOnClick()
@@ -893,7 +893,7 @@ def test_a_dry_run_that_the_page_says_was_sent_ends_at_once_as_sent(monkeypatch:
 
 
 def test_a_send_the_guard_holds_back_is_told_to_the_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    from agent_automation.apply import DRY_RUN_HELD
+    from agent_automation.agent.apply import DRY_RUN_HELD
 
     monkeypatch.setenv("AGENT_DRY_RUN", "1")
     browser = SendsOnClick(held=[0, 1])
