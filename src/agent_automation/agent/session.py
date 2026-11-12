@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import shutil
 import subprocess
 import sys
 import time
 from collections.abc import Awaitable, Callable
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 from openai import AsyncOpenAI
@@ -49,6 +51,15 @@ from agent_automation.tools.library import Library
 WIDE = 200
 
 Log = Callable[[str], None]
+# What the jobs in the store were found and scored with, as a hash: see searched_with.
+SEARCHED_FILE = "searched-with"
+
+
+def searched_with(config: Config) -> str:
+    """What decides which jobs a search lists and how they are scored: the filters, the goals and the days. Settings
+    changed anywhere, automation.yaml by hand included, give another value."""
+    said = {"filters": asdict(config.filters), "goals": config.goals, "max_age_days": config.max_age_days}
+    return hashlib.sha256(json.dumps(said, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
 class Session:
@@ -196,7 +207,14 @@ class Session:
         )
 
     async def find(self) -> int:
-        """Bring the postings for this search, of those on this computer, into the store; how many are new."""
+        """Bring the postings for this search, of those on this computer, into the store; how many are new. The jobs not
+        tried yet go first when the search changed since they were found: an old search's jobs and scores are not this one's."""
+        mark = self.config.data_dir / SEARCHED_FILE
+        now = searched_with(self.config)
+        if (mark.read_text(encoding="utf-8").strip() if mark.is_file() else "") != now:
+            self.store.forget_untried()
+            mark.parent.mkdir(parents=True, exist_ok=True)
+            mark.write_text(now, encoding="utf-8")
         jobs = await asyncio.to_thread(search, self.library, self.config.filters, self.config.max_age_days)
         new = self.store.add_all(jobs)
         self.telemetry.search(found=len(jobs), new=new)

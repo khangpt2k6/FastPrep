@@ -180,3 +180,28 @@ def test_forgetting_the_untried_keeps_every_job_that_was_tried(tmp_path: Path) -
         store.set_status(name, {"sent": "submitted"}.get(name, name), "")
     store.forget_untried()
     assert sorted(item.job.id for item in store.all()) == ["failed", "refused", "sent"]
+
+
+def test_a_search_changed_since_the_jobs_were_found_drops_the_untried_ones_and_keeps_the_tried(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from agent_automation.memory.config import load_config
+
+    found = [Job("https://a.example/1", "Firm", "Engineer", "Rome", "https://a.example/1", "https://a.example/1", "", 1.0)]
+    monkeypatch.setattr(session_module, "search", lambda library, filters, days: list(found))
+    session = session_with(tmp_path, 2)
+    session.store.set_statuses(["p000"], "submitted")
+    session.store.set_score("p001", 4.0)
+
+    asyncio.run(session.find())
+    # The first search of a store has nothing to compare with, so the untried jobs are taken as an old search's.
+    assert {item.job.id for item in session.store.all()} == {"p000", "https://a.example/1"}
+
+    session.store.set_score("https://a.example/1", 4.0)
+    asyncio.run(session.find())
+    assert scored(session) == {"https://a.example/1": 4.0}
+
+    # Set by hand in automation.yaml, not on a settings screen: the next search still sees it.
+    (tmp_path / "automation.yaml").write_text("filters:\n  require: [Intern]\n", encoding="utf-8")
+    session.config = load_config(tmp_path)
+    found.clear()
+    asyncio.run(session.find())
+    assert {item.job.id: item.status for item in session.store.all()} == {"p000": "submitted"}
