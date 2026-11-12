@@ -5,7 +5,7 @@ hosts: [greenhouse.io]
 ---
 The page shows the job and, below it, the form. There is no need to click "Apply": the fields are already on the page. Do not use "Autofill my application", Dropbox or Google Drive.
 
-`#first_name`, `#last_name`, `#email` and `#phone` are the basics. Upload the CV to `#resume`, a file input hidden by CSS. `#cover_letter` is a file too: leave it empty unless it is required.
+`#first_name`, `#last_name`, `#email` and `#phone` are the basics. Upload the CV to `#resume`, a file input hidden by CSS. `#cover_letter` is a file too: it takes the cover letter when one is given; otherwise leave it empty unless it is required.
 
 Questions a company adds have ids such as `#question_39108683002`: find each by its label. A required label ends with a `*`. Many fields look like text but are lists (`role="combobox"`, showing "Select..."), such as `#country` and `#candidate-location`. Each has a "Toggle flyout" button beside it.
 

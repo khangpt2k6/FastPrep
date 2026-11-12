@@ -15,6 +15,18 @@ from openai import AsyncOpenAI
 
 from agent_automation.agent.apply import MAILBOXES, NOTE, SKIPPED_BY_HOOK, Outcome, apply_to_job, signed_in, site_of
 from agent_automation.agent.apply import sign_in as sign_in_browser
+from agent_automation.agent.cover_letter import (
+    DEFAULT_TEMPLATE,
+    Letter,
+    Template,
+    candidate_voice,
+    fields_for,
+    file_name,
+    load_templates,
+    render_pdf,
+    write_letter,
+)
+from agent_automation.agent.cover_letter import load_skills as load_cover_skills
 from agent_automation.agent.llm import SPEND, Mark, make_client, no_credit, not_answering, refused
 from agent_automation.agent.scoring import NOT_JUDGED, NotAnswering, fits, question, score
 from agent_automation.home import Home, home_for
@@ -23,7 +35,7 @@ from agent_automation.hooks.runner import run_hooks
 from agent_automation.hooks.telemetry import Telemetry
 from agent_automation.memory.config import KEY_ENV, Config, ConfigError, base_url, dry_run, load_config
 from agent_automation.memory.profile import CV_NAME_FILE, ensure_account_password, import_answers_file, install_resume, save_setting
-from agent_automation.memory.store import SUBMITTED, Store, Stored, write_applied
+from agent_automation.memory.store import SUBMITTED, Store, Stored, safe_name, write_applied
 from agent_automation.memory.web_profile import home_writing
 from agent_automation.skills import Skill, always_skills, load_skills, skill_for
 from agent_automation.tools.database import load_manifest, search
@@ -258,9 +270,45 @@ class Session:
                 break
         return results
 
-    async def apply(self, item: Stored, log: Log, note: Callable[[str], None] | None = None, extra_answers: str = "") -> Outcome:
+    # Cover letters: on and which template, from preferences.md (the web page's choice goes through sync.py instead).
+
+    def letters_on(self) -> bool:
+        setting = self.home.preferences()[0].get("cover_letter") or {}
+        return not isinstance(setting, dict) or setting.get("enabled", True) is not False
+
+    def letter_template_name(self) -> str:
+        setting = self.home.preferences()[0].get("cover_letter") or {}
+        return str(setting.get("template") or DEFAULT_TEMPLATE) if isinstance(setting, dict) else DEFAULT_TEMPLATE
+
+    async def cover_letter(self, item: Stored, template: Template | None = None, text: str = "", log: Log = lambda line: None) -> Letter | None:
+        """The cover letter for this job, as a PDF beside the CV, where the browser may upload it. Written from `template`
+        (preferences.md's when None), or `text` as the person left it. None when a letter_written hook stops it."""
+        templates = load_templates(self.home)
+        template = template or templates.get(self.letter_template_name()) or templates[DEFAULT_TEMPLATE]
+        job, answers = item.job, self.store.answers()
+        cv = self.config.cv.read_text(encoding="utf-8-sig")
+        if text.strip():
+            letter = Letter(template.id, text.strip() + "\n", {})
+        else:
+            letter = await write_letter(
+                self.client, self.config.model, template, job, cv, answers, load_cover_skills(self.home), voice=candidate_voice(self.home))
+            hooked = await run_hooks(self.home, "letter_written", {"job": job_event(item), "letter": letter.text, "template": template.id}, log)
+            if hooked.blocked:
+                log(f"No cover letter for {job.company}: {hooked.reason}")
+                return None
+            if isinstance(changed := hooked.changes.get("letter"), str) and changed.strip():
+                letter.text = changed.strip() + "\n"
+        name = fields_for(answers, job, cv)["full_name"]
+        folder = self.config.data_dir / "cvs" / "cover-letters" / safe_name(job.id)
+        letter.pdf = render_pdf(letter.text, folder / file_name(name, job.company), f"Cover letter: {job.title} at {job.company}", name)
+        return letter
+
+    async def apply(
+        self, item: Stored, log: Log, note: Callable[[str], None] | None = None, extra_answers: str = "", cover: Letter | None | str = "auto",
+    ) -> Outcome:
         """Fill and send one application, once. What the page said is kept with it, and applied.csv is written. `extra_answers`
-        is added after the answers: the writing preferences and the approved answers the web dashboard keeps."""
+        is added after the answers: the writing preferences and the approved answers the web dashboard keeps. `cover` is the
+        cover letter to send with it; "auto" writes one when preferences.md has them on, None sends none."""
         if item.status in SUBMITTED:
             raise ConfigError(f"{item.job.company}: already sent, and not sent twice")
         preferences, _ = self.home.preferences()
@@ -288,8 +336,13 @@ class Session:
         try:
             await self.engine_coming(note)
             cv_file = self._own_cv()
+            letter = await self._letter_for(item, cover, log)
+            # The letter goes only when there is one, so a run with letters off calls the form filler as it always did.
+            sent_with = {"cover": (letter.text, letter.pdf)} if letter is not None and letter.pdf is not None else {}
             outcome = await apply_to_job(
-                self.client, self.config.model, job, cv, answers, cv_file, self.config.data_dir, self.config.browser_profile, guidance, account)
+                self.client, self.config.model, job, cv, answers, cv_file, self.config.data_dir, self.config.browser_profile, guidance, account,
+                **sent_with,
+            )
         except Exception as error:
             # One job's failure is reported and recorded; the next job still runs.
             if refused(error):
@@ -313,6 +366,20 @@ class Session:
         except OSError:
             log("applied.csv could not be saved. Close it if another program has it open.")
         return outcome
+
+    async def _letter_for(self, item: Stored, cover: Letter | None | str, log: Log) -> Letter | None:
+        if cover != "auto":
+            return cover if isinstance(cover, Letter) else None
+        if not self.letters_on():
+            return None
+        try:
+            return await self.cover_letter(item, log=log)
+        except Exception as error:
+            # A letter that cannot be written does not stop the application: it goes without one, and the person is told.
+            if refused(error):
+                raise
+            log(f"No cover letter for {item.job.company}: {errors.explained(error)}")
+            return None
 
     async def _record(self, item: Stored, host: str, outcome: Outcome, mark: Mark) -> dict[str, tuple[int, int]]:
         """What came of the application, kept with the job: its account, status, proof and cost. The tokens each model used."""

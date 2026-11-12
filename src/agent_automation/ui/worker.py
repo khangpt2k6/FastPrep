@@ -19,6 +19,8 @@ from typing import Any
 import click
 import httpx
 
+from agent_automation.agent.cover_letter import Letter
+from agent_automation.agent.cover_letter.sync import CoverLetters
 from agent_automation.agent.scoring import NotAnswering
 from agent_automation.agent.session import Session
 from agent_automation.hooks.runner import run_hooks
@@ -127,9 +129,9 @@ class Supabase:
         reply = await self.http.delete(f"{self.url}/rest/v1/{table}", params=params, headers=await self._headers({"Prefer": "return=minimal"}))
         reply.raise_for_status()
 
-    async def upload(self, path: str, data: bytes) -> None:
+    async def upload(self, path: str, data: bytes, content_type: str = "image/png") -> None:
         reply = await self.http.post(
-            f"{self.url}/storage/v1/object/{BUCKET}/{path}", headers=await self._headers({"Content-Type": "image/png", "x-upsert": "true"}), content=data,
+            f"{self.url}/storage/v1/object/{BUCKET}/{path}", headers=await self._headers({"Content-Type": content_type, "x-upsert": "true"}), content=data,
         )
         reply.raise_for_status()
 
@@ -148,6 +150,7 @@ class Agent:
         self.wake = asyncio.Event()
         self.target = SCORE_TARGET
         self.profile_seen = ""
+        self.letters = CoverLetters(db, session, click.echo)
         # One search at a time: a change of places must not land in the middle of a round.
         self.search_lock = asyncio.Lock()
         self.fresh = True
@@ -304,7 +307,7 @@ class Agent:
             try:
                 rows = await self.db.select(
                     "automation_commands",
-                    {"status": "eq.pending", "kind": "in.(apply,search)", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
+                    {"status": "eq.pending", "kind": "in.(apply,search,cover_letter)", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
                 )
                 if rows:
                     await self.handle(rows[0])
@@ -320,6 +323,8 @@ class Agent:
             if command["kind"] == "search":
                 self.target = self.scored() + SCORE_MORE
                 self.wake.set()
+            elif command["kind"] == "cover_letter":
+                await self.write_letters(command["job_ids"])
             elif command["kind"] == "apply":
                 await self.apply_all(command["job_ids"], bool(command["dry_run"]))
             await self.db.update("automation_commands", {"id": f"eq.{command['id']}"}, {"status": "done"})
@@ -362,6 +367,26 @@ class Agent:
         except Exception as error:  # noqa: BLE001  The application itself is already recorded.
             click.echo(f"memory: {error}")
 
+    async def letter(self, item: Stored, always: bool = False) -> Letter | None:
+        """The job's cover letter as the page set it up, or None: letters off, or one that could not be written, which is
+        said and does not stop the application."""
+        try:
+            return await self.letters.for_job(item, always)
+        except Exception as error:  # noqa: BLE001  Said on the page; the application goes on without a letter.
+            self.say("applying", f"No cover letter for {item.job.company}: {error}")
+            return None
+
+    async def write_letters(self, job_ids: list[str]) -> None:
+        """Cover letters for these jobs, to read and edit on the page before applying. Nothing is sent."""
+        await self.writing()
+        for number, job_id in enumerate(job_ids, 1):
+            item = self.session.store.get(job_id)
+            if item is None:
+                continue
+            self.say("writing", f"Cover letter {number}/{len(job_ids)}: {item.job.company}")
+            await self.letter(item, always=True)
+        self.say("ready", f"{len(job_ids)} cover letter(s) written. Read them on the page before applying.")
+
     async def apply_all(self, job_ids: list[str], dry: bool) -> None:
         session = self.session
         os.environ[DRY_RUN_ENV] = "1" if dry else ""
@@ -380,7 +405,10 @@ class Agent:
                 if line:
                     self.say("applying", f"{label}: {line}")
 
-            outcome = await session.apply(item, click.echo, note, writing)
+            letter = await self.letter(item)
+            if letter is not None:
+                self.say("applying", f"{label}: cover letter ready ({letter.template_id}){mode}")
+            outcome = await session.apply(item, click.echo, note, writing, cover=letter)
             if learning and outcome.written:
                 await self.learn(item, outcome.written)
             shot = ""
@@ -430,6 +458,10 @@ class Agent:
             self.say("starting", "Agent online")
             await self.recover()
             await run_hooks(self.session.home, "session_start", {"preferences": self.session.home.preferences()[0]}, click.echo)
+            try:
+                await self.letters.publish()
+            except Exception as error:  # noqa: BLE001  The page shows no templates until the next start; letters still work.
+                click.echo(f"cover letter templates not published: {error}")
             # The profile first: its countries may change where the first search looks.
             try:
                 await self.sync_profile(first=True)

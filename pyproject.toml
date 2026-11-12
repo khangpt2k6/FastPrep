@@ -25,6 +25,7 @@ dependencies = [
     "click>=8.1",
     "cryptography>=42",
     "duckdb>=1.1",
+    "fpdf2>=2.7",
     "httpx>=0.27",
     "invisible-playwright-mcp",
     "mcp>=1.9",
@@ -61,6 +62,7 @@ testpaths = ["tests"]
 pythonpath = ["tests"]
 markers = [
     "browser: runs the real invisible-playwright-mcp and its Firefox",
+    "letters: lets the session write cover letters, which every other test has off",
 ]
 
 [tool.ruff]

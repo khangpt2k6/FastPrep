@@ -23,7 +23,7 @@ Dropdowns are `div[role="combobox"]` showing "--" until a choice is made, such a
 
 `#info\.skills` is a tag field ("Type a skill and press enter").
 
-"Add Work History" and "Add Education" add rows, with the same fields numbered `.0`, `.1`. "Select Cover Letter" is a file: leave it empty unless required.
+"Add Work History" and "Add Education" add rows, with the same fields numbered `.0`, `.1`. "Select Cover Letter" is a file: it takes the cover letter when one is given; otherwise leave it empty unless required.
 
 Demographic questions on the last steps are voluntary, and they are where this site eats its steps: two tries on one of them is enough, then move on. `#acknowledgements\.eeoGender`, `#acknowledgements\.racialOrEthnicGroup`, `#acknowledgements\.disability`, `#acknowledgements\.militaryService` and `#expandedIdentityQuestions\.identifyAsLegalGender\.0` are listboxes with their options under `#<id>__listbox`: take the one whose text declines to answer, which was the last option in each of them, and never a guess at an answer. `#ethnicityOptions` and `#pronounOptions` are typeaheads: type `Prefer not to say` and take the first row of `#<id>-dropdown-list-container`, which reads "Create Prefer not to say" and sets the value all the same.
 

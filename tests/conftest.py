@@ -49,6 +49,16 @@ def no_key_check_over_the_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def no_cover_letters(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The project's preferences.md has cover letters on, and a letter is one more model call: a test's scripted model is
+    asked for one only when the test is about cover letters (marked `letters`)."""
+    if request.node.get_closest_marker("letters") is None:
+        from agent_automation.agent import session
+
+        monkeypatch.setattr(session.Session, "letters_on", lambda self: False)
+
+
+@pytest.fixture(autouse=True)
 def tracked(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
     """Agent Automation's events go to PostHog: in a test they go here, as they are sent, and a test that asks for them reads what was sent."""
     events: list[dict[str, Any]] = []

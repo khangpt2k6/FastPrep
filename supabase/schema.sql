@@ -139,3 +139,73 @@ create policy "automation proofs write" on storage.objects for insert to authent
 drop policy if exists "automation proofs update" on storage.objects;
 create policy "automation proofs update" on storage.objects for update to authenticated
   using (bucket_id = 'automation-proofs' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- Cover letters. The agent publishes its templates (builtin), the page adds the person's own and picks one, and the agent
+-- keeps the letter it wrote for each job here: the page can show it, edit it (updated_by 'web') and the agent then uses
+-- the edited text. The PDFs go in automation-proofs under <user id>/cover-letters/.
+create table if not exists public.automation_cover_templates (
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  id text not null,
+  name text not null,
+  description text not null default '',
+  body text not null,
+  builtin boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, id)
+);
+
+create table if not exists public.automation_cover_settings (
+  user_id uuid primary key default auth.uid() references auth.users on delete cascade,
+  enabled boolean not null default true,
+  template_id text not null default 'classic',
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.automation_cover_letters (
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  job_id text not null,
+  template_id text not null default '',
+  body text not null default '',
+  pdf_path text not null default '',
+  problems text not null default '',
+  updated_by text not null default 'agent' check (updated_by in ('agent', 'web')),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, job_id)
+);
+
+alter table public.automation_cover_templates enable row level security;
+alter table public.automation_cover_settings enable row level security;
+alter table public.automation_cover_letters enable row level security;
+
+drop policy if exists "own cover templates" on public.automation_cover_templates;
+create policy "own cover templates" on public.automation_cover_templates for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+drop policy if exists "own cover settings" on public.automation_cover_settings;
+create policy "own cover settings" on public.automation_cover_settings for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+drop policy if exists "own cover letters" on public.automation_cover_letters;
+create policy "own cover letters" on public.automation_cover_letters for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.automation_cover_templates; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.automation_cover_settings; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.automation_cover_letters; exception when duplicate_object then null; end;
+end $$;
+
+-- A command can also ask for cover letters alone, to read them before applying.
+do $$
+declare
+  found record;
+begin
+  for found in
+    select conname from pg_constraint
+    where conrelid = 'public.automation_commands'::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%kind%'
+  loop
+    execute format('alter table public.automation_commands drop constraint %I', found.conname);
+  end loop;
+end $$;
+alter table public.automation_commands add constraint automation_commands_kind_check check (kind in ('apply', 'search', 'cover_letter'));
