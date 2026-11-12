@@ -4683,3 +4683,17 @@ a.infochip:hover {
     display: none;
   }
 }
+
+/* Apply again, on an application that ended without being sent. */
+.appcard__again {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 12px;
+}
+
+.appcard__hint {
+  color: var(--muted, #6b7280);
+  font-size: 13px;
+}

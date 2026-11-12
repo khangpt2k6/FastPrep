@@ -378,6 +378,14 @@ export function Dashboard({ userId, email }: DashboardProps) {
               <ApplicationsSummaryCard items={applications} onOpen={() => navigate('applications')} />
             </>
           }
+          dryRun={dryRun}
+          online={online}
+          queued={queued}
+          onApplyAgain={(job) => {
+            if (!online) return;
+            if (dryRun) void apply([job]);
+            else setConfirmJobs([job]);
+          }}
         />
       );
       break;

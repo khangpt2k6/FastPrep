@@ -28,6 +28,17 @@ interface ApplicationsPageProps {
   answerCounts: Map<string, number>;
   strip: ReactNode;
   rail: ReactNode;
+  /** The header's dry-run switch: it decides whether "apply again" fills only or really sends. */
+  dryRun: boolean;
+  online: boolean;
+  /** Jobs already in a command the agent has not finished. */
+  queued: Set<string>;
+  onApplyAgain: (job: JobRow) => void;
+}
+
+/** A job that ended without being sent can be tried again: after a dry run, after a block, after a failure. */
+function canApplyAgain(job: JobRow): boolean {
+  return job.status === 'blocked' || job.status === 'failed' || job.status === 'refused';
 }
 
 function Thumb({ job, onOpen }: { job: JobRow; onOpen: (url: string) => void }) {
@@ -69,7 +80,9 @@ function Note({ job }: { job: JobRow }) {
   );
 }
 
-export function ApplicationsPage({ items, loading, error, onRetry, now, onOpenShot, onOpenAnswers, answerCounts, strip, rail }: ApplicationsPageProps) {
+export function ApplicationsPage({
+  items, loading, error, onRetry, now, onOpenShot, onOpenAnswers, answerCounts, strip, rail, dryRun, online, queued, onApplyAgain,
+}: ApplicationsPageProps) {
   const [group, setGroup] = useState<Group>('all');
 
   const counts = useMemo(() => {
@@ -142,6 +155,27 @@ export function ApplicationsPage({ items, loading, error, onRetry, now, onOpenSh
                       </a>
                     ) : null}
                   </p>
+                  {canApplyAgain(job) ? (
+                    <div className="appcard__again">
+                      {queued.has(job.id) ? (
+                        <span className="tag tag--queued">Queued for the agent</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`btn btn--sm ${dryRun ? 'btn--secondary' : 'btn--primary'}`}
+                          onClick={() => onApplyAgain(job)}
+                          disabled={!online}
+                          title={online ? undefined : 'Start the agent on your computer first'}
+                        >
+                          <IconSend size={15} />
+                          {dryRun ? 'Dry run again' : 'Apply for real'}
+                        </button>
+                      )}
+                      {dryRun && job.dry_run && job.reason === 'dry_run' ? (
+                        <span className="appcard__hint">Looks right? Turn off Dry run at the top, then apply for real.</span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <Thumb job={job} onOpen={(url) => onOpenShot(job, url)} />
               </div>
