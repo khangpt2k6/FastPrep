@@ -300,7 +300,12 @@ export function profileProgress(p: Profile): SectionState[] {
     { step: 1, title: 'Education', done: p.education.length > 0 },
     { step: 2, title: 'Work experience', done: p.experience.length > 0 },
     { step: 3, title: 'Skills and preferences', done: p.skills.length > 0 },
-    { step: 4, title: 'Work authorization', done: Boolean(a.authorized_us || a.needs_sponsorship || a.countries.length > 0) },
+    // For the US, every form asks both questions; a section with either one unanswered is not done.
+    {
+      step: 4,
+      title: 'Work authorization',
+      done: a.countries.length > 0 && (!a.countries.some((c) => /^(united states|usa?|us)$/i.test(c.trim())) || Boolean(a.authorized_us && a.needs_sponsorship)),
+    },
   ];
 }
 

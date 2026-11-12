@@ -60,6 +60,9 @@ function combineLive(statuses: LiveStatus[]): LiveStatus {
 }
 
 /** Toast and notification text for a finished application. */
+// One command is worked through form by form, a few minutes each: a few dozen is an afternoon.
+const MAX_PER_APPLY = 25;
+
 function finishedMessage(job: JobRow): { title: string; detail: string; tone: ToastTone; good: boolean } {
   switch (job.status) {
     case 'submitted':
@@ -91,7 +94,7 @@ export function Dashboard({ userId, email }: DashboardProps) {
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [dryRun, setDryRun] = useState(true);
-  const [minScore, setMinScore] = useState<MinScore>(0);
+  const [minScore, setMinScore] = useState<MinScore>(3);
   const [query, setQuery] = useState('');
   const [applyBusy, setApplyBusy] = useState(false);
   const [searchBusy, setSearchBusy] = useState(false);
@@ -225,6 +228,10 @@ export function Dashboard({ userId, email }: DashboardProps) {
 
   function requestApply() {
     if (chosen.length === 0 || !online) return;
+    if (chosen.length > MAX_PER_APPLY) {
+      push({ tone: 'warn', title: `Pick at most ${MAX_PER_APPLY} jobs at a time`, detail: `${chosen.length} are selected. Each form takes the agent a few minutes.` });
+      return;
+    }
     if (!profileComplete) {
       const personalOk = Object.keys(validatePersonal(profile.personal)).length === 0;
       openWizard(personalOk && profileRow ? REVIEW_STEP : 0, 'apply');

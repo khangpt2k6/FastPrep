@@ -1741,12 +1741,31 @@ input:focus-visible + .switch {
 .jobcard__company {
   font-weight: 700;
   color: var(--ink-2);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .jobcard__loc {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A posting can list dozens of cities: two lines, then an ellipsis. */
+.jobcard__loc > :not(svg) {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.jobcard__loc svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .jobcard__meta {
@@ -3937,7 +3956,7 @@ a.infochip:hover {
   position: fixed;
   right: 24px;
   bottom: 24px;
-  z-index: 80;
+  z-index: 55;
   width: min(336px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;

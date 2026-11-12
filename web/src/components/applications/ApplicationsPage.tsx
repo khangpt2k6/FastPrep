@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { JobRow, LoadError } from '../../lib/types';
-import { timeAgo } from '../../lib/format';
+import { companyName, reasonWords, timeAgo } from '../../lib/format';
 import { useOverflow } from '../../hooks/useOverflow';
 import { useSignedUrl } from '../../hooks/useSignedUrl';
 import { Avatar, EmptyState, PillGroup, SkeletonCards } from '../common';
@@ -126,9 +126,9 @@ export function ApplicationsPage({
           return (
             <li className={`card appcard ${job.status === 'applying' ? 'is-live' : ''}`} key={job.id}>
               <div className="appcard__top">
-                <Avatar name={job.company} size={42} />
+                <Avatar name={companyName(job.company)} size={42} />
                 <div className="appcard__who">
-                  <span className="appcard__company">{job.company}</span>
+                  <span className="appcard__company">{companyName(job.company)}</span>
                   <span className="appcard__title">{job.title}</span>
                 </div>
                 <StatusChip job={job} />
@@ -141,7 +141,7 @@ export function ApplicationsPage({
                       {timeAgo(job.updated_at, now)}
                     </time>
                     {job.dry_run && job.status !== 'blocked' ? <span className="tag tag--dry">Dry run</span> : null}
-                    {job.reason && job.status !== 'applying' ? <span className="appcard__reason mono">{job.reason}</span> : null}
+                    {job.reason && job.status !== 'applying' && reasonWords(job.reason) ? <span className="appcard__reason">{reasonWords(job.reason)}</span> : null}
                   </p>
                   <p className="appcard__links">
                     <button type="button" className="link-btn" onClick={() => onOpenAnswers(job)}>

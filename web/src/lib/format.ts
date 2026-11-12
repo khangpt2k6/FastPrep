@@ -49,6 +49,31 @@ export const APPLICATION_STATUSES = ['applying', 'submitted', 'unconfirmed', 're
 
 export type StatusTone = 'applying' | 'sent' | 'unconfirmed' | 'bad' | 'stopped';
 
+/** A company as people say it. Some sources give a Workday tenant path ("cisco/wd5/cisco_careers") or a careers host
+ * ("careers.cisco.com"): the company's own name is taken from it. */
+export function companyName(raw: string): string {
+  const name = raw.trim();
+  const tenant = /^([a-z0-9][a-z0-9_-]*)\/wd\d+\//i.exec(name);
+  const host = /^(?:careers?|jobs|apply)\.([a-z0-9-]+)\.[a-z.]+$/i.exec(name);
+  const word = tenant?.[1] ?? host?.[1];
+  if (!word) return name;
+  return word.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** The agent's one-word reason, in words for a card's meta line; empty when the status chip already says it. */
+export function reasonWords(reason: string): string {
+  const words: Record<string, string> = {
+    sent_in_dry_run: 'sent during a dry run',
+    no_credit: 'out of model credit',
+    not_answering: 'AI service not answering',
+    refused_by_form: 'the form refused it',
+    form_not_loaded: 'form did not load',
+    mailbox_signed_out: 'sign in to your mailbox',
+    no_code: 'no code arrived by email',
+  };
+  return words[reason] ?? '';
+}
+
 /** Why a form was not sent, in words, from the agent's one-word reason. */
 const STOP_REASONS: Record<string, string> = {
   missing_info: 'needs info from you',

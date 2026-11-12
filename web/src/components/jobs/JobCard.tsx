@@ -1,5 +1,5 @@
 import type { JobRow } from '../../lib/types';
-import { timeAgo } from '../../lib/format';
+import { companyName, timeAgo } from '../../lib/format';
 import { Avatar, MatchBadge } from '../common';
 import { IconClock, IconLink, IconMapPin } from '../Icons';
 
@@ -25,15 +25,15 @@ export function JobCard({ job, selected, queued, now, onToggle }: JobCardProps) 
           />
           <span className="check__box" aria-hidden="true" />
         </span>
-        <Avatar name={job.company} />
+        <Avatar name={companyName(job.company)} />
         <span className="jobcard__main">
           <span className="jobcard__title">{job.title}</span>
           <span className="jobcard__sub">
-            <span className="jobcard__company">{job.company}</span>
+            <span className="jobcard__company">{companyName(job.company)}</span>
             {job.location ? (
-              <span className="jobcard__loc">
+              <span className="jobcard__loc" title={job.location}>
                 <IconMapPin size={13} />
-                {job.location}
+                <span>{job.location}</span>
               </span>
             ) : null}
           </span>
