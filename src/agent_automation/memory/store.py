@@ -39,6 +39,17 @@ CREATE TABLE IF NOT EXISTS jobs (
 )
 """
 
+# The employer behind each company name the job database writes, as the dashboard shows it: a short name and the
+# company's own domain, for its logo. Either can be empty.
+COMPANIES_SCHEMA = """
+CREATE TABLE IF NOT EXISTS companies (
+    key TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    domain TEXT NOT NULL,
+    named TEXT NOT NULL
+)
+"""
+
 # The one password Agent Automation makes for the job sites that need an account. Kept sealed: encrypted in the store with a key in
 # its own file beside it, and opened only when an answer is read.
 ACCOUNT_PASSWORD = "account_password"
@@ -170,6 +181,7 @@ class Store:
         self._db.execute(SCHEMA)
         self._db.execute(ANSWERS_SCHEMA)
         self._db.execute(ACCOUNTS_SCHEMA)
+        self._db.execute(COMPANIES_SCHEMA)
         # A store from before the cost was kept gets the column; the rows keep their nulls.
         columns = {row[1] for row in self._db.execute("PRAGMA table_info(jobs)")}
         if "cost" not in columns:
@@ -349,6 +361,19 @@ class Store:
             )
         else:
             self._db.execute("DELETE FROM answers WHERE name = ?", (name,))
+        self._db.commit()
+
+    def companies(self) -> dict[str, tuple[str, str]]:
+        """The employer named for each company key so far: its short name and its domain."""
+        return {row["key"]: (row["name"], row["domain"]) for row in self._db.execute("SELECT key, name, domain FROM companies")}
+
+    def set_companies(self, named: dict[str, tuple[str, str]]) -> None:
+        now = _now()
+        self._db.executemany(
+            "INSERT INTO companies (key, name, domain, named) VALUES (?, ?, ?, ?)"
+            " ON CONFLICT(key) DO UPDATE SET name = excluded.name, domain = excluded.domain, named = excluded.named",
+            [(key, name, domain, now) for key, (name, domain) in named.items()],
+        )
         self._db.commit()
 
     def set_score(self, job_id: str, score: float) -> None:

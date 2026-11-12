@@ -19,6 +19,7 @@ from typing import Any
 import click
 import httpx
 
+from agent_automation.agent.companies import company_key, key_of, name_companies
 from agent_automation.agent.cover_letter import Letter
 from agent_automation.agent.cover_letter.sync import CoverLetters
 from agent_automation.agent.scoring import NotAnswering
@@ -37,6 +38,9 @@ SCORE_TARGET = 300
 SCORE_MORE = 200
 PUSH_LIMIT = 300
 BUCKET = "automation-proofs"
+# After a failed try at naming the companies, the next try waits this long, so a model with no credit is not asked on
+# every push.
+NAMING_PAUSE_SECONDS = 600
 
 
 def _now() -> str:
@@ -154,6 +158,11 @@ class Agent:
         # One search at a time: a change of places must not land in the middle of a round.
         self.search_lock = asyncio.Lock()
         self.fresh = True
+        # Naming the companies runs beside the pushes, one at a time.
+        self.naming: asyncio.Task[None] | None = None
+        self.naming_paused_until = 0.0
+        # The jobs tried before get their company's name once a run: they are not pushed again.
+        self.tried_named = False
 
     # What the page shows about the agent.
 
@@ -185,11 +194,13 @@ class Agent:
 
     # The jobs: download, search, score, push.
 
-    def _row(self, item: Stored) -> dict[str, Any]:
+    def _row(self, item: Stored, companies: dict[str, tuple[str, str]]) -> dict[str, Any]:
         job = item.job
+        name, domain = companies.get(company_key(job), ("", ""))
         return {
             "user_id": self.db.user_id, "id": job.id, "title": job.title, "company": job.company, "location": job.location,
             "url": job.url, "score": item.score, "status": item.status, "note": (item.note or "")[:2000], "updated_at": _now(),
+            "company_name": name, "company_domain": domain,
         }
 
     async def push_jobs(self) -> None:
@@ -197,7 +208,44 @@ class Agent:
         # Only the jobs not tried yet: a tried one's row is written when its application ends, and pushing it again would
         # only move its time to now.
         scored = [item for item in items if item.score is not None and item.status not in SENT_WORDS][:PUSH_LIMIT]
-        await self.db.upsert("automation_jobs", [self._row(item) for item in scored], "user_id,id")
+        await self.db.upsert("automation_jobs", [self._row(item, self.session.store.companies()) for item in scored], "user_id,id")
+        # The names come after the rows, so the page never waits on them.
+        if self.naming is None or self.naming.done():
+            tried = [item for item in items if item.status in SENT_WORDS]
+            self.naming = asyncio.create_task(self.know_companies(scored + tried))
+
+    async def know_companies(self, items: list[Stored]) -> None:
+        """Names the employers of these jobs not named yet, for the page's names and logos, and writes them on their
+        rows. Only the two company columns are written, so a status the page shows is never put back. A failure leaves
+        them unnamed for now: the jobs go on without them."""
+        store = self.session.store
+        try:
+            known = store.companies()
+            unnamed = [item.job for item in items if company_key(item.job) not in known]
+            if unnamed and time.monotonic() >= self.naming_paused_until:
+                try:
+                    named = await name_companies(self.session.client, self.session.config.quick_model, unnamed)
+                except Exception as error:  # noqa: BLE001  Names and logos are only for the page.
+                    self.naming_paused_until = time.monotonic() + NAMING_PAUSE_SECONDS
+                    click.echo(f"company names: {error}")
+                    named = {}
+                store.set_companies({key: (company.name, company.domain) for key, company in named.items()})
+                known = store.companies()
+                fresh = {item.job.company for item in items if company_key(item.job) in named}
+                for company in fresh:
+                    name, domain = known[key_of(company)]
+                    where = {"user_id": f"eq.{self.db.user_id}", "company": f"eq.{company}"}
+                    await self.db.update("automation_jobs", where, {"company_name": name, "company_domain": domain})
+            if not self.tried_named:
+                # Jobs tried in an earlier run whose company was named then, but whose rows were never given it.
+                for item in items:
+                    if item.status in SENT_WORDS and company_key(item.job) in known:
+                        name, domain = known[company_key(item.job)]
+                        where = {"user_id": f"eq.{self.db.user_id}", "id": f"eq.{item.job.id}"}
+                        await self.db.update("automation_jobs", where, {"company_name": name, "company_domain": domain})
+                self.tried_named = True
+        except Exception as error:  # noqa: BLE001  Tried again on the next push.
+            click.echo(f"company names on the page: {error}")
 
     async def bring_jobs(self) -> None:
         session = self.session

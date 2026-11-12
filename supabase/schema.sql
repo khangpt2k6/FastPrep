@@ -29,6 +29,9 @@ create table if not exists public.automation_jobs (
   updated_at timestamptz not null default now(),
   primary key (user_id, id)
 );
+-- The employer as the page shows it: a short name and its domain, for the logo. The agent names them; either can be empty.
+alter table public.automation_jobs add column if not exists company_name text not null default '';
+alter table public.automation_jobs add column if not exists company_domain text not null default '';
 create index if not exists automation_jobs_user_score on public.automation_jobs (user_id, score desc nulls last);
 
 create table if not exists public.automation_commands (
