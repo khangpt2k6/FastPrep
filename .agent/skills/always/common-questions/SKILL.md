@@ -1,6 +1,6 @@
 ---
 name: common-questions
-description: How to answer the questions many forms ask: salary, start date, sponsorship, notice period.
+description: How to answer the questions many forms ask, such as salary, start date, sponsorship and notice period.
 ---
 Questions most forms ask, and what to answer when the answers give nothing more precise. The answers always win over this.
 
