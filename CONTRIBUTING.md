@@ -4,7 +4,7 @@ Agent Automation is a command-line program in Python. The most useful contributi
 
 ## Setup
 
-You need Python 3.11 or newer. CI runs the unit tests on 3.11 and 3.12, on Ubuntu, Windows and macOS.
+You need Python 3.11 or newer.
 
 ```sh
 git clone https://github.com/khangpt2k6/agent-automation
@@ -15,7 +15,7 @@ pip install -e ".[dev]"
 agent-automation-tui --help
 ```
 
-The install pulls in `invisible-playwright-mcp` at its newest release from PyPI. It is not pinned, on purpose: the CI runs every day to show when a new release stops working with Agent Automation.
+The install pulls in `invisible-playwright-mcp` at its newest release from PyPI. It is not pinned, so run `pytest -m browser` after an update to see that a new release still works with Agent Automation.
 
 Running `agent-automation-tui` for real needs an OrcaRouter key and makes model calls. The tests need neither: they use scripted fakes (`tests/fakes.py`) and make no network calls to a model.
 
@@ -28,7 +28,7 @@ pytest -m "not browser"     # unit tests: no browser, no model
 pytest -m browser           # the real browser on a local form
 ```
 
-The browser tests run the real `invisible-playwright-mcp` and its Firefox against a form served from `127.0.0.1`, not a live site. On Linux without a display, run them under `xvfb-run -a`, as CI does.
+The browser tests run the real `invisible-playwright-mcp` and its Firefox against a form served from `127.0.0.1`, not a live site. On Linux without a display, run them under `xvfb-run -a`.
 
 ## Lint
 
@@ -36,17 +36,7 @@ The browser tests run the real `invisible-playwright-mcp` and its Firefox agains
 ruff check .
 ```
 
-Ruff reads its settings from `[tool.ruff]` in `pyproject.toml`: the default rules only. The line length of 160 is set there but not enforced: `ruff check` does not run E501, so a longer line does not fail it. CI runs this exact command.
-
-## What CI runs
-
-The workflow is `.github/workflows/tests.yml`. It runs on every push to `main`, on every pull request, and every day at 05:41 UTC.
-
-- **unit**, on Ubuntu, Windows and macOS, Python 3.11 and 3.12: `pip install -e ".[dev]"`, then `ruff check .`, then `pytest -m "not browser"`.
-- **browser**, on Ubuntu: installs the Firefox libraries and xvfb, then `xvfb-run -a -s "-screen 0 1920x1080x24" pytest -m browser`.
-- **gate**: passes only if both jobs pass.
-
-The other workflow, `.github/workflows/jobs-database.yml`, builds the job database and publishes it to the Hugging Face dataset Agent Automation reads. It runs on a schedule and by hand, not on pull requests.
+Ruff reads its settings from `[tool.ruff]` in `pyproject.toml`: the default rules only. The line length of 160 is set there but not enforced: `ruff check` does not run E501, so a longer line does not fail it.
 
 ## Before you open a pull request
 

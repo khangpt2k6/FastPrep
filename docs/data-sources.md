@@ -57,4 +57,4 @@ A source's owner can ask for it to be removed. There are two ways.
 - **In public:** open an issue with the [data source template](../.github/ISSUE_TEMPLATE/data_source.md). Say which source it is, who you are, and what to remove.
 - **In private:** if you would rather not write in public, use the private report in [SECURITY.md](../SECURITY.md).
 
-What happens next: the source is removed from `SOURCES` in `pipeline/build.py` and from this table. The next build, within five hours, in [`.github/workflows/jobs-database.yml`](../.github/workflows/jobs-database.yml) does not read it. Builds already published keep their postings until the publish step drops them. It keeps the last six builds, about thirty hours.
+What happens next: the source is removed from `SOURCES` in `pipeline/build.py` and from this table. The next build of the dataset, within five hours, does not read it. Builds already published keep their postings until the publish step drops them. It keeps the last six builds, about thirty hours.

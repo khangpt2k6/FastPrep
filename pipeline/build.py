@@ -3,7 +3,7 @@
     python pipeline/build.py --out work                 # everything
     python pipeline/build.py --out work --only riley    # only these sources
 
-Scheduled every five hours in .github/workflows/jobs-database.yml, which publishes work/out to the Hugging Face dataset feder-cr/jobs. Each source is read into
+Run every five hours upstream (feder-cr), which publishes work/out to the Hugging Face dataset feder-cr/jobs; this repo has no workflow. Each source is read into
 work/sources/<name>.parquet in the columns of COMMON. A source that fails is left out of that build's database and named in
 the manifest; publish.py refuses a database that lost too much of itself. Postings are the same posting when their links
 are the same after `posting_key` (src/agent_automation/key.sql), and of those the row with the longest description is kept. The
