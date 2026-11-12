@@ -154,7 +154,7 @@ FINISH_TOOL = {
         "parameters": {
             "type": "object",
             "additionalProperties": False,
-            "required": ["status", "blocked_by", "summary", "submit_selector", "made_account"],
+            "required": ["status", "blocked_by", "summary", "submit_selector", "made_account", "written_answers"],
             "properties": {
                 "status": {
                     "type": "string",
@@ -173,6 +173,17 @@ FINISH_TOOL = {
                 "summary": {"type": "string", "description": "What you wrote in each field, or why you are blocked."},
                 "submit_selector": {"type": "string", "description": "CSS selector of the control that sends the form; empty unless ready."},
                 "made_account": {"type": "boolean", "description": "True only if you created a candidate account on this site just now."},
+                "written_answers": {
+                    "type": "array",
+                    "description": "Every open question you answered in your own words (not names, contacts, lists or yes or no), "
+                    "with the question as the form asks it and exactly what you wrote. Empty when there was none.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["question", "answer"],
+                        "properties": {"question": {"type": "string"}, "answer": {"type": "string"}},
+                    },
+                },
             },
         },
     },
@@ -185,9 +196,14 @@ You fill in one job application form in a browser, for the candidate, from the C
   languages, where the candidate can work, a start date. Employers, titles, dates and degrees come from the CV as written.
 - A question of fact about the candidate, such as whether they worked for this company or hold a licence, is answered yes
   only where the CV or the answers say so. A name that merely resembles another is not an answer.
-- A required field they give you nothing for: a written one says "Please see my attached CV", in the form's language; a
-  list or a yes or no takes the closest option; a number takes the most plausible one. Leave optional fields they do not
-  answer empty.
+- An open question in words, such as why this company, why this role or a project to describe: when the answers hold an
+  approved answer to the same question, use it, fitted to this company; a pinned one word for word. Otherwise, when it is
+  required, write the answer from the CV and what the page says about the job: true to the CV, in the first person, in the
+  form's language, as the writing preferences in the answers say, or in two to four plain sentences when they say nothing.
+  An optional one is left empty unless an approved answer fits it. Report each in finish_form's written_answers.
+- A required field they give you nothing for: a list or a yes or no takes the closest option; a number takes the most
+  plausible one; a written one with nothing to build on says "Please see my attached CV", in the form's language. Leave
+  optional fields they do not answer empty.
 - That fallback never invents a fact about the candidate: a reference's name, a licence or certificate number, a
   qualification they do not claim. A required field that asks for one ends the form: call finish_form with status blocked
   and name that field. This is the one case where a required field is left for the person.
@@ -265,6 +281,8 @@ class Outcome:
     reason: str = ""
     # How many turns the model took on the form.
     steps: int = 0
+    # The open questions the model answered in its own words, as (question, answer): what Memory learns from.
+    written: tuple[tuple[str, str], ...] = ()
 
     @property
     def needs_mail(self) -> bool:
@@ -282,6 +300,20 @@ class Report:
     blocked_by: str = ""
     made_account: bool = False
     steps: int = 0
+    # The open questions the model answered in its own words, as (question, answer).
+    written: tuple[tuple[str, str], ...] = ()
+
+
+def written_answers(arguments: dict[str, Any]) -> tuple[tuple[str, str], ...]:
+    """finish_form's written_answers as (question, answer) pairs; anything of another shape is left out."""
+    pairs = arguments.get("written_answers")
+    if not isinstance(pairs, list):
+        return ()
+    out = []
+    for pair in pairs:
+        if isinstance(pair, dict) and str(pair.get("question") or "").strip() and str(pair.get("answer") or "").strip():
+            out.append((str(pair["question"]).strip(), str(pair["answer"]).strip()))
+    return tuple(out)
 
 
 def instructions(guidance: str, page_rules: str = "") -> str:
@@ -446,7 +478,7 @@ async def fill_form(session: Browser, tools: list[dict[str, Any]], client: Async
                     continue
                 return Report(
                     str(arguments.get("status", "")), str(arguments.get("summary", "")), str(arguments.get("submit_selector", "")),
-                    str(arguments.get("blocked_by") or ""), bool(arguments.get("made_account")), watch.turns,
+                    str(arguments.get("blocked_by") or ""), bool(arguments.get("made_account")), watch.turns, written_answers(arguments),
                 )
             # The plugins say two visits to the mailbox; the code holds the model to it, whatever it reasons.
             if name == "browser_navigate" and watch.one_visit_too_many(str(arguments.get("url", ""))):
@@ -613,15 +645,15 @@ async def run_on_page(
         traced.note(f"== finish_form: {json.dumps(asdict(report), ensure_ascii=False)[:500]}")
     if report.status != "ready" or not report.submit_selector:
         reason = "other" if report.blocked_by in ("", "none") else report.blocked_by
-        return Outcome("blocked", report.summary, made_account=report.made_account, reason=reason, steps=report.steps)
+        return Outcome("blocked", report.summary, made_account=report.made_account, reason=reason, steps=report.steps, written=report.written)
     if trial:
         # A trial of the flow: the form is filled and the send control named, and nothing leaves for the employer.
         url, screenshot = await _where(session, shot)
         proof = Proof("", url, "", "", "", screenshot)
         summary = f"Dry run ({DRY_RUN_ENV} is set): filled, send control {report.submit_selector} found, nothing sent.\n{report.summary}"
-        return Outcome("blocked", summary, proof, made_account=report.made_account, reason=DRY_RUN, steps=report.steps)
+        return Outcome("blocked", summary, proof, made_account=report.made_account, reason=DRY_RUN, steps=report.steps, written=report.written)
     sent = await submit_and_verify(session, client, model, report.submit_selector, report.summary, guidance, shot)
-    return replace(sent, made_account=report.made_account, steps=report.steps)
+    return replace(sent, made_account=report.made_account, steps=report.steps, written=report.written)
 
 
 def getting_the_browser(answer: str) -> str:

@@ -141,3 +141,55 @@ async def prefill(client: AsyncOpenAI, model: str, cv: str) -> dict[str, Any]:
     data["experience"] = read.get("experience") or []
     data["skills"] = read.get("skills") or []
     return data
+
+
+LENGTHS = {"Short": "one or two sentences", "Medium": "three to five sentences", "Detailed": "up to 150 words"}
+# How many kept answers go into one application's brief, after one per question is kept.
+MEMORY_IN_BRIEF = 40
+
+
+def same_question(question: str) -> str:
+    """A question reduced to what makes it the same question: lower case, letters and digits, single spaces."""
+    return " ".join("".join(char if char.isalnum() else " " for char in question.lower()).split())
+
+
+def writing_text(preferences: dict[str, Any], memory: list[dict[str, Any]]) -> str:
+    """The writing preferences and the kept answers, as the form-filling model reads them after the answers."""
+    blocks = []
+    lines = []
+    if tone := _text(preferences.get("tone")):
+        lines.append(f"- tone: {tone}")
+    if length := _text(preferences.get("length")):
+        lines.append(f"- length: {LENGTHS.get(length, length)}")
+    for name, label in (("highlight", "emphasize"), ("avoid", "never say"), ("notes", "also")):
+        if value := _text(preferences.get(name)):
+            lines.append(f"- {label}: {value}")
+    if sample := _text(preferences.get("sample")):
+        lines.append(f"- match the candidate's own voice in this sample: {sample}")
+    if lines:
+        blocks.append("Writing preferences, for open questions answered in words:\n" + "\n".join(lines))
+
+    # One answer per question: a pinned one first, then the candidate's own, then the newest written on an application.
+    rank = {"user": 1, "learned": 2}
+    kept: dict[str, dict[str, Any]] = {}
+    ordered = sorted(
+        (entry for entry in memory if _text(entry.get("question")) and _text(entry.get("answer"))),
+        key=lambda entry: (not entry.get("pinned"), rank.get(str(entry.get("source")), 3), _negated(str(entry.get("updated_at") or ""))),
+    )
+    for entry in ordered:
+        kept.setdefault(same_question(_text(entry.get("question"))), entry)
+    if kept:
+        pairs = [
+            f"Q: {_text(entry.get('question'))}\nA{' (pinned)' if entry.get('pinned') else ''}: {_text(entry.get('answer'))}"
+            for entry in list(kept.values())[:MEMORY_IN_BRIEF]
+        ]
+        blocks.append(
+            "Answers the candidate keeps for questions forms asked before, their own or written on earlier applications. "
+            "Reuse one when a question asks the same thing, fitted to this company; a pinned one word for word:\n" + "\n\n".join(pairs)
+        )
+    return "\n\n".join(blocks)
+
+
+def _negated(stamp: str) -> tuple[int, ...]:
+    """A sort key that puts the newest ISO time first."""
+    return tuple(-ord(char) for char in stamp)

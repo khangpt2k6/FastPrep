@@ -38,3 +38,31 @@ def test_profile_answers_flattens_every_section():
 
 def test_profile_answers_survives_bad_shapes():
     assert profile_answers({"personal": "nope", "education": "nope", "experience": [1, None], "skills": None}) == {}
+
+
+def test_writing_text_says_the_preferences_and_one_answer_per_question():
+    from agent_automation.web_profile import writing_text
+
+    preferences = {"tone": "Warm", "length": "Short", "highlight": "AI agents", "avoid": "", "notes": "", "sample": "", "learn": True}
+    memory = [
+        {"question": "Why do you want to work here?", "answer": "Old learned", "source": "learned", "pinned": False, "updated_at": "2026-11-01T00:00:00Z"},
+        {"question": "Why do you want to work here?", "answer": "Newer learned", "source": "learned", "pinned": False, "updated_at": "2026-11-05T00:00:00Z"},
+        {"question": "why do you want to work HERE", "answer": "Mine", "source": "user", "pinned": False, "updated_at": "2026-10-01T00:00:00Z"},
+        {"question": "Tell us about a project", "answer": "Arena", "source": "learned", "pinned": True, "updated_at": "2026-09-01T00:00:00Z"},
+        {"question": "", "answer": "ignored", "source": "user", "pinned": False, "updated_at": ""},
+    ]
+    text = writing_text(preferences, memory)
+    assert "- tone: Warm" in text and "- length: one or two sentences" in text and "- emphasize: AI agents" in text
+    assert "never say" not in text
+    assert "A: Mine" in text and "Old learned" not in text and "Newer learned" not in text
+    assert "A (pinned): Arena" in text
+    assert text.index("Tell us about a project") < text.index("A: Mine")
+    assert writing_text({}, []) == ""
+
+
+def test_finish_form_written_answers_are_read_safely():
+    from agent_automation.apply import written_answers
+
+    assert written_answers({"written_answers": [{"question": " Why us? ", "answer": " Mission. "}, {"question": "", "answer": "x"}, "bad"]}) == (("Why us?", "Mission."),)
+    assert written_answers({}) == ()
+    assert written_answers({"written_answers": "nope"}) == ()

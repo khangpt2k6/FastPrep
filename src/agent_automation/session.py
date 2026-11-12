@@ -253,15 +253,17 @@ class Session:
                 break
         return results
 
-    async def apply(self, item: Stored, log: Log, note: Callable[[str], None] | None = None) -> Outcome:
-        """Fill and send one application, once. What the page said is kept with it, and applied.csv is written."""
+    async def apply(self, item: Stored, log: Log, note: Callable[[str], None] | None = None, extra_answers: str = "") -> Outcome:
+        """Fill and send one application, once. What the page said is kept with it, and applied.csv is written. `extra_answers`
+        is added after the answers: the writing preferences and the approved answers the web dashboard keeps."""
         if item.status in SUBMITTED:
             raise ConfigError(f"{item.job.company}: already sent, and not sent twice")
         # A plugin helps where there is one. Every posting is tried.
         plugin = plugin_for(item.job.url, self.plugins)
         cv = self.config.cv.read_text(encoding="utf-8-sig")
         job = replace(item.job, apply_url=plugin.form_url(item.job.url) if plugin else item.job.url)
-        answers = self.store.answers_text()
+        extra = extra_answers.strip()
+        answers = self.store.answers_text() + (f"\n\n{extra}" if extra else "")
         host = site_of(job.apply_url)
         account = self.store.account(host)
         guidance = _guidance(plugin, always_plugins(self.plugins))

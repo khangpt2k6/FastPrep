@@ -24,7 +24,7 @@ from agent_automation.profile import set_search_places
 from agent_automation.scoring import NotAnswering
 from agent_automation.session import Session
 from agent_automation.store import SENT_WORDS, SUBMITTED, Stored, safe_name
-from agent_automation.web_profile import prefill, profile_answers
+from agent_automation.web_profile import prefill, profile_answers, writing_text
 
 HEARTBEAT_SECONDS = 10
 POLL_SECONDS = 2
@@ -103,6 +103,12 @@ class Supabase:
         )
         reply.raise_for_status()
         return reply.json()
+
+    async def insert(self, table: str, rows: list[dict[str, Any]]) -> None:
+        if not rows:
+            return
+        reply = await self.http.post(f"{self.url}/rest/v1/{table}", headers=await self._headers({"Prefer": "return=minimal"}), json=rows)
+        reply.raise_for_status()
 
     async def delete(self, table: str, params: dict[str, str]) -> None:
         reply = await self.http.delete(f"{self.url}/rest/v1/{table}", params=params, headers=await self._headers({"Prefer": "return=minimal"}))
@@ -300,9 +306,40 @@ class Agent:
             self.say("error", str(error))
             await self.db.update("automation_commands", {"id": f"eq.{command['id']}"}, {"status": "failed", "error": str(error)[:500]})
 
+    async def writing(self) -> tuple[str, bool]:
+        """The writing preferences and the kept answers, as text for the forms, and whether to learn from what is written."""
+        where = {"user_id": f"eq.{self.db.user_id}"}
+        try:
+            rows = await self.db.select("automation_preferences", where)
+        except Exception as error:  # noqa: BLE001  Applications run without preferences rather than not at all.
+            click.echo(f"preferences: {error}")
+            rows = []
+        try:
+            memory = await self.db.select("automation_memory", {**where, "order": "pinned.desc,updated_at.desc", "limit": "200"})
+        except Exception as error:  # noqa: BLE001  Same.
+            click.echo(f"memory: {error}")
+            memory = []
+        preferences = rows[0] if rows else {}
+        return writing_text(preferences, memory), preferences.get("learn", True) is not False
+
+    async def learn(self, item: Stored, written: tuple[tuple[str, str], ...]) -> None:
+        """What the model wrote in its own words on this form, kept in Memory for the person to review and reuse."""
+        rows = [
+            {"user_id": self.db.user_id, "question": question[:1000], "answer": answer[:5000], "source": "learned",
+             "company": item.job.company, "job_title": item.job.title, "job_id": item.job.id}
+            for question, answer in written
+        ]
+        try:
+            await self.db.insert("automation_memory", rows)
+            if rows:
+                click.echo(f"Memory: {len(rows)} answer(s) learned at {item.job.company}")
+        except Exception as error:  # noqa: BLE001  The application itself is already recorded.
+            click.echo(f"memory: {error}")
+
     async def apply_all(self, job_ids: list[str], dry: bool) -> None:
         session = self.session
         os.environ[DRY_RUN_ENV] = "1" if dry else ""
+        writing, learning = await self.writing()
         mode = " (dry run, nothing is sent)" if dry else ""
         for number, job_id in enumerate(job_ids, 1):
             item = session.store.get(job_id)
@@ -317,7 +354,9 @@ class Agent:
                 if line:
                     self.say("applying", f"{label}: {line}")
 
-            outcome = await session.apply(item, click.echo, note)
+            outcome = await session.apply(item, click.echo, note, writing)
+            if learning and outcome.written:
+                await self.learn(item, outcome.written)
             shot = ""
             if outcome.proof.screenshot and Path(outcome.proof.screenshot).is_file():
                 shot = f"{self.db.user_id}/{safe_name(job_id)}.png"
