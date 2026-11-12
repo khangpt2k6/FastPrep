@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
-from agent_automation.agent.cover_letter import DEFAULT_TEMPLATE, Letter, Template, check_body, load_templates
-from agent_automation.memory.store import Stored, safe_name
+from agent_automation.agent.cover_letter import DEFAULT_TEMPLATE, Letter, Template, check_body, letter_key, load_templates
+from agent_automation.memory.store import Stored
 
 TEMPLATES = "automation_cover_templates"
 SETTINGS = "automation_cover_settings"
@@ -95,7 +95,7 @@ class CoverLetters:
             return None
         if reuse and kept:
             letter.template_id = str(kept.get("template_id") or letter.template_id)
-        remote = f"{self.db.user_id}/cover-letters/{safe_name(job.id)}.pdf"
+        remote = f"{self.db.user_id}/cover-letters/{letter_key(job.id)}.pdf"
         try:
             assert letter.pdf is not None
             await self.db.upload(remote, letter.pdf.read_bytes(), "application/pdf")

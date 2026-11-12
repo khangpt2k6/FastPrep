@@ -22,6 +22,7 @@ from agent_automation.agent.cover_letter import (
     candidate_voice,
     fields_for,
     file_name,
+    letter_key,
     load_templates,
     render_pdf,
     write_letter,
@@ -35,7 +36,7 @@ from agent_automation.hooks.runner import run_hooks
 from agent_automation.hooks.telemetry import Telemetry
 from agent_automation.memory.config import KEY_ENV, Config, ConfigError, base_url, dry_run, load_config
 from agent_automation.memory.profile import CV_NAME_FILE, ensure_account_password, import_answers_file, install_resume, save_setting
-from agent_automation.memory.store import SUBMITTED, Store, Stored, safe_name, write_applied
+from agent_automation.memory.store import SUBMITTED, Store, Stored, write_applied
 from agent_automation.memory.web_profile import home_writing
 from agent_automation.skills import Skill, always_skills, load_skills, skill_for
 from agent_automation.tools.database import load_manifest, search
@@ -299,7 +300,7 @@ class Session:
             if isinstance(changed := hooked.changes.get("letter"), str) and changed.strip():
                 letter.text = changed.strip() + "\n"
         name = fields_for(answers, job, cv)["full_name"]
-        folder = self.config.data_dir / "cvs" / "cover-letters" / safe_name(job.id)
+        folder = self.config.data_dir / "cvs" / "cover-letters" / letter_key(job.id)
         letter.pdf = render_pdf(letter.text, folder / file_name(name, job.company), f"Cover letter: {job.title} at {job.company}", name)
         return letter
 

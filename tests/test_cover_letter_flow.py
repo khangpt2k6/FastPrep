@@ -12,7 +12,7 @@ import pytest
 
 from agent_automation.agent import session as session_module
 from agent_automation.agent.apply import Outcome, run_on_page
-from agent_automation.agent.cover_letter import Letter
+from agent_automation.agent.cover_letter import Letter, letter_key
 from agent_automation.agent.cover_letter.sync import LETTERS, SETTINGS, TEMPLATES, CoverLetters
 from agent_automation.agent.session import Session
 from agent_automation.tools.database import Job
@@ -49,7 +49,7 @@ def test_the_letter_follows_the_template_preferences_md_picks_and_its_pdf_sits_u
     letter = asyncio.run(session.cover_letter(session.store.get(JOB.id)))
     assert letter is not None and letter.template_id == "concise"
     assert letter.text.startswith("Dear Hiring Team,\n\nI cut latency 40%.")
-    assert letter.pdf == tmp_path / "data" / "cvs" / "cover-letters" / "gh-9" / "Cover_Letter_Ada_Rossi_Acme_Robotics.pdf"
+    assert letter.pdf == tmp_path / "data" / "cvs" / "cover-letters" / letter_key(JOB.id) / "Cover_Letter_Ada_Rossi_Acme_Robotics.pdf"
     assert letter.pdf.read_bytes().startswith(b"%PDF")
 
 
@@ -178,8 +178,9 @@ def test_the_page_gets_the_templates_and_the_letter_written_with_the_one_it_pick
     assert letter is not None and letter.template_id == "concise"
     row = db.tables[LETTERS][0]
     assert row["job_id"] == JOB.id and row["template_id"] == "concise" and row["updated_by"] == "agent" and "I cut latency." in row["body"]
-    data, kind = db.files["u1/cover-letters/gh-9.pdf"]
-    assert data.startswith(b"%PDF") and kind == "application/pdf" and row["pdf_path"] == "u1/cover-letters/gh-9.pdf"
+    remote = f"u1/cover-letters/{letter_key(JOB.id)}.pdf"
+    data, kind = db.files[remote]
+    assert data.startswith(b"%PDF") and kind == "application/pdf" and row["pdf_path"] == remote
 
 
 @pytest.mark.letters
@@ -213,3 +214,16 @@ def test_a_given_letter_goes_to_the_form_as_it_is(tmp_path: Path, monkeypatch: p
     pdf.write_bytes(b"%PDF")
     asyncio.run(session.apply(session.store.get(JOB.id), lambda line: None, cover=Letter("classic", "Given.\n", {}, pdf=pdf)))
     assert seen["cover"] == ("Given.\n", pdf)
+
+
+@pytest.mark.letters
+def test_a_job_whose_id_is_a_whole_url_still_gets_its_letter_in_a_short_path(tmp_path: Path) -> None:
+    session = session_at(tmp_path)
+    long_id = "https://cisco.wd5.myworkdayjobs.com/Cisco_Careers/job/San-Jose-California-US/Software-Engineer-Full-Stack-Backend-I-Intern_2001234"
+    session.store.add(Job(long_id, "Cisco", "Software Engineer", "San Jose", long_id, long_id, "Python."))
+    session._client = letter_model()  # type: ignore[assignment]
+    letter = asyncio.run(session.cover_letter(session.store.get(long_id)))
+    assert letter is not None and letter.pdf is not None and letter.pdf.is_file()
+    folder = letter.pdf.parent.name
+    assert len(folder) <= 43 and folder.startswith("https-cisco-wd5-myworkdayjobs-co")
+    assert letter_key(long_id) != letter_key(long_id + "x")

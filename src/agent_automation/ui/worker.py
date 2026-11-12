@@ -373,7 +373,7 @@ class Agent:
         try:
             return await self.letters.for_job(item, always)
         except Exception as error:  # noqa: BLE001  Said on the page; the application goes on without a letter.
-            self.say("applying", f"No cover letter for {item.job.company}: {error}")
+            self.say(self.state, f"No cover letter for {item.job.company}: {error}")
             return None
 
     async def write_letters(self, job_ids: list[str]) -> None:

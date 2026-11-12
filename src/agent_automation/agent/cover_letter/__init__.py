@@ -12,6 +12,7 @@ AGENT.md, writing style and preferences go with every letter too.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -383,4 +384,11 @@ def file_name(full_name: str, company: str) -> str:
         return re.sub(r"[^A-Za-z0-9]+", "_", ascii_text(text)).strip("_")
 
     parts = [part for part in ("Cover_Letter", plain(full_name), plain(company)) if part]
-    return "_".join(parts)[:120] + ".pdf"
+    return "_".join(parts)[:80].rstrip("_") + ".pdf"
+
+
+def letter_key(job_id: str) -> str:
+    """A short name for one job's letter, for its folder and its stored PDF. A job's id can be a whole URL, and Windows refuses
+    a path over 260 characters: the start of the id keeps it readable, a hash of all of it keeps it one job's."""
+    readable = re.sub(r"[^A-Za-z0-9]+", "-", job_id).strip("-")[:32].rstrip("-")
+    return f"{readable}-{hashlib.sha1(job_id.encode()).hexdigest()[:10]}" if readable else hashlib.sha1(job_id.encode()).hexdigest()[:10]
