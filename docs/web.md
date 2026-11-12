@@ -30,6 +30,11 @@ The agent downloads the job database (about 250 MB the first time), scores about
 4. **Jobs**: tick jobs and press Apply. Dry run (the switch at the top, on by default) fills each form and stops before sending.
 5. **Applications** shows each form as it is worked on, with a screenshot and why it stopped. "Dry run again" retries one; with Dry run off the button reads "Apply for real" and asks before sending.
 6. **Memory** keeps every open answer the agent wrote. Edit one to make it yours, pin one to have it reused word for word, or teach a new one.
+7. **Cover letters**: pick a template, or duplicate one and edit it. Highlighted parts are written by the agent for each job; everything else is sent as you wrote it. With "Attach a cover letter to every application" on, each application gets its letter first, as a PDF uploaded to the form's cover letter field (or as text when the form only has a text box). To read letters before applying, tick jobs and press **Write letters**: they show up on this page, where you can edit one (the agent then sends your version), open its PDF, or have it written again.
+
+## How cover letters are written
+
+Only the parts of the template marked `{{part: note}}` are written by the model, following the rules in `.agent/skills/cover-letter/` (only true facts, match the posting with proof, why this company, plain human wording with no dashes or labels, the posting's own keywords, no apologies for gaps). Fields such as `{{full_name}}`, `{{company}}` or `{{today}}` come from your profile and the job. A part that breaks a rule is written once more; what still breaks one shows on the letter as "check wording". The PDF is Times New Roman, black on white. Templates live in `.agent/styles/cover-letters/` and in your own on this page; see [.agent/README.md](../.agent/README.md).
 
 ## How the agent answers questions
 
