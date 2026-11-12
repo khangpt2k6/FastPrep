@@ -43,6 +43,21 @@ create table if not exists public.aihawk_commands (
 );
 create index if not exists aihawk_commands_pending on public.aihawk_commands (user_id, created_at) where status = 'pending';
 
+-- What the forms are told about you, filled in the page's profile wizard. The agent turns it into answers.
+-- updated_by says who wrote last: 'agent' when it prefilled it from the resume, 'web' when you saved it.
+create table if not exists public.aihawk_profile (
+  user_id uuid primary key default auth.uid() references auth.users on delete cascade,
+  data jsonb not null default '{}'::jsonb,
+  completed boolean not null default false,
+  updated_by text not null default 'web' check (updated_by in ('web', 'agent')),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.aihawk_profile enable row level security;
+drop policy if exists "own profile" on public.aihawk_profile;
+create policy "own profile" on public.aihawk_profile for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
 alter table public.aihawk_agent enable row level security;
 alter table public.aihawk_jobs enable row level security;
 alter table public.aihawk_commands enable row level security;
@@ -65,6 +80,7 @@ begin
   begin alter publication supabase_realtime add table public.aihawk_agent; exception when duplicate_object then null; end;
   begin alter publication supabase_realtime add table public.aihawk_jobs; exception when duplicate_object then null; end;
   begin alter publication supabase_realtime add table public.aihawk_commands; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.aihawk_profile; exception when duplicate_object then null; end;
 end $$;
 
 -- Screenshots of each application, private, one folder per user.

@@ -23,9 +23,11 @@ from aihawk.config import DRY_RUN_ENV, ConfigError, default_home, load_dotenv
 from aihawk.scoring import NotAnswering
 from aihawk.session import Session
 from aihawk.store import SENT_WORDS, SUBMITTED, Stored, safe_name
+from aihawk.web_profile import prefill, profile_answers
 
 HEARTBEAT_SECONDS = 10
 POLL_SECONDS = 2
+PROFILE_SECONDS = 5
 # How many jobs get scored before the agent waits for the page to ask for more.
 SCORE_TARGET = 300
 SCORE_MORE = 200
@@ -121,6 +123,7 @@ class Agent:
         self.download = ""
         self.wake = asyncio.Event()
         self.target = SCORE_TARGET
+        self.profile_seen = ""
 
     # What the page shows about the agent.
 
@@ -209,6 +212,43 @@ class Agent:
                 continue
             await self.push_jobs()
 
+    # The profile from the page's wizard: the answers the forms are given.
+
+    async def sync_profile(self, first: bool = False) -> None:
+        rows = await self.db.select("aihawk_profile", {"user_id": f"eq.{self.db.user_id}", "select": "data,updated_by,updated_at"})
+        row = rows[0] if rows else None
+        if row is None or not row.get("data"):
+            if first:
+                self.say("reading", "Prefilling your profile from the resume")
+                cv = self.session.config.cv.read_text(encoding="utf-8-sig")
+                data = await prefill(self.session.client, self.session.config.quick_model, cv)
+                await self.db.upsert(
+                    "aihawk_profile", [{"user_id": self.db.user_id, "data": data, "completed": False, "updated_by": "agent", "updated_at": _now()}], "user_id",
+                )
+                click.echo("Profile prefilled from the resume: check it on the dashboard.")
+            return
+        if row["updated_at"] == self.profile_seen:
+            return
+        self.profile_seen = row["updated_at"]
+        if row.get("updated_by") != "web":
+            return
+        answers = profile_answers(row["data"])
+        for name, value in answers.items():
+            self.session.store.set_answer(name, value, source="web")
+        click.echo(f"Profile from the dashboard: {len(answers)} answers updated.")
+
+    async def profile_loop(self) -> None:
+        try:
+            await self.sync_profile(first=True)
+        except Exception as error:  # noqa: BLE001  The applications still run on the answers already here.
+            click.echo(f"profile: {error}")
+        while True:
+            await asyncio.sleep(PROFILE_SECONDS)
+            try:
+                await self.sync_profile()
+            except Exception as error:  # noqa: BLE001  Tried again on the next round.
+                click.echo(f"profile sync failed: {error}")
+
     # What the page asks for.
 
     async def commands(self) -> None:
@@ -283,7 +323,7 @@ class Agent:
             if self.session.needs_resume():
                 raise ConfigError("no resume yet: run  aihawk-agent path/to/resume.pdf")
             self.say("starting", "Agent online")
-            await asyncio.gather(self.heartbeat(), self.commands(), self.bring_jobs(), self.searching())
+            await asyncio.gather(self.heartbeat(), self.profile_loop(), self.commands(), self.bring_jobs(), self.searching())
         finally:
             self.state, self.message, self.download = "offline", "", ""
             await self._beat()
