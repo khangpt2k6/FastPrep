@@ -222,7 +222,7 @@ def test_a_candidate_who_will_relocate_is_asked_about_the_whole_country() -> Non
 def test_openai_verdicts_are_capped_by_their_yes_no_answers_and_dropped_when_the_title_is_another(monkeypatch: pytest.MonkeyPatch) -> None:
     import asyncio
 
-    from agent_automation import scoring
+    from agent_automation.agent import scoring
 
     jobs = [Job(f"j{n}", "Firm", f"Engineer {n}", "Rome", "u", "a", "Build things.") for n in range(4)]
     reply = {"answers": [

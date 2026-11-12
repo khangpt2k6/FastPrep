@@ -1,6 +1,6 @@
 ---
 name: pace
-description: The browser types at a person's pace: how to order the fields and wait out long answers.
+description: The browser types at a person's pace, so short fields go first and long answers are waited out.
 ---
 The browser types at a person's pace, a few characters a second, so a long answer of a few sentences takes one to three minutes. The answer to browser_type comes once the typing has finished, and says so. If an answer ever says the typing still goes on, nothing is wrong and nothing is stuck: never call finish_form for it, and never type the same text again; reads work meanwhile, and browser_status says when it has ended.
 

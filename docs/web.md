@@ -33,7 +33,7 @@ The agent downloads the job database (about 250 MB the first time), scores about
 
 ## How the agent answers questions
 
-The model reads the CV, the answers from your profile, your preferences, the kept answers in Memory, and the skill for the site (`src/agent_automation/plugins/*.md`). Facts (sponsorship, EEO, links) come only from the profile; it never invents one, and a required fact it does not have stops the form with "needs info from you". Open questions are written from the CV and the posting in your style and saved to Memory.
+The model reads the CV, the answers from your profile, your preferences, the kept answers in Memory, and the skill for the site (`.agent/skills/sites/<site>/SKILL.md`). Facts (sponsorship, EEO, links) come only from the profile; it never invents one, and a required fact it does not have stops the form with "needs info from you". Open questions are written from the CV and the posting in your style and saved to Memory.
 
 ## Local dev of the page
 

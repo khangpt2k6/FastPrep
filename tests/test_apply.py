@@ -846,7 +846,7 @@ def test_a_long_answer_still_typing_is_waited_for_before_the_model_goes_on(monke
     import asyncio
     from types import SimpleNamespace
 
-    from agent_automation import apply
+    from agent_automation.agent import apply
 
     calls: list[str] = []
     answers = iter([" typing: still going on in the background, into #why.", " typing: still going on in the background, into #why.", " page: form."])
