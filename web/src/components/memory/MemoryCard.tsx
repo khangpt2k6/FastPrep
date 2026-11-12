@@ -1,9 +1,10 @@
 import { forwardRef, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
+import { LAYOUT_CAP, SPRING, cardHover, riseItem } from '../../lib/motion';
 import type { MemoryRow } from '../../lib/types';
-import { timeAgo } from '../../lib/format';
+import { companyName, timeAgo } from '../../lib/format';
 import { useOverflow } from '../../hooks/useOverflow';
+import { CompanyLogo } from '../CompanyLogo';
 import { IconPencil, IconPin, IconSpark, IconTrash, IconUser } from '../Icons';
 
 interface MemoryCardProps {
@@ -28,7 +29,9 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
   }, [row.answer, editing]);
 
   const [answerRef, clamped] = useOverflow<HTMLParagraphElement>(row.answer, open, editing);
-  const where = [row.company, row.job_title].filter(Boolean).join(', ');
+  // The memory row has the raw company name and no domain, so the tile is a monogram.
+  const company = row.company ? companyName(row.company) : '';
+  const learned = row.source === 'learned';
 
   async function save() {
     if (!draft.trim()) return;
@@ -41,21 +44,21 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
   return (
     <motion.li
       ref={ref}
-      className={`card memcard ${row.pinned ? 'is-pinned' : ''}`}
+      className={`card spot memcard ${row.pinned ? 'is-pinned' : ''}`}
       layout={index < LAYOUT_CAP ? 'position' : false}
       variants={riseItem}
       custom={index}
       initial="hidden"
       animate="shown"
       exit="gone"
+      whileHover={editing ? undefined : cardHover}
       transition={{ layout: SPRING }}
     >
       <div className="memcard__head">
         <p className="memcard__q">{row.question}</p>
         {row.pinned ? (
-          <span className="pinmark" title="Pinned: used word for word">
+          <span className="pinmark" title="Pinned: used word for word" aria-label="Pinned">
             <IconPin size={14} />
-            Pinned
           </span>
         ) : null}
       </div>
@@ -74,7 +77,6 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
             autoFocus
           />
           <div className="memcard__editbar">
-            <span className="field__hint">Saving makes this answer yours.</span>
             <button
               type="button"
               className="btn btn--ghost btn--sm"
@@ -85,7 +87,7 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
             >
               Cancel
             </button>
-            <button type="button" className="btn btn--primary btn--sm" onClick={save} disabled={busy || !draft.trim()}>
+            <button type="button" className="btn btn--primary btn--sm" onClick={save} disabled={busy || !draft.trim()} title="Saving makes this answer yours">
               {busy ? <span className="spinner" aria-hidden="true" /> : null}
               Save
             </button>
@@ -98,7 +100,7 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
           </p>
           {open || clamped ? (
             <button type="button" className="link-btn link-btn--sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-              {open ? 'Show less' : 'Show more'}
+              {open ? 'Less' : 'More'}
             </button>
           ) : null}
         </>
@@ -106,32 +108,32 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
 
       <div className="memcard__foot">
         <p className="memcard__meta">
-          {row.source === 'learned' ? (
-            <>
-              <IconSpark size={14} />
-              {where ? `Learned at ${where}` : 'Learned while applying'}
-            </>
-          ) : (
-            <>
-              <IconUser size={14} />
-              {where ? `Yours, from ${where}` : 'Added by you'}
-            </>
-          )}
+          <span className="memcard__src" title={learned ? 'Learned while applying' : 'Added by you'}>
+            {learned ? <IconSpark size={13} /> : <IconUser size={13} />}
+            <span className="sr-only">{learned ? 'Learned' : 'Yours'}</span>
+          </span>
+          {company ? <CompanyLogo name={company} size={22} /> : null}
+          {company ? <span className="memcard__where">{company}</span> : <span className="memcard__where">{learned ? 'Learned' : 'Yours'}</span>}
+          {row.job_title ? <span className="memcard__job">{row.job_title}</span> : null}
           <span className="memcard__time mono">{timeAgo(row.updated_at, now)}</span>
         </p>
         {!editing ? (
           <div className="memcard__actions">
-            <button type="button" className="ghostbtn" onClick={() => setEditing(true)}>
+            <button type="button" className="icon-btn" onClick={() => setEditing(true)} aria-label="Edit answer" title="Edit">
               <IconPencil size={15} />
-              Edit
             </button>
-            <button type="button" className={`ghostbtn ${row.pinned ? 'is-on' : ''}`} onClick={onPin} aria-pressed={row.pinned}>
+            <button
+              type="button"
+              className={`icon-btn ${row.pinned ? 'is-on' : ''}`}
+              onClick={onPin}
+              aria-pressed={row.pinned}
+              aria-label={row.pinned ? 'Unpin' : 'Pin: use word for word'}
+              title={row.pinned ? 'Unpin' : 'Pin: use word for word'}
+            >
               <IconPin size={15} />
-              {row.pinned ? 'Unpin' : 'Pin'}
             </button>
-            <button type="button" className="ghostbtn ghostbtn--danger" onClick={onDelete}>
+            <button type="button" className="icon-btn icon-btn--danger" onClick={onDelete} aria-label="Delete answer" title="Delete">
               <IconTrash size={15} />
-              Delete
             </button>
           </div>
         ) : null}

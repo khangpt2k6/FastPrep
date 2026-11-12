@@ -12,13 +12,13 @@ import { AuthorizationStep, EducationStep, EeoStep, ExperienceStep, PersonalStep
 import { ReviewStep } from './ReviewStep';
 
 export const STEPS = [
-  { title: 'Personal', blurb: 'How employers reach you.' },
-  { title: 'Education', blurb: 'Schools, degrees and dates.' },
-  { title: 'Experience', blurb: 'Jobs, internships and projects.' },
-  { title: 'Skills & preferences', blurb: 'What you can do and what you want next.' },
-  { title: 'Work authorization', blurb: 'Where you can work, and whether you need sponsorship.' },
-  { title: 'Self-identification', blurb: 'Voluntary questions some forms ask.' },
-  { title: 'Review', blurb: 'Check everything, then save.' },
+  { title: 'Personal', short: 'Personal' },
+  { title: 'Education', short: 'Education' },
+  { title: 'Experience', short: 'Experience' },
+  { title: 'Skills and preferences', short: 'Skills' },
+  { title: 'Work authorization', short: 'Work auth' },
+  { title: 'Self-identification', short: 'Identity' },
+  { title: 'Review', short: 'Review' },
 ];
 export const REVIEW_STEP = STEPS.length - 1;
 
@@ -149,7 +149,7 @@ export function ProfileWizard(props: ProfileWizardProps) {
     if (touched.current && changed()) {
       void persist(false).then((ok) => {
         if (ok) touched.current = false;
-        else onDraftError('Your profile draft could not be saved. It is still here; open Profile to try again.');
+        else onDraftError('It is still here. Open Profile to try again.');
       });
     } else {
       touched.current = false;
@@ -173,13 +173,10 @@ export function ProfileWizard(props: ProfileWizardProps) {
     <Dialog open={open} onClose={close} labelledBy="wizard-title" className="wizard">
       <header className="wizard__head">
         <div className="wizard__top">
-          <div>
-            <p className="eyebrow">Your profile</p>
-            <h2 id="wizard-title" className="wizard__title">
-              Everything the agent needs to apply for you
-            </h2>
-          </div>
-          <button type="button" className="icon-btn" onClick={close} aria-label="Close profile (your draft is kept)">
+          <h2 id="wizard-title" className="wizard__title">
+            Profile
+          </h2>
+          <button type="button" className="icon-btn" onClick={close} aria-label="Close profile (your draft is kept)" title="Close (draft is kept)">
             <IconX size={18} />
           </button>
         </div>
@@ -189,7 +186,7 @@ export function ProfileWizard(props: ProfileWizardProps) {
             <li key={s.title} className={`wsteps__item ${i === step ? 'is-current' : i < step ? 'is-done' : ''}`}>
               <button type="button" onClick={() => goTo(i)} aria-current={i === step ? 'step' : undefined}>
                 <span className="wsteps__num mono">{i < step ? <IconCheck size={12} /> : i + 1}</span>
-                <span className="wsteps__name">{s.title}</span>
+                <span className="wsteps__name">{s.short}</span>
               </button>
             </li>
           ))}
@@ -201,7 +198,7 @@ export function ProfileWizard(props: ProfileWizardProps) {
 
       <div className="wizard__body" ref={bodyRef}>
         {reason === 'apply' ? (
-          <p className="wbanner wbanner--warn">Finish your profile before applying. The agent uses it to answer the application forms.</p>
+          <p className="wbanner wbanner--warn">Finish your profile to apply.</p>
         ) : null}
         {prefilled ? <p className="wbanner">Prefilled from your resume. Check each step.</p> : null}
 
@@ -219,7 +216,6 @@ export function ProfileWizard(props: ProfileWizardProps) {
               <h3 className="wizard__step-title" ref={headingRef} tabIndex={-1} data-autofocus>
                 {current.title}
               </h3>
-              <p className="wizard__step-blurb">{current.blurb}</p>
             </div>
 
             {step === 0 ? <PersonalStep profile={form} update={update} errors={errors} /> : null}

@@ -1,11 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { MemoryRow } from '../../lib/types';
 import { errorText } from '../../lib/errors';
-import { plural } from '../../lib/format';
 import { deleteAnswer, editAnswer, setPinned, teachAnswer } from '../../hooks/useAutomationData';
 import type { LiveTable } from '../../hooks/useLiveTable';
 import { Dialog } from '../Dialog';
 import { AnimatePresence } from 'motion/react';
+import { CompanyLogo } from '../CompanyLogo';
 import { EmptyState, PillGroup, SkeletonCards } from '../common';
 import { IconAlert, IconMemory, IconPlus, IconSearch, IconX } from '../Icons';
 import { SetupCard } from '../SetupCard';
@@ -17,8 +17,8 @@ type Filter = 'all' | 'learned' | 'user' | 'pinned';
 interface MemoryPageProps {
   memory: LiveTable<MemoryRow>;
   now: number;
-  /** From "View answers it wrote" on an application: only that job's answers. */
-  job: { id: string; company: string } | null;
+  /** From the answers button on an application: only that job's answers. */
+  job: { id: string; company: string; domain?: string } | null;
   onClearJob: () => void;
   toast: (toast: ToastInput) => void;
 }
@@ -56,7 +56,6 @@ function TeachDialog({ open, onClose, onSaved }: { open: boolean; onClose: () =>
           <IconX size={18} />
         </button>
       </header>
-      <p className="smalldialog__text">When a form asks this question, the agent uses your answer.</p>
       <div className="field">
         <label className="field__label" htmlFor="teach-q">
           Question
@@ -80,7 +79,7 @@ function TeachDialog({ open, onClose, onSaved }: { open: boolean; onClose: () =>
           rows={5}
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
-          placeholder="Write it the way you would say it."
+          placeholder="In your own words"
         />
       </div>
       {error ? (
@@ -173,19 +172,17 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
     body = (
       <EmptyState
         icon={<IconMemory size={22} />}
-        title={job ? `No saved answers for ${job.company} yet` : 'Nothing yet'}
+        title={job ? `No answers for ${job.company} yet` : 'No answers yet'}
         action={
           <button type="button" className="btn btn--primary btn--sm" onClick={() => setTeaching(true)}>
             <IconPlus size={15} />
             Teach an answer
           </button>
         }
-      >
-        Answers appear here after the agent fills applications, or teach one yourself.
-      </EmptyState>
+      />
     );
   } else if (shown.length === 0) {
-    body = <p className="empty-line">No answers match. Try another filter or search.</p>;
+    body = <p className="empty-line">No matches.</p>;
   } else {
     body = (
       <ul className="cardlist">
@@ -217,7 +214,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
             { value: 'all', label: 'All', count: counts.all },
             { value: 'learned', label: 'Learned', count: counts.learned },
             { value: 'user', label: 'Yours', count: counts.user },
-            { value: 'pinned', label: 'Pinned', count: counts.pinned },
+            { value: 'pinned', label: 'Pinned', count: counts.pinned, title: 'Pinned answers are used word for word' },
           ]}
         />
         <label className="searchbox">
@@ -226,32 +223,26 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search questions and answers"
+            placeholder="Search"
             aria-label="Search questions and answers"
           />
         </label>
-        <button type="button" className="btn btn--dark toolbar__more" onClick={() => setTeaching(true)}>
+        <button type="button" className="btn btn--primary toolbar__more" onClick={() => setTeaching(true)} title="Teach the agent an answer">
           <IconPlus size={16} />
-          Teach an answer
+          Teach
         </button>
       </div>
 
       {job ? (
         <div className="scopechip">
+          <CompanyLogo name={job.company} domain={job.domain} size={22} />
           <span>
-            Showing answers for <strong>{job.company}</strong>
+            Answers for <strong>{job.company}</strong>
           </span>
-          <button type="button" className="icon-btn icon-btn--sm" onClick={onClearJob} aria-label="Show all answers">
+          <button type="button" className="icon-btn icon-btn--sm" onClick={onClearJob} aria-label="Show all answers" title="Show all">
             <IconX size={14} />
           </button>
         </div>
-      ) : null}
-
-      {!memory.loading && !memory.error && scoped.length > 0 ? (
-        <p className="listmeta">
-          {plural(shown.length, 'answer')}
-          {counts.pinned > 0 ? `, ${counts.pinned} pinned and used word for word` : ''}
-        </p>
       ) : null}
 
       {body}
@@ -262,7 +253,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
         onSaved={() => {
           setTeaching(false);
           memory.reload();
-          toast({ tone: 'ok', title: 'Answer saved', detail: 'The agent will use it when a form asks that question.' });
+          toast({ tone: 'ok', title: 'Answer saved' });
         }}
       />
 
@@ -273,7 +264,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
         <p className="smalldialog__text">
           {doomed ? <strong>{doomed.question}</strong> : null}
           <br />
-          The agent will stop reusing it. This cannot be undone.
+          This cannot be undone.
         </p>
         <div className="smalldialog__actions">
           <button type="button" className="btn btn--ghost" onClick={() => setDoomed(null)} data-autofocus>

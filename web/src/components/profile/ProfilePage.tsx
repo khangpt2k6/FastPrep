@@ -33,7 +33,6 @@ type TabKey = (typeof TABS)[number]['key'];
 interface ProfilePageProps {
   profile: Profile;
   row: ProfileRow | null;
-  email: string;
   onEdit: (step: number) => void;
 }
 
@@ -152,7 +151,7 @@ function TabBody({ tab, profile, onEdit }: { tab: TabKey; profile: Profile; onEd
       );
     case 'experience':
       return profile.experience.length === 0 ? (
-        <Nothing text="No work experience yet. Internships and projects count." label="Add experience" onAdd={() => onEdit(2)} />
+        <Nothing text="No experience yet." label="Add experience" onAdd={() => onEdit(2)} />
       ) : (
         <Timeline>
           {profile.experience.map((ex, i) => {
@@ -231,7 +230,7 @@ function TabBody({ tab, profile, onEdit }: { tab: TabKey; profile: Profile; onEd
     case 'eeo':
       return (
         <>
-          <p className="tabnote">Voluntary. Used only for the optional self-identification questions on forms.</p>
+          <p className="tabnote">Voluntary. Only for optional questions on forms.</p>
           <Rows
             items={[
               ['Gender', e.gender],
@@ -249,7 +248,7 @@ function TabBody({ tab, profile, onEdit }: { tab: TabKey; profile: Profile; onEd
   }
 }
 
-export function ProfilePage({ profile, row, email, onEdit }: ProfilePageProps) {
+export function ProfilePage({ profile, row, onEdit }: ProfilePageProps) {
   const [tab, setTab] = useState<TabKey>('personal');
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const sections = profileProgress(profile);
@@ -272,17 +271,17 @@ export function ProfilePage({ profile, row, email, onEdit }: ProfilePageProps) {
         {prefilled ? (
           <div className="notebar">
             <IconSpark size={18} />
-            <p>Prefilled from your resume. Check each step, then save.</p>
-            <button type="button" className="btn btn--dark btn--sm" onClick={() => onEdit(0)}>
-              Review it
+            <p>Prefilled from your resume</p>
+            <button type="button" className="btn btn--primary btn--sm" onClick={() => onEdit(0)}>
+              Review
             </button>
           </div>
         ) : !complete ? (
           <div className="notebar notebar--todo">
             <IconSpark size={18} />
-            <p>Not finished yet. The agent needs your profile before it can apply.</p>
-            <button type="button" className="btn btn--dark btn--sm" onClick={() => onEdit(0)}>
-              Continue setup
+            <p>Needed before the agent can apply</p>
+            <button type="button" className="btn btn--primary btn--sm" onClick={() => onEdit(0)}>
+              Finish
             </button>
           </div>
         ) : null}
@@ -313,7 +312,7 @@ export function ProfilePage({ profile, row, email, onEdit }: ProfilePageProps) {
         <section className="card tabpanel" role="tabpanel" id="profile-panel" aria-labelledby={`tab-${current.key}`}>
           <header className="tabpanel__head">
             <h2 className="tabpanel__title">{current.title}</h2>
-            <button type="button" className="icon-btn icon-btn--soft" onClick={() => onEdit(current.step)} aria-label={`Edit ${current.title}`}>
+            <button type="button" className="icon-btn icon-btn--soft" onClick={() => onEdit(current.step)} aria-label={`Edit ${current.title}`} title="Edit">
               <IconPencil size={17} />
             </button>
           </header>
@@ -355,9 +354,8 @@ export function ProfilePage({ profile, row, email, onEdit }: ProfilePageProps) {
             ))}
           </ul>
           <button type="button" className={`btn btn--block ${complete ? 'btn--secondary' : 'btn--primary'}`} onClick={() => onEdit(complete ? REVIEW_STEP : 0)}>
-            {complete ? 'Review and edit' : 'Continue setup'}
+            {complete ? 'Review and edit' : 'Finish setup'}
           </button>
-          <p className="progresscard__email">Signed in as {email}</p>
         </section>
       </aside>
     </div>

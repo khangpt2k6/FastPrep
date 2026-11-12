@@ -1,14 +1,24 @@
 import { lazy, Suspense } from 'react';
 import { configError } from './lib/supabase';
 import { useSession } from './hooks/useSession';
-import { AuthScreen } from './components/AuthScreen';
+import { Aurora } from './components/Aurora';
 import { Dashboard } from './components/Dashboard';
 import { Notice } from './components/Notice';
+import { BootError, BootSplash } from './components/Splash';
 
 // Dev-only motion preview with mock data at #/__preview. Dropped from production builds.
 const Preview = import.meta.env.DEV ? lazy(() => import('./components/motion/Preview')) : null;
 
 export default function App() {
+  return (
+    <>
+      <Aurora />
+      <Screen />
+    </>
+  );
+}
+
+function Screen() {
   if (Preview && window.location.hash.startsWith('#/__preview')) {
     return (
       <Suspense fallback={null}>
@@ -19,27 +29,19 @@ export default function App() {
   if (configError) {
     return (
       <Notice title="Supabase is not configured">
-        <p>{configError}</p>
+        <p className="mono">{configError}</p>
         <p>
-          Put both values in the repo root <code>.env</code> (or in the hosting project's environment variables) and
-          restart the dev server. <code>web/.env.example</code> lists the names.
+          Add them to the repo root <code>.env</code>, then restart the dev server.
         </p>
       </Notice>
     );
   }
-  return <SignedInGate />;
+  return <OwnerGate />;
 }
 
-function SignedInGate() {
-  const { session, ready } = useSession();
-  if (!ready) {
-    return (
-      <div className="boot" role="status" aria-live="polite">
-        <span className="boot__dot" />
-        Connecting
-      </div>
-    );
-  }
-  if (!session) return <AuthScreen />;
+function OwnerGate() {
+  const { session, ready, error, retry } = useSession();
+  if (error) return <BootError message={error} onRetry={retry} />;
+  if (!ready || !session) return <BootSplash />;
   return <Dashboard key={session.user.id} userId={session.user.id} email={session.user.email ?? ''} />;
 }

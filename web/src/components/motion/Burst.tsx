@@ -21,13 +21,19 @@ export function useJustSettled(status: string, fromStatus: string, into: string[
   return on;
 }
 
-/** A mint ring and eight sparks that fly out once. Pure CSS, decorative. */
+const SPARKS = 12;
+
+/** A ring and twelve bits of mint and aqua confetti that fly out once. Pure CSS, decorative. */
 export function Burst({ tone = 'mint' }: { tone?: 'mint' | 'amber' }) {
   return (
     <span className={`burst burst--${tone}`} aria-hidden="true">
       <span className="burst__ring" />
-      {Array.from({ length: 8 }, (_, i) => (
-        <span className="burst__spark" key={i} style={{ ['--a' as string]: `${i * 45}deg` }} />
+      {Array.from({ length: SPARKS }, (_, i) => (
+        <span
+          className="burst__spark"
+          key={i}
+          style={{ ['--a' as string]: `${i * (360 / SPARKS) + (i % 2 ? 9 : -6)}deg`, ['--d' as string]: `${22 + (i % 3) * 7}px` }}
+        />
       ))}
     </span>
   );

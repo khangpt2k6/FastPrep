@@ -1,112 +1,58 @@
-import { AnimatePresence, motion } from 'motion/react';
-import type { AgentRow } from '../../lib/types';
+import type { AgentRow, JobRow } from '../../lib/types';
 import { AnimatedNumber, Swap } from '../motion';
-import { clock, stateLabel, timeAgo } from '../../lib/format';
+import { stateLabel, timeAgo } from '../../lib/format';
 import { IconArrowRight } from '../Icons';
-import { Beacon, LogLine, StartHint, agentTone, logItem, type LogEntry } from './live';
+import { CurrentJob, StartHint, agentTone } from './live';
+import { Orb } from './Orb';
 
 interface AgentCardProps {
   agent: AgentRow | null;
   online: boolean;
   loading: boolean;
   now: number;
-  /** Log lines seen this session, oldest first (kept by the dashboard so they survive page switches). */
-  tail: LogEntry[];
+  /** The job being filled right now, if any. */
+  current: JobRow | null;
   onOpen: () => void;
 }
 
-/** The right-rail card: who is working, what it is doing right now. */
-export function AgentCard({ agent, online, loading, now, tail, onOpen }: AgentCardProps) {
+/** The right-rail card: the orb, one state word and the two big numbers. */
+export function AgentCard({ agent, online, loading, now, current, onOpen }: AgentCardProps) {
   const state = online ? agent?.state ?? 'idle' : 'offline';
   const tone = agentTone(online, state);
-  const earlier = tail.slice(0, -1).reverse().slice(0, 2);
+  const word = loading ? 'Connecting' : stateLabel(state);
+  const seen = !online && agent?.last_seen ? timeAgo(agent.last_seen, now) : '';
 
   return (
-    <section className={`card agentcard agentcard--${tone}`} aria-label="Agent status">
-      <header className="agentcard__head">
-        <Beacon tone={tone} />
-        <div className="agentcard__who">
-          <p className="agentcard__status">
-            <Swap id={loading ? 'checking' : online ? 'on' : 'off'}>{loading ? 'Checking' : online ? 'Agent online' : 'Agent offline'}</Swap>
-          </p>
-          <p className="agentcard__seen">
-            <Swap id={online ? `s-${state}` : 'seen'}>
-              {online ? stateLabel(state) : agent?.last_seen ? `Last seen ${timeAgo(agent.last_seen, now)}` : 'Never connected'}
-            </Swap>
-          </p>
-        </div>
-      </header>
+    <section className={`card railcard agentcard agentcard--${tone}`} aria-label="Agent">
+      <button type="button" className="agentcard__head" onClick={onOpen} title="Open the agent page">
+        <Orb tone={loading ? 'loading' : tone} size="md" />
+        <span className="agentcard__who">
+          <span className="agentcard__state">
+            <Swap id={word}>{word}</Swap>
+          </span>
+          {seen ? <span className="agentcard__seen mono">seen {seen}</span> : null}
+        </span>
+        <IconArrowRight size={16} className="agentcard__go" />
+      </button>
 
-      {online ? (
-        <div className="agentcard__log">
-          <LogLine agent={agent} online={online} tone={tone} />
-          {earlier.length > 0 ? (
-            <ol className="logtail" aria-label="Earlier log lines">
-              <AnimatePresence initial={false}>
-                {earlier.map((e) => (
-                  <motion.li key={`${e.at}-${e.message}`} layout="position" {...logItem}>
-                    <time className="mono">{clock(e.at)}</time>
-                    <span className="logtail__msg">{e.message}</span>
-                  </motion.li>
-                ))}
-              </AnimatePresence>
-            </ol>
-          ) : null}
-        </div>
-      ) : (
-        <StartHint />
-      )}
+      {online && current ? <CurrentJob job={current} /> : null}
 
-      <dl className="minis">
+      <dl className="bignums">
         <div>
           <dt>Found</dt>
-          <dd className="mono">
+          <dd>
             <AnimatedNumber id="agent-found" value={agent?.jobs_found ?? 0} />
           </dd>
         </div>
         <div>
           <dt>Scored</dt>
-          <dd className="mono">
+          <dd>
             <AnimatedNumber id="agent-scored" value={agent?.jobs_scored ?? 0} />
           </dd>
         </div>
       </dl>
-      <p className="agentcard__meta">
-        <span title={agent?.resume_name || undefined}>{agent?.resume_name || 'No resume yet'}</span>
-        {agent?.model ? <span className="mono">{agent.model}</span> : null}
-      </p>
-      <button type="button" className="link-btn agentcard__open" onClick={onOpen}>
-        Open agent page
-        <IconArrowRight size={14} />
-      </button>
-    </section>
-  );
-}
 
-/** Under 1280px the rail folds away; this one-line strip keeps the live log in view. */
-export function LiveStrip({ agent, online, onOpen }: { agent: AgentRow | null; online: boolean; onOpen: () => void }) {
-  const state = online ? agent?.state ?? 'idle' : 'offline';
-  const tone = agentTone(online, state);
-  return (
-    <section className={`card livestrip livestrip--${tone}`} aria-label="Agent status">
-      <Beacon tone={tone} size="sm" />
-      {online ? (
-        <>
-          <span className="livestrip__state">
-            <Swap id={state}>{stateLabel(state)}</Swap>
-          </span>
-          <div className="livestrip__line">
-            <LogLine agent={agent} online={online} tone={tone} />
-          </div>
-        </>
-      ) : (
-        <div className="livestrip__line">
-          <StartHint />
-        </div>
-      )}
-      <button type="button" className="icon-btn" onClick={onOpen} aria-label="Open the agent page">
-        <IconArrowRight size={16} />
-      </button>
+      {!online && !loading ? <StartHint /> : null}
     </section>
   );
 }

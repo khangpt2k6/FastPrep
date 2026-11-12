@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; resetKey: st
         </span>
         <h2>This page hit an error</h2>
         <p>{this.state.error.message}</p>
-        <button type="button" className="btn btn--dark btn--sm" onClick={() => this.setState({ error: null })}>
+        <button type="button" className="btn btn--secondary btn--sm" onClick={() => this.setState({ error: null })}>
           Try again
         </button>
       </section>

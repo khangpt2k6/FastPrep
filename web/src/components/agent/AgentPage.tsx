@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
-import type { AgentRow, CommandRow, LiveStatus, LoadError } from '../../lib/types';
+import type { AgentRow, CommandRow, JobRow, LiveStatus, LoadError } from '../../lib/types';
 import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
 import { AnimatedNumber, Swap } from '../motion';
 import { clock, plural, stateLabel, timeAgo } from '../../lib/format';
-import { Beacon, LogLine, StartHint, agentTone, logItem, type LogEntry } from './live';
+import { CurrentJob, LogLine, StartHint, agentTone, logItem, type LogEntry } from './live';
+import { Orb } from './Orb';
 
 const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters' };
 
@@ -18,6 +19,8 @@ interface AgentPageProps {
   commands: CommandRow[];
   live: LiveStatus;
   sent: number;
+  /** The job being filled right now, if any. */
+  current: JobRow | null;
 }
 
 const COMMAND_STATUS: Record<CommandRow['status'], string> = {
@@ -27,9 +30,12 @@ const COMMAND_STATUS: Record<CommandRow['status'], string> = {
   failed: 'Failed',
 };
 
-export function AgentPage({ agent, online, loading, error, onRetry, now, tail, commands, live, sent }: AgentPageProps) {
+const LIVE_WORD: Record<LiveStatus, string> = { live: 'Connected', down: 'Reconnecting', connecting: 'Connecting' };
+
+export function AgentPage({ agent, online, loading, error, onRetry, now, tail, commands, live, sent, current }: AgentPageProps) {
   const state = online ? agent?.state ?? 'idle' : 'offline';
   const tone = agentTone(online, state);
+  const word = loading ? 'Connecting' : stateLabel(state);
   const earlier = tail.slice(0, -1).reverse().slice(0, 5);
   const recent = [...commands].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).slice(0, 10);
 
@@ -37,26 +43,24 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
     <div className="page page--agent">
       <section className={`card hero hero--${tone}`} aria-label="Agent status">
         <div className="hero__status">
-          <Beacon tone={tone} size="lg" />
-          <div>
-            <p className="hero__online">
-              <Swap id={loading ? 'checking' : online ? 'on' : 'off'}>{loading ? 'Checking' : online ? 'Online' : 'Offline'}</Swap>
+          <Orb tone={loading ? 'loading' : tone} size="lg" label={`Agent: ${word}`} />
+          <div className="hero__who">
+            <p className="hero__state">
+              <Swap id={word}>{word}</Swap>
             </p>
-            <p className="hero__meta">
-              <span className={`statepill statepill--${tone}`}>
-                <Swap id={state}>{stateLabel(state)}</Swap>
-              </span>
-              {agent?.last_seen ? <span className="mono">seen {timeAgo(agent.last_seen, now)}</span> : null}
+            <p className="hero__meta mono">
+              {agent?.last_seen ? <span>seen {timeAgo(agent.last_seen, now)}</span> : <span>never connected</span>}
+              {agent?.model ? <span>{agent.model}</span> : null}
             </p>
+            {online && current ? <CurrentJob job={current} /> : null}
           </div>
         </div>
 
         <div className="hero__log">
-          <p className="eyebrow">Live log</p>
           {error ? (
             <div className="inline-error">
               <p>{error.message}</p>
-              <button type="button" className="btn btn--ghost btn--sm" onClick={onRetry}>
+              <button type="button" className="btn btn--secondary btn--sm" onClick={onRetry}>
                 Try again
               </button>
             </div>
@@ -77,34 +81,28 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
                 </ol>
               ) : null}
             </>
-          ) : (
-            <>
-              <p className="hero__off">
-                {agent ? 'The agent is not running.' : 'No agent has checked in yet.'} It runs on your computer, reads your
-                resume, scores jobs and fills the forms in a real browser window. This page shows what it is doing.
-              </p>
-              <StartHint />
-            </>
+          ) : loading ? null : (
+            <StartHint />
           )}
         </div>
       </section>
 
       <dl className="stats">
         <div className="card stat">
-          <dt>Jobs found</dt>
-          <dd className="stat__num mono">
+          <dt>Found</dt>
+          <dd className="stat__num">
             <AnimatedNumber id="agent-found" value={agent?.jobs_found ?? 0} />
           </dd>
         </div>
         <div className="card stat">
-          <dt>Jobs scored</dt>
-          <dd className="stat__num mono">
+          <dt>Scored</dt>
+          <dd className="stat__num">
             <AnimatedNumber id="agent-scored" value={agent?.jobs_scored ?? 0} />
           </dd>
         </div>
         <div className="card stat">
-          <dt>Applications sent</dt>
-          <dd className="stat__num mono">
+          <dt>Sent</dt>
+          <dd className="stat__num">
             <AnimatedNumber id="apps-sent" value={sent} />
           </dd>
         </div>
@@ -119,9 +117,9 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
           <dd className="stat__text mono">{agent?.model || <span className="muted">Unknown</span>}</dd>
         </div>
         <div className="card stat">
-          <dt>Live updates</dt>
+          <dt>Realtime</dt>
           <dd className={`stat__text live-${live}`}>
-            <Swap id={live}>{live === 'live' ? 'Connected' : live === 'down' ? 'Reconnecting' : 'Connecting'}</Swap>
+            <Swap id={live}>{LIVE_WORD[live]}</Swap>
           </dd>
         </div>
       </dl>
@@ -129,39 +127,40 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
       <section className="card cmds" aria-labelledby="cmds-title">
         <header className="card__head">
           <h2 id="cmds-title" className="card__title">
-            Recent commands
+            Commands
           </h2>
-          <span className="card__hint">What this page asked the agent to do</span>
         </header>
         {recent.length === 0 ? (
-          <p className="empty-line">Nothing yet. Commands appear here when you apply or ask for more jobs.</p>
+          <p className="empty-line">None yet.</p>
         ) : (
           <ul className="cmdlist">
             <AnimatePresence initial={false}>
-            {recent.map((c, i) => (
-              <motion.li
-                className="cmd"
-                key={c.id}
-                layout={i < LAYOUT_CAP ? 'position' : false}
-                variants={riseItem}
-                custom={0}
-                initial="hidden"
-                animate="shown"
-                exit="gone"
-                transition={{ layout: SPRING }}
-              >
-                <span className={`cmd__kind cmd__kind--${c.kind}`}>{COMMAND_KIND[c.kind] ?? c.kind}</span>
-                <span className="cmd__what">
-                  {c.kind === 'apply' ? plural(c.job_ids.length, 'job') : c.kind === 'cover_letter' ? plural(c.job_ids.length, 'letter') : 'Find more jobs'}
-                  {c.kind === 'apply' && c.dry_run ? <span className="tag tag--dry">Dry run</span> : null}
-                </span>
-                <span className={`pill pill--cmd-${c.status}`}>
-                  <Swap id={`${c.status}-${online}`}>{c.status === 'pending' && !online ? 'Waiting for agent' : COMMAND_STATUS[c.status]}</Swap>
-                </span>
-                <time className="cmd__time mono">{timeAgo(c.created_at, now)}</time>
-                {c.status === 'failed' && c.error ? <p className="cmd__error">{c.error}</p> : null}
-              </motion.li>
-            ))}
+              {recent.map((c, i) => (
+                <motion.li
+                  className="cmd"
+                  key={c.id}
+                  layout={i < LAYOUT_CAP ? 'position' : false}
+                  variants={riseItem}
+                  custom={0}
+                  initial="hidden"
+                  animate="shown"
+                  exit="gone"
+                  transition={{ layout: SPRING }}
+                >
+                  <span className={`cmd__kind cmd__kind--${c.kind}`}>{COMMAND_KIND[c.kind] ?? c.kind}</span>
+                  <span className="cmd__what">
+                    {c.kind === 'apply' ? plural(c.job_ids.length, 'job') : c.kind === 'cover_letter' ? plural(c.job_ids.length, 'letter') : 'More jobs'}
+                    {c.kind === 'apply' ? (
+                      c.dry_run ? <span className="tag tag--dry">Dry run</span> : <span className="tag tag--live">Live</span>
+                    ) : null}
+                  </span>
+                  <span className={`pill pill--cmd-${c.status}`}>
+                    <Swap id={`${c.status}-${online}`}>{c.status === 'pending' && !online ? 'Waiting for agent' : COMMAND_STATUS[c.status]}</Swap>
+                  </span>
+                  <time className="cmd__time mono">{timeAgo(c.created_at, now)}</time>
+                  {c.status === 'failed' && c.error ? <p className="cmd__error">{c.error}</p> : null}
+                </motion.li>
+              ))}
             </AnimatePresence>
           </ul>
         )}

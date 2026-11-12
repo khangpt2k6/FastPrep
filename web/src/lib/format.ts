@@ -48,17 +48,43 @@ export function stateLabel(state: string): string {
 
 export const APPLICATION_STATUSES = ['applying', 'submitted', 'unconfirmed', 'refused', 'blocked', 'failed'];
 
-export type StatusTone = 'applying' | 'sent' | 'unconfirmed' | 'bad' | 'stopped';
+/** filled is a dry run that reached the send button and stopped there on purpose; stopped is any other stop. */
+export type StatusTone = 'applying' | 'sent' | 'unconfirmed' | 'filled' | 'bad' | 'stopped';
 
 /** A company as people say it. Some sources give a Workday tenant path ("cisco/wd5/cisco_careers") or a careers host
  * ("careers.cisco.com"): the company's own name is taken from it. */
 export function companyName(raw: string): string {
-  const name = raw.trim();
+  const name = (raw ?? '').trim();
   const tenant = /^([a-z0-9][a-z0-9_-]*)\/wd\d+\//i.exec(name);
   const host = /^(?:careers?|jobs|apply)\.([a-z0-9-]+)\.[a-z.]+$/i.exec(name);
   const word = tenant?.[1] ?? host?.[1];
   if (!word) return name;
   return word.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** The name shown for a job's company everywhere: the agent's clean name, else one taken from the raw source name. */
+export function displayName(job: Pick<JobRow, 'company'> & Partial<Pick<JobRow, 'company_name'>>): string {
+  return job.company_name || companyName(job.company);
+}
+
+/** The company's domain, or '' when the agent has not filled one in or it does not look like a domain. */
+export function logoDomain(domain: string | undefined): string {
+  const host = (domain ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z]+:\/\//, '')
+    .replace(/[/?#].*$/, '')
+    .replace(/^www\./, '');
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(host) ? host : '';
+}
+
+/** The first place a posting names and how many more it lists: postings join places with ";". */
+export function firstLocation(location: string): { first: string; more: number } {
+  const places = (location ?? '')
+    .split(/\s*[;|\n]\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return { first: places[0] ?? '', more: Math.max(0, places.length - 1) };
 }
 
 /** The agent's one-word reason, in words for a card's meta line; empty when the status chip already says it. */
@@ -77,29 +103,30 @@ export function reasonWords(reason: string): string {
 
 /** Why a form was not sent, in words, from the agent's one-word reason. */
 const STOP_REASONS: Record<string, string> = {
-  missing_info: 'needs info from you',
+  missing_info: 'needs your info',
   captcha: 'captcha',
   login: 'needs a login',
   closed: 'posting closed',
   broken_page: 'page did not work',
   stuck: 'got stuck',
-  never_clicked: 'send button not clicked',
+  never_clicked: 'send not clicked',
 };
 
+/** The status as a short label for a pill. A dry run never sends, so its result never reads as sent. */
 export function statusInfo(job: Pick<JobRow, 'status' | 'dry_run'> & Partial<Pick<JobRow, 'reason'>>): { label: string; tone: StatusTone } {
   if (job.status === 'blocked') {
     // Only a dry run that reached the send button was filled; any other stop is a stop, dry run or not.
-    if (job.reason === 'dry_run' || (job.dry_run && !job.reason)) return { label: 'Filled, not sent (dry run)', tone: 'stopped' };
+    if (job.reason === 'dry_run' || (job.dry_run && !job.reason)) return { label: 'Filled (dry run)', tone: 'filled' };
     const why = job.reason ? STOP_REASONS[job.reason] : undefined;
     return { label: why ? `Stopped: ${why}` : 'Stopped', tone: 'stopped' };
   }
   switch (job.status) {
     case 'applying':
-      return { label: 'Applying...', tone: 'applying' };
+      return { label: 'Applying', tone: 'applying' };
     case 'submitted':
       return { label: 'Sent', tone: 'sent' };
     case 'unconfirmed':
-      return { label: 'Sent (not confirmed)', tone: 'unconfirmed' };
+      return { label: 'Sent, unconfirmed', tone: 'unconfirmed' };
     case 'refused':
       return { label: 'Refused by form', tone: 'bad' };
     case 'failed':
@@ -109,27 +136,45 @@ export function statusInfo(job: Pick<JobRow, 'status' | 'dry_run'> & Partial<Pic
   }
 }
 
+/** What a status pill means, for its tooltip. */
+export function statusHint(tone: StatusTone): string {
+  switch (tone) {
+    case 'filled':
+      return 'Dry run: the form was filled and never sent';
+    case 'sent':
+      return 'Sent to the employer';
+    case 'unconfirmed':
+      return 'Sent, but no confirmation page was seen';
+    case 'applying':
+      return 'The agent is filling this form now';
+    case 'bad':
+      return 'Not sent';
+    default:
+      return 'Stopped before sending';
+  }
+}
+
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** Soft background and strong foreground pairs for company initials. */
-const AVATAR_COLORS: [string, string][] = [
-  ['#E7F0FF', '#2457C5'],
-  ['#F1E9FF', '#6B3FC4'],
-  ['#FFEDE3', '#C2531B'],
-  ['#E3F7F4', '#0E7C6B'],
-  ['#FFE8F0', '#C02C66'],
-  ['#EAF4E1', '#4A7A1B'],
-  ['#FFF4D9', '#A36A00'],
-  ['#E5F3FB', '#1C6E9C'],
+/** Calm two-stop gradients for monogram tiles on a dark page: deep enough for a white letter, never neon. */
+const MONOGRAMS: [string, string][] = [
+  ['#155e52', '#1f7f6e'],
+  ['#2e3a7a', '#4352a6'],
+  ['#5a2f6b', '#7a4290'],
+  ['#6e3b1c', '#94552c'],
+  ['#1f4f75', '#2c6d9e'],
+  ['#4a5a1f', '#66792d'],
+  ['#6b2440', '#8f3459'],
+  ['#2f4b56', '#426a79'],
 ];
 
-export function avatarColors(name: string): { background: string; color: string } {
+export function monogramGradient(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  const [background, color] = AVATAR_COLORS[hash % AVATAR_COLORS.length];
-  return { background, color };
+  const [from, to] = MONOGRAMS[hash % MONOGRAMS.length];
+  return `linear-gradient(135deg, ${from}, ${to})`;
 }
 
 export function initialOf(name: string): string {

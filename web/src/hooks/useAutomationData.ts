@@ -4,7 +4,9 @@ import { toLoadError } from '../lib/errors';
 import type { AgentRow, CommandRow, JobRow, LoadError, MemoryRow, Preferences, PreferencesRow, ProfileRow } from '../lib/types';
 import { useLiveTable } from './useLiveTable';
 
-const JOB_COLUMNS = 'id,title,company,location,url,score,status,note,reason,screenshot_path,dry_run,updated_at';
+// Every column: company_name and company_domain come through once the agent adds them, and naming them
+// before the table has them would fail the whole read.
+const JOB_COLUMNS = '*';
 
 export function useAgent(userId: string) {
   const load = useCallback(

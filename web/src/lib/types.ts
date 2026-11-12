@@ -36,7 +36,12 @@ export type JobStatus =
 export interface JobRow {
   id: string;
   title: string;
+  /** The raw name from the job source, such as a Workday path ("cisco/wd5/cisco_careers"). */
   company: string;
+  /** A clean display name from the agent, such as "Cisco". Rows written before the agent fills it lack it: read a missing one as ''. */
+  company_name?: string;
+  /** The company's web domain for its logo, such as "cisco.com". Rows written before the agent fills it lack it: read a missing one as ''. */
+  company_domain?: string;
   location: string;
   url: string;
   score: number | null;

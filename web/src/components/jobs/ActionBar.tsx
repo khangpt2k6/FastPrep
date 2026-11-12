@@ -1,76 +1,80 @@
 import { useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { DUR, EASE, SPRING_SOFT } from '../../lib/motion';
+import { dockVariants } from '../../lib/motion';
 import { AnimatedNumber } from '../motion';
-import { IconLetter, IconPlay, IconRadar } from '../Icons';
+import { IconLetter, IconPlay, IconX } from '../Icons';
 
 interface ActionBarProps {
   count: number;
   dryRun: boolean;
   online: boolean;
   applying: boolean;
-  searching: boolean;
   onApply: () => void;
-  onSearch: () => void;
-  /** Ask the agent to write cover letters for the selected jobs, to read before applying. */
+  /** Ask the agent to write cover letters for the selected jobs (a cover_letter command), to read before applying. */
   onLetters: () => void;
   writing: boolean;
   onClear: () => void;
 }
 
-/** Slides up from the bottom once something is selected. */
+/** A floating glass dock that rises from the bottom once something is selected. */
 export function ActionBar(props: ActionBarProps) {
-  // Keep the last non-zero count so the bar does not read "0 selected" while it slides away.
+  // Keep the last non-zero count so the dock does not read "0" while it sinks away.
   const last = useRef(props.count);
   if (props.count > 0) last.current = props.count;
   return (
     <AnimatePresence>
       {props.count > 0 ? (
         <motion.div
-          key="actionbar"
-          className="actionbar"
+          key="dock"
+          className={`dock ${props.dryRun ? '' : 'is-live'}`}
           role="region"
           aria-label="Selected jobs"
-          initial={{ opacity: 0, y: 24, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1, transition: SPRING_SOFT }}
-          exit={{ opacity: 0, y: 18, scale: 0.98, transition: { duration: DUR.fast, ease: EASE } }}
+          variants={dockVariants}
+          initial="hidden"
+          animate="shown"
+          exit="gone"
         >
-          <Bar {...props} count={last.current} />
+          <Dock {...props} count={last.current} />
         </motion.div>
       ) : null}
     </AnimatePresence>
   );
 }
 
-function Bar({ count, dryRun, online, applying, searching, onApply, onSearch, onLetters, writing, onClear }: ActionBarProps) {
+function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, onClear }: ActionBarProps) {
   return (
     <>
-      <div className="actionbar__count">
-        <AnimatedNumber className="actionbar__num mono" value={count} from={count} duration={0.35} />
-        <span>selected</span>
-        <button type="button" className="link-btn link-btn--muted" onClick={onClear}>
-          Clear
+      <div className="dock__count">
+        <AnimatedNumber className="dock__num mono" value={count} from={count} duration={0.35} />
+        <span className="dock__label">selected</span>
+        <button type="button" className="icon-btn icon-btn--sm" onClick={onClear} aria-label="Clear the selection" title="Clear">
+          <IconX size={14} />
         </button>
       </div>
-      <span className={`modepill ${dryRun ? '' : 'is-live'}`} title={dryRun ? 'Fills the forms but does not submit' : 'Applications are really submitted'}>
+      <span className={`modepill ${dryRun ? '' : 'is-live'}`} title={dryRun ? 'Fills forms, never sends' : 'Live: applications are really sent'}>
         <span className="modepill__dot" aria-hidden="true" />
-        <span className="modepill__text">{dryRun ? 'Dry run: nothing is submitted' : 'Live: applications are sent'}</span>
+        {dryRun ? 'Dry run' : 'Live'}
       </span>
-      <div className="actionbar__buttons">
-        {!online ? <span className="actionbar__why">Agent offline</span> : null}
-        <button type="button" className="btn btn--secondary" onClick={onSearch} disabled={searching}>
-          {searching ? <span className="spinner" aria-hidden="true" /> : <IconRadar size={16} />}
-          <span className="hide-phone">Find more jobs</span>
-          <span className="show-phone">More</span>
-        </button>
+      <div className="dock__buttons">
+        {!online ? (
+          <span className="dock__why" title="Start the agent on your computer first">
+            Agent offline
+          </span>
+        ) : null}
         <button type="button" className="btn btn--secondary" onClick={onLetters} disabled={writing} title="Write cover letters for these jobs, to read before applying">
           {writing ? <span className="spinner" aria-hidden="true" /> : <IconLetter size={16} />}
           <span className="hide-phone">Write letters</span>
           <span className="show-phone">Letters</span>
         </button>
-        <button type="button" className={`btn ${dryRun ? 'btn--primary' : 'btn--live'}`} onClick={onApply} disabled={!online || applying}>
+        <button
+          type="button"
+          className={`btn ${dryRun ? 'btn--primary btn--shimmer' : 'btn--live'}`}
+          onClick={onApply}
+          disabled={!online || applying}
+          title={dryRun ? 'Dry run: fill the forms, send nothing' : 'Live: fill and send the applications'}
+        >
           {applying ? <span className="spinner" aria-hidden="true" /> : <IconPlay size={14} />}
-          Apply to <AnimatedNumber className="mono" value={count} from={count} duration={0.35} /> {count === 1 ? 'job' : 'jobs'}
+          Apply <AnimatedNumber className="mono" value={count} from={count} duration={0.35} />
         </button>
       </div>
     </>

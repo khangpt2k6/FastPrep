@@ -2,32 +2,41 @@ import type { ComponentType, MouseEvent, ReactNode, SVGProps } from 'react';
 import { motion } from 'motion/react';
 import type { Page } from '../../hooks/useRoute';
 import { SPRING } from '../../lib/motion';
-import { IconBot, IconBriefcase, IconLetter, IconLogout, IconMemory, IconSend, IconSliders, IconUser, Logo } from '../Icons';
+import { IconBot, IconBriefcase, IconLetter, IconMemory, IconSend, IconSliders, IconUser, Logo } from '../Icons';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
-export const NAV: { page: Page; label: string; short: string; Icon: Icon }[] = [
-  { page: 'jobs', label: 'Jobs', short: 'Jobs', Icon: IconBriefcase },
-  { page: 'applications', label: 'Applications', short: 'Applied', Icon: IconSend },
-  { page: 'agent', label: 'Agent', short: 'Agent', Icon: IconBot },
-  { page: 'profile', label: 'Profile', short: 'Profile', Icon: IconUser },
-  { page: 'preferences', label: 'Preferences', short: 'Prefs', Icon: IconSliders },
-  { page: 'memory', label: 'Memory', short: 'Memory', Icon: IconMemory },
-  { page: 'letters', label: 'Cover letters', short: 'Letters', Icon: IconLetter },
+/** Tiny labels under the icons; the full page names are in FULL. */
+export const NAV: { page: Page; label: string; Icon: Icon }[] = [
+  { page: 'jobs', label: 'Jobs', Icon: IconBriefcase },
+  { page: 'applications', label: 'Applied', Icon: IconSend },
+  { page: 'agent', label: 'Agent', Icon: IconBot },
+  { page: 'profile', label: 'Profile', Icon: IconUser },
+  { page: 'preferences', label: 'Prefs', Icon: IconSliders },
+  { page: 'memory', label: 'Memory', Icon: IconMemory },
+  { page: 'letters', label: 'Letters', Icon: IconLetter },
 ];
+
+/** Full names for screen readers and tooltips, where the tiny labels are abbreviated. */
+const FULL: Record<Page, string> = {
+  jobs: 'Jobs',
+  applications: 'Applications',
+  agent: 'Agent',
+  profile: 'Profile',
+  preferences: 'Preferences',
+  memory: 'Memory',
+  letters: 'Cover letters',
+};
 
 interface SidebarProps {
   page: Page;
   onNavigate: (page: Page) => void;
   /** Small live markers per page (a count, a dot) plus words for screen readers. */
   marks: Partial<Record<Page, { node: ReactNode; label: string }>>;
-  email: string;
-  onSignOut: () => void;
-  notify: ReactNode;
 }
 
-/** A left icon rail on desktop; the same links become a bottom tab bar on phones. */
-export function Sidebar({ page, onNavigate, marks, email, onSignOut, notify }: SidebarProps) {
+/** A dark glass icon rail on desktop; the same links become a bottom tab bar on phones. */
+export function Sidebar({ page, onNavigate, marks }: SidebarProps) {
   const go = (target: Page) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
     event.preventDefault();
@@ -36,39 +45,36 @@ export function Sidebar({ page, onNavigate, marks, email, onSignOut, notify }: S
 
   return (
     <nav className="sidebar" aria-label="Main">
-      <a className="sidebar__logo" href="#/jobs" onClick={go('jobs')} aria-label="Agent Automation home">
+      <a className="sidebar__logo" href="#/jobs" onClick={go('jobs')} aria-label="Agent Automation home" title="Agent Automation">
         <Logo size={38} />
       </a>
       <ul className="sidebar__nav">
-        {NAV.map(({ page: target, label, short, Icon }) => (
-          <li key={target}>
-            <a
-              href={`#/${target}`}
-              className={`navitem ${page === target ? 'is-active' : ''}`}
-              aria-current={page === target ? 'page' : undefined}
-              aria-label={marks[target] ? `${label}, ${marks[target]?.label}` : label}
-              onClick={go(target)}
-            >
-              {page === target ? <motion.span className="navitem__pill" layoutId="nav-active" transition={SPRING} aria-hidden="true" /> : null}
-              <span className="navitem__icon" aria-hidden="true">
-                <Icon size={21} />
-                {marks[target]?.node ?? null}
-              </span>
-              <span className="navitem__label navitem__label--long">{label}</span>
-              <span className="navitem__label navitem__label--short">{short}</span>
-            </a>
-          </li>
-        ))}
+        {NAV.map(({ page: target, label, Icon }) => {
+          const name = FULL[target];
+          const mark = marks[target];
+          return (
+            <li key={target}>
+              <a
+                href={`#/${target}`}
+                className={`navitem ${page === target ? 'is-active' : ''}`}
+                aria-current={page === target ? 'page' : undefined}
+                aria-label={mark ? `${name}, ${mark.label}` : name}
+                title={name}
+                onClick={go(target)}
+              >
+                {page === target ? <motion.span className="navitem__pill" layoutId="nav-active" transition={SPRING} aria-hidden="true" /> : null}
+                <span className="navitem__icon" aria-hidden="true">
+                  <Icon size={20} />
+                  {mark?.node ?? null}
+                </span>
+                <span className="navitem__label" aria-hidden="true">
+                  {label}
+                </span>
+              </a>
+            </li>
+          );
+        })}
       </ul>
-      <div className="sidebar__foot">
-        {notify}
-        <button type="button" className="navitem" onClick={onSignOut} title={`Signed in as ${email}`}>
-          <span className="navitem__icon">
-            <IconLogout size={20} />
-          </span>
-          <span className="navitem__label">Sign out</span>
-        </button>
-      </div>
     </nav>
   );
 }

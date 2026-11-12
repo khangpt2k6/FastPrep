@@ -1,5 +1,6 @@
 import { useId, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { PRESENT } from '../../lib/profile';
+import { CheckBox } from '../common';
 import { IconX } from '../Icons';
 
 interface TextFieldProps {
@@ -325,7 +326,7 @@ export function MonthRange({ start, end, onChange, presentLabel }: {
       </div>
       <label className="check check--text">
         <input type="checkbox" checked={present} onChange={(e) => onChange(start, e.target.checked ? PRESENT : '')} />
-        <span className="check__box" aria-hidden="true" />
+        <CheckBox />
         <span>{presentLabel}</span>
       </label>
     </div>

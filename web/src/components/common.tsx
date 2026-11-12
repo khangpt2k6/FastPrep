@@ -1,83 +1,94 @@
 import { useId, type ReactNode } from 'react';
-import { motion } from 'motion/react';
-import { SPRING } from '../lib/motion';
+import { motion, useReducedMotion } from 'motion/react';
+import { EASE_OUT, SPRING } from '../lib/motion';
 import { AnimatedNumber } from './motion/AnimatedNumber';
-import { avatarColors, initialOf, matchInfo } from '../lib/format';
+import { matchInfo } from '../lib/format';
 
-/** A colored circle with the company's first letter. */
-export function Avatar({ name, size = 44 }: { name: string; size?: number }) {
-  const colors = avatarColors(name || '?');
-  return (
-    <span className="avatar" style={{ ...colors, width: size, height: size, fontSize: Math.round(size * 0.42) }} aria-hidden="true">
-      {initialOf(name)}
-    </span>
-  );
-}
+const RING_R = 20;
 
-const RING_R = 19;
-const RING_C = 2 * Math.PI * RING_R;
-
-/** The match score as a ring with the number inside, a label, and the 1 to 5 scale as five bars. */
-export function MatchBadge({ score }: { score: number | null }) {
+/**
+ * The 1 to 5 match score as a ring with the number inside. The colour says the strength, the tooltip says it in
+ * words, the arc draws in when the ring scrolls into view, and 4.5 and up glows.
+ */
+export function ScoreRing({ score }: { score: number | null }) {
+  const gradient = `ring${useId().replace(/:/g, '')}`;
+  const reduce = useReducedMotion();
   if (score === null || !Number.isFinite(score)) {
-    return <span className="match match--none">Not scored</span>;
+    return (
+      <span className="ring ring--none" title="Not scored yet" role="img" aria-label="Not scored yet">
+        <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+          <circle className="ring__track" cx="24" cy="24" r={RING_R} />
+        </svg>
+        <span className="ring__num mono">?</span>
+      </span>
+    );
   }
   const { label, tone } = matchInfo(score);
-  const share = Math.max(0, Math.min(1, score / 5));
+  const share = Math.max(0.02, Math.min(1, score / 5));
+  const tip = `${label}, ${score.toFixed(1)} of 5`;
   return (
-    <span className={`match match--${tone}`} role="img" aria-label={`${label}, ${score.toFixed(1)} out of 5`}>
-      <span className="match__ring">
-        <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true" focusable="false">
-          <circle className="match__track" cx="24" cy="24" r={RING_R} />
-          <circle
-            className="match__arc"
-            cx="24"
-            cy="24"
-            r={RING_R}
-            strokeDasharray={RING_C}
-            strokeDashoffset={RING_C * (1 - share)}
-            transform="rotate(-90 24 24)"
-          />
-        </svg>
-        <AnimatedNumber className="match__num mono" value={score} decimals={1} from={score * 0.6} duration={0.5} />
-      </span>
-      <span className="match__text" aria-hidden="true">
-        <span className="match__label">{label}</span>
-        <span className="match__bars">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span className="match__seg" key={i}>
-              <span style={{ width: `${Math.max(0, Math.min(1, score - i)) * 100}%` }} />
-            </span>
-          ))}
-        </span>
-      </span>
+    <span className={`ring ring--${tone} ${score >= 4.5 ? 'is-hot' : ''}`} role="img" aria-label={tip} title={tip}>
+      <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
+            <stop className="ring__from" offset="0" />
+            <stop className="ring__to" offset="1" />
+          </linearGradient>
+        </defs>
+        <circle className="ring__track" cx="24" cy="24" r={RING_R} />
+        <motion.circle
+          className="ring__arc"
+          cx="24"
+          cy="24"
+          r={RING_R}
+          stroke={`url(#${gradient})`}
+          initial={reduce ? { pathLength: share, opacity: 1 } : { pathLength: 0, opacity: 0 }}
+          whileInView={{ pathLength: share, opacity: 1 }}
+          viewport={{ once: true, margin: '0px 0px -40px 0px' }}
+          transition={{ duration: 1, ease: EASE_OUT, delay: 0.08 }}
+        />
+      </svg>
+      <AnimatedNumber className="ring__num mono" value={score} decimals={1} from={score * 0.6} duration={0.7} />
     </span>
   );
 }
 
-export function EmptyState({ icon, title, children, action }: { icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
+/** The drawn box of a .check: the tick draws itself in when the input before it is checked. */
+export function CheckBox() {
+  return (
+    <span className="check__box" aria-hidden="true">
+      <svg viewBox="0 0 16 16" focusable="false">
+        <path d="M3.5 8.4l3 3 6-6.4" />
+      </svg>
+    </span>
+  );
+}
+
+export function EmptyState({ icon, title, children, action }: { icon: ReactNode; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="card emptystate">
       <span className="emptystate__icon" aria-hidden="true">
         {icon}
       </span>
       <p className="emptystate__title">{title}</p>
-      <p className="emptystate__text">{children}</p>
+      {children ? <p className="emptystate__text">{children}</p> : null}
       {action ? <div className="emptystate__action">{action}</div> : null}
     </div>
   );
 }
 
+/** Placeholder cards in the shape of a job card while data loads. */
 export function SkeletonCards({ count = 4 }: { count?: number }) {
   return (
     <ul className="cardlist" aria-hidden="true">
       {Array.from({ length: count }, (_, i) => (
         <li className="card skelcard" key={i}>
-          <span className="skeleton skeleton--circle" />
+          <span className="skeleton skeleton--tile" />
           <span className="skelcard__lines">
-            <span className="skeleton skeleton--line" style={{ width: `${62 - i * 7}%` }} />
-            <span className="skeleton skeleton--line" style={{ width: `${38 - i * 4}%` }} />
+            <span className="skeleton skeleton--line" style={{ width: `${68 - i * 7}%` }} />
+            <span className="skeleton skeleton--line skeleton--thin" style={{ width: `${40 - i * 4}%` }} />
           </span>
+          <span className="skeleton skeleton--circle" />
         </li>
       ))}
     </ul>
@@ -87,7 +98,7 @@ export function SkeletonCards({ count = 4 }: { count?: number }) {
 /** A row of pill toggles; exactly one is on. */
 export function PillGroup<T extends string | number>({ label, options, value, onChange }: {
   label: string;
-  options: { value: T; label: string; count?: number }[];
+  options: { value: T; label: string; count?: number; title?: string }[];
   value: T;
   onChange: (value: T) => void;
 }) {
@@ -100,6 +111,7 @@ export function PillGroup<T extends string | number>({ label, options, value, on
           key={String(o.value)}
           className={`pilltoggle ${value === o.value ? 'is-on' : ''}`}
           aria-pressed={value === o.value}
+          title={o.title}
           onClick={() => onChange(o.value)}
         >
           {value === o.value ? <motion.span className="pilltoggle__pill" layoutId={`pill-${group}`} transition={SPRING} aria-hidden="true" /> : null}

@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { JobRow } from '../../lib/types';
 import { errorText } from '../../lib/errors';
-import { timeAgo } from '../../lib/format';
+import { displayName, timeAgo } from '../../lib/format';
 import {
   DEFAULT_TEMPLATE,
   FIELDS,
@@ -24,6 +24,7 @@ import {
   useCoverTemplates,
 } from '../../hooks/useCoverLetters';
 import { useSignedUrl } from '../../hooks/useSignedUrl';
+import { CompanyLogo } from '../CompanyLogo';
 import { EmptyState, SkeletonCards } from '../common';
 import { IconAlert, IconCheck, IconCopy, IconLetter, IconLink, IconPencil, IconPlus, IconSpark, IconTrash } from '../Icons';
 import { SetupCard } from '../SetupCard';
@@ -55,7 +56,7 @@ function Paper({ body }: { body: string }) {
         }
         if (piece.kind === 'field')
           return (
-            <span key={index} className="cl-field" title={`{{${piece.name}}} comes from your profile or the job`}>
+            <span key={index} className="cl-field" title={`{{${piece.name}}}: from your profile or the job`}>
               {piece.label}
             </span>
           );
@@ -148,8 +149,7 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
           onChange={(e) => onChange({ ...draft, body: e.target.value })}
         />
         <span className="field__hint">
-          Text outside {'{{ }}'} is sent as you write it. A part like {'{{why_you: two sentences on the best match}}'} is written by the
-          agent for each job, following your note.
+          Text outside {'{{ }}'} stays as written. {'{{part: note}}'} is written for each job.
         </span>
       </div>
 
@@ -166,7 +166,9 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
       )}
 
       <footer className="prefs__foot">
-        <span className="savestate">{slotNames(draft.body).length} part(s) the agent writes</span>
+        <span className="savestate" title="Parts the agent writes for each job">
+          <IconSpark size={13} /> {slotNames(draft.body).length}
+        </span>
         <button type="button" className="btn btn--ghost" onClick={onCancel}>
           Cancel
         </button>
@@ -213,7 +215,7 @@ function LetterItem({ letter, job, templateName, now, online, toast, onChanged }
     setBusy(true);
     try {
       await saveCoverLetter(letter.job_id, text);
-      toast({ tone: 'ok', title: 'Letter saved', detail: 'The agent sends your version with this application.' });
+      toast({ tone: 'ok', title: 'Letter saved' });
       onChanged();
     } catch (error) {
       toast({ tone: 'error', title: 'Could not save the letter', detail: errorText(error) });
@@ -226,7 +228,7 @@ function LetterItem({ letter, job, templateName, now, online, toast, onChanged }
     setBusy(true);
     try {
       await sendCoverLetters([letter.job_id], true);
-      toast({ tone: 'ok', title: 'Writing it again', detail: online ? 'The new letter shows here in a moment.' : 'Queued for when the agent starts.' });
+      toast({ tone: 'ok', title: online ? 'Writing it again' : 'Rewrite queued for when the agent starts' });
       onChanged();
     } catch (error) {
       toast({ tone: 'error', title: 'Could not ask for a new letter', detail: errorText(error) });
@@ -235,22 +237,28 @@ function LetterItem({ letter, job, templateName, now, online, toast, onChanged }
     }
   }
 
+  const name = job ? displayName(job) : letter.job_id;
   return (
     <li className={`cl-letter ${open ? 'is-open' : ''}`}>
       <button type="button" className="cl-letter__head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <CompanyLogo name={name} domain={job?.company_domain} size={32} />
         <span className="cl-letter__what">
-          <strong>{job ? job.company : letter.job_id}</strong>
+          <strong>{name}</strong>
           <span>{job ? job.title : ''}</span>
         </span>
         <span className="cl-letter__meta">
-          {letter.updated_by === 'web' ? <span className="softchip">edited by you</span> : null}
-          {letter.problems ? (
-            <span className="tag tag--dry" title={letter.problems}>
-              check wording
-            </span>
-          ) : null}
-          <span className="cl-letter__tpl">{templateName}</span>
           <time className="mono">{timeAgo(letter.updated_at, now)}</time>
+          <span className="cl-letter__tags">
+            {letter.updated_by === 'web' ? <span className="softchip">edited</span> : null}
+            {letter.problems ? (
+              <span className="tag tag--dry" title={letter.problems}>
+                check
+              </span>
+            ) : null}
+            <span className="cl-letter__tpl" title="Template">
+              {templateName}
+            </span>
+          </span>
         </span>
       </button>
       {open ? (
@@ -259,7 +267,7 @@ function LetterItem({ letter, job, templateName, now, online, toast, onChanged }
           {letter.problems ? <p className="cl-letter__warn">The agent could not fix: {letter.problems}</p> : null}
           <div className="cl-actions">
             <PdfLink path={letter.pdf_path} version={letter.updated_at} />
-            <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy} title="Drop this letter and write a new one">
               Write again
             </button>
             <button type="button" className="btn btn--primary btn--sm" onClick={save} disabled={!dirty || busy}>
@@ -301,11 +309,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
     try {
       await saveCoverSettings(on, templateId);
       settingsT.reload();
-      toast({
-        tone: 'ok',
-        title: on ? `Using "${names.get(templateId) ?? templateId}"` : 'Cover letters off',
-        detail: on ? 'Every application from now on gets a letter from this template.' : 'Applications go without a letter.',
-      });
+      toast({ tone: 'ok', title: on ? `Using "${names.get(templateId) ?? templateId}"` : 'Cover letters off' });
     } catch (error) {
       toast({ tone: 'error', title: 'Could not save the choice', detail: errorText(error) });
     }
@@ -319,7 +323,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
       setFocusId(draft.id);
       setDraft(null);
       templatesT.reload();
-      toast({ tone: 'ok', title: 'Template saved', detail: 'Press "Use this template" to have the agent fill it.' });
+      toast({ tone: 'ok', title: 'Template saved' });
     } catch (error) {
       toast({ tone: 'error', title: 'Could not save the template', detail: errorText(error) });
     } finally {
@@ -348,12 +352,8 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
         <section className="card cl-card" aria-label="Cover letter templates">
           <label className="row-switch row-switch--card">
             <span className="row-switch__text">
-              <strong>Attach a cover letter to every application</strong>
-              <span>
-                {enabled
-                  ? `The agent fills "${names.get(inUse) ?? inUse}" for each job, then uploads it or pastes it into the form.`
-                  : 'Off: forms get no letter.'}
-              </span>
+              <strong>Letter with every application</strong>
+              <span>{enabled ? `Using "${names.get(inUse) ?? inUse}"` : 'Off'}</span>
             </span>
             <input type="checkbox" role="switch" checked={enabled} onChange={(e) => void choose(inUse, e.target.checked)} />
             <span className="switch" aria-hidden="true">
@@ -363,7 +363,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
 
           {templatesT.loading && templates.length === 0 ? <SkeletonCards count={2} /> : null}
           {!templatesT.loading && templates.length === 0 ? (
-            <p className="cl-empty">Start the agent once: it adds the bundled templates here. You can write your own now.</p>
+            <p className="cl-empty">Bundled templates appear once the agent runs.</p>
           ) : null}
 
           <div className="cl-gallery" role="list">
@@ -386,8 +386,8 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                     {t.id === inUse ? <span className="cl-inuse">{enabled ? 'In use' : 'Picked'}</span> : null}
                   </span>
                   <span className="cl-tile__desc">{t.description || 'Your template'}</span>
-                  <span className="cl-tile__foot">
-                    {t.builtin ? 'Bundled' : 'Yours'} · {slotNames(t.body).length} parts written per job
+                  <span className="cl-tile__foot" title="Parts the agent writes for each job">
+                    {t.builtin ? 'Bundled' : 'Yours'} · <IconSpark size={11} /> {slotNames(t.body).length}
                   </span>
                 </button>
               );
@@ -416,8 +416,8 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                 <div className="cl-actions">
                   {focused.builtin ? null : (
                     <>
-                      <button type="button" className="btn btn--ghost btn--sm" onClick={() => void remove(focused)} aria-label={`Delete ${focused.name}`}>
-                        <IconTrash size={14} />
+                      <button type="button" className="icon-btn" onClick={() => void remove(focused)} aria-label={`Delete ${focused.name}`} title="Delete">
+                        <IconTrash size={15} />
                       </button>
                       <button type="button" className="btn btn--secondary btn--sm" onClick={() => setDraft({ ...focused, isNew: false })}>
                         <IconPencil size={14} /> Edit
@@ -439,16 +439,16 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                     disabled={focused.id === inUse && enabled}
                     onClick={() => void choose(focused.id, true)}
                   >
-                    <IconCheck size={14} /> {focused.id === inUse && enabled ? 'In use' : 'Use this template'}
+                    <IconCheck size={14} /> {focused.id === inUse && enabled ? 'In use' : 'Use'}
                   </button>
                 </div>
               </div>
               <p className="cl-legend">
-                <span className="cl-field">Field</span> comes from your profile or the job.{' '}
+                <span className="cl-field">Field</span> from your profile
                 <span className="cl-slot cl-slot--inline">
                   <IconSpark size={12} /> Part
-                </span>{' '}
-                is written by the agent for each job.
+                </span>
+                written per job
               </p>
               <Paper body={focused.body} />
             </>
@@ -460,14 +460,14 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
         <section className="card cl-card cl-letters" aria-labelledby="letters-title">
           <div className="card__head">
             <h2 className="card__title" id="letters-title">
-              Written letters
+              Letters
             </h2>
             <span className="mono cl-count">{letters.length}</span>
           </div>
           {lettersT.loading && letters.length === 0 ? <SkeletonCards count={2} /> : null}
           {!lettersT.loading && letters.length === 0 ? (
             <EmptyState icon={<IconLetter size={22} />} title="No letters yet">
-              Select jobs and press "Write letters" to read them before applying. Every application also gets its letter first.
+              Select jobs, then Write letters.
             </EmptyState>
           ) : (
             <ul className="cl-letter-list">

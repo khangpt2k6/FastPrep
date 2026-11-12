@@ -202,7 +202,7 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
         <label className="row-switch row-switch--card">
           <span className="row-switch__text">
             <strong>Learn from applications</strong>
-            <span>Save the answers the agent writes to Memory so you can review and reuse them.</span>
+            <span>Saves its answers to Memory</span>
           </span>
           <input type="checkbox" role="switch" checked={form.learn} onChange={(e) => set('learn', e.target.checked)} />
           <span className="switch" aria-hidden="true">
@@ -245,9 +245,9 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
             ))}
           </div>
           <blockquote className="preview__a">{example}</blockquote>
-          <p className="preview__note">
+          <p className="preview__note" title="The agent writes a fresh answer for each form">
             <IconSpark size={14} />
-            Example only. The agent writes a fresh answer for each form, using your profile and these settings.
+            Example only
           </p>
         </section>
       </aside>

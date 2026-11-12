@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { DUR, EASE, SPRING } from '../../lib/motion';
-import type { AgentRow } from '../../lib/types';
-import { stateLabel } from '../../lib/format';
+import type { AgentRow, JobRow } from '../../lib/types';
+import { displayName, stateLabel } from '../../lib/format';
+import { CompanyLogo } from '../CompanyLogo';
 import { IconCheck, IconCopy } from '../Icons';
 
 export interface LogEntry {
@@ -18,7 +19,8 @@ export const logItem = {
   transition: { layout: SPRING },
 };
 
-export const BUSY_STATES = ['starting', 'reading', 'searching', 'scoring', 'applying'];
+/** States where the agent is doing work: the orb spins faster and its dots come out. */
+export const BUSY_STATES = ['starting', 'reading', 'searching', 'scoring', 'applying', 'writing'];
 export const START_COMMAND = 'agent-automation';
 
 export type AgentTone = 'off' | 'bad' | 'busy' | 'calm';
@@ -45,25 +47,15 @@ export function useLogTail(agent: AgentRow | null, keep = 6): LogEntry[] {
   return entries;
 }
 
-export function Beacon({ tone, size = 'md' }: { tone: AgentTone; size?: 'sm' | 'md' | 'lg' }) {
-  return (
-    <span className={`beacon beacon--${size} beacon--${tone}`} aria-hidden="true">
-      <span className="beacon__ring" />
-      <span className="beacon__ring beacon__ring--late" />
-      <span className="beacon__core" />
-    </span>
-  );
-}
-
-/** The one line that changes every few seconds while the agent works. */
+/** The one line that changes every few seconds while the agent works. Each new line types itself in. */
 export function LogLine({ agent, online, tone }: { agent: AgentRow | null; online: boolean; tone: AgentTone }) {
   const text = agent?.message || `${stateLabel(online ? agent?.state ?? 'idle' : 'offline')}.`;
   return (
-    <p className={`logline ${tone === 'bad' ? 'logline--bad' : ''}`} aria-live="polite" key={text}>
+    <p className={`logline ${tone === 'bad' ? 'logline--bad' : ''}`} aria-live="polite">
       <span className="logline__prompt" aria-hidden="true">
         &rsaquo;
       </span>
-      <span className="logline__text">
+      <span className="logline__text typein" key={text}>
         {text}
         <span className="caret" aria-hidden="true" />
       </span>
@@ -71,6 +63,7 @@ export function LogLine({ agent, online, tone }: { agent: AgentRow | null; onlin
   );
 }
 
+/** The start command as a chip with a copy button: shown only while the agent is offline. */
 export function StartHint() {
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -83,14 +76,26 @@ export function StartHint() {
     }
   }
   return (
-    <div className="starthint">
-      <span>Start the agent on your computer:</span>
-      <span className="starthint__cmd">
-        <code>{START_COMMAND}</code>
-        <button type="button" className="icon-btn icon-btn--sm" onClick={copy} aria-label="Copy the start command">
-          {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-        </button>
+    <span className="cmdchip" title="Run this on your computer to start the agent">
+      <span className="cmdchip__prompt" aria-hidden="true">
+        $
       </span>
-    </div>
+      <code>{START_COMMAND}</code>
+      <button type="button" className="icon-btn icon-btn--sm" onClick={copy} aria-label={copied ? 'Copied' : 'Copy the start command'} title={copied ? 'Copied' : 'Copy'}>
+        {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+      </button>
+    </span>
+  );
+}
+
+/** The job the agent is filling right now, with its logo. */
+export function CurrentJob({ job }: { job: JobRow }) {
+  const name = displayName(job);
+  return (
+    <p className="nowjob" title={`${name}: ${job.title}`}>
+      <CompanyLogo name={name} domain={job.company_domain} size={24} />
+      <span className="nowjob__name">{name}</span>
+      <span className="nowjob__title">{job.title}</span>
+    </p>
   );
 }

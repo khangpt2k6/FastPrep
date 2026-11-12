@@ -56,7 +56,7 @@ export function EducationStep({ profile, update }: StepProps) {
   const add = () => update((d) => ({ ...d, education: [...d.education, emptyEducation()] }));
   return (
     <div className="wlist">
-      {list.length === 0 ? <p className="wempty">No schools added yet. Add the ones you want employers to see.</p> : null}
+      {list.length === 0 ? <p className="wempty">No schools yet.</p> : null}
       {list.map((e, i) => (
         <section className="wcard" key={i} aria-label={`School ${i + 1}`}>
           <CardHead
@@ -88,7 +88,7 @@ export function ExperienceStep({ profile, update }: StepProps) {
   const add = () => update((d) => ({ ...d, experience: [...d.experience, emptyExperience()] }));
   return (
     <div className="wlist">
-      {list.length === 0 ? <p className="wempty">No jobs added yet. Internships, part-time work and projects all count.</p> : null}
+      {list.length === 0 ? <p className="wempty">No experience yet. Internships and projects count.</p> : null}
       {list.map((e, i) => (
         <section className="wcard" key={i} aria-label={`Experience ${i + 1}`}>
           <CardHead
@@ -135,7 +135,7 @@ export function SkillsStep({ profile, update }: StepProps) {
           values={profile.skills}
           onChange={(skills) => update((d) => ({ ...d, skills }))}
           placeholder="Python, SQL, React..."
-          hint="Press Enter or type a comma after each one."
+          hint="Enter or comma after each one."
         />
       </Section>
       <Section title="What you are looking for">
@@ -159,7 +159,7 @@ export function SkillsStep({ profile, update }: StepProps) {
           label="Notes for the agent"
           value={ex.notes}
           onChange={(v) => update((d) => ({ ...d, extra: { ...d.extra, notes: v } }))}
-          placeholder="Anything the agent should know when it answers questions for you."
+          placeholder="Anything the agent should know"
           rows={3}
         />
         <div className="field field--wide">
@@ -232,7 +232,7 @@ export function AuthorizationStep({ profile, update }: StepProps) {
           wide
         />
         <SelectField label="Basis of authorization" value={a.authorization_basis} options={OPTIONS.basis} onChange={set('authorization_basis')} />
-        <TextField label="Visa type" value={a.visa_type} onChange={set('visa_type')} placeholder="F-1 OPT" list="visa-options" hint="Pick a suggestion or type your own." />
+        <TextField label="Visa type" value={a.visa_type} onChange={set('visa_type')} placeholder="F-1 OPT" list="visa-options" />
         <datalist id="visa-options">
           {OPTIONS.visa.map((v) => (
             <option key={v} value={v} />
@@ -249,7 +249,7 @@ export function EeoStep({ profile, update }: StepProps) {
     update((d) => ({ ...d, eeo: { ...d.eeo, [key]: value } }));
   return (
     <>
-      <p className="wintro">Optional. Used only to answer the voluntary questions on application forms. You can skip any of these.</p>
+      <p className="wintro">Optional. Skip any of these.</p>
       <Section title="Identity">
         <Segmented label="Gender" value={e.gender} options={OPTIONS.gender} onChange={set('gender')} wide />
         <Segmented label="Pronouns" value={e.pronouns} options={OPTIONS.pronouns} onChange={set('pronouns')} wide />

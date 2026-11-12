@@ -2,25 +2,27 @@ import { forwardRef } from 'react';
 import { motion } from 'motion/react';
 import type { JobRow } from '../../lib/types';
 import { LAYOUT_CAP, SPRING, cardHover, riseItem } from '../../lib/motion';
-import { companyName, timeAgo } from '../../lib/format';
-import { Avatar, MatchBadge } from '../common';
-import { IconClock, IconLink, IconMapPin } from '../Icons';
+import { displayName, firstLocation } from '../../lib/format';
+import { CompanyLogo } from '../CompanyLogo';
+import { CheckBox, ScoreRing } from '../common';
+import { IconLink } from '../Icons';
 
 interface JobCardProps {
   job: JobRow;
   selected: boolean;
   queued: boolean;
-  now: number;
   onToggle: (id: string) => void;
   /** Position in the list: drives the entrance stagger and whether it gets layout animation. */
   index?: number;
 }
 
-export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard({ job, selected, queued, now, onToggle, index = 0 }, ref) {
+export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard({ job, selected, queued, onToggle, index = 0 }, ref) {
+  const name = displayName(job);
+  const place = firstLocation(job.location);
   return (
     <motion.li
       ref={ref}
-      className={`card jobcard ${selected ? 'is-selected' : ''} ${queued ? 'is-queued' : ''}`}
+      className={`card spot jobcard ${selected ? 'is-selected' : ''} ${queued ? 'is-queued' : ''}`}
       layout={index < LAYOUT_CAP ? 'position' : false}
       variants={riseItem}
       custom={index}
@@ -37,33 +39,29 @@ export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard(
             checked={selected}
             disabled={queued}
             onChange={() => onToggle(job.id)}
-            aria-label={`Select ${job.title} at ${job.company}`}
+            aria-label={`Select ${job.title} at ${name}`}
           />
-          <span className="check__box" aria-hidden="true" />
+          <CheckBox />
         </span>
-        <Avatar name={companyName(job.company)} />
+        <CompanyLogo name={name} domain={job.company_domain} size={44} />
         <span className="jobcard__main">
           <span className="jobcard__title">{job.title}</span>
           <span className="jobcard__sub">
-            <span className="jobcard__company">{companyName(job.company)}</span>
-            {job.location ? (
+            <span className="jobcard__company">{name}</span>
+            {place.first ? (
               <span className="jobcard__loc" title={job.location}>
-                <IconMapPin size={13} />
-                <span>{job.location}</span>
+                <span className="jobcard__place">{place.first}</span>
+                {place.more ? <span className="jobcard__more mono">+{place.more}</span> : null}
               </span>
             ) : null}
-          </span>
-          <span className="jobcard__meta">
-            <IconClock size={13} />
-            Updated {timeAgo(job.updated_at, now)}
-            {queued ? <span className="tag tag--queued">Queued for the agent</span> : null}
+            {queued ? <span className="tag tag--queued">Queued</span> : null}
           </span>
         </span>
-        <MatchBadge score={job.score} />
+        <ScoreRing score={job.score} />
       </label>
       {job.url ? (
-        <a className="icon-btn jobcard__link" href={job.url} target="_blank" rel="noreferrer" aria-label={`Open the ${job.company} posting`}>
-          <IconLink size={17} />
+        <a className="icon-btn jobcard__link" href={job.url} target="_blank" rel="noreferrer" aria-label={`Open the ${name} posting`} title="Open posting">
+          <IconLink size={16} />
         </a>
       ) : null}
     </motion.li>

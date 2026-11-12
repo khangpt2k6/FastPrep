@@ -1,8 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
 import type { JobRow, LoadError } from '../../lib/types';
-import { plural } from '../../lib/format';
-import { EmptyState, PillGroup, SkeletonCards } from '../common';
+import { CheckBox, EmptyState, PillGroup, SkeletonCards } from '../common';
 import { IconAlert, IconBriefcase, IconRadar, IconSearch } from '../Icons';
 import { JobCard } from './JobCard';
 import { AnimatedNumber, StateFade } from '../motion';
@@ -15,7 +14,6 @@ interface JobsPageProps {
   loading: boolean;
   error: LoadError | null;
   onRetry: () => void;
-  now: number;
   selected: Set<string>;
   queued: Set<string>;
   onToggle: (id: string) => void;
@@ -27,8 +25,6 @@ interface JobsPageProps {
   onClearFilters: () => void;
   searching: boolean;
   onSearch: () => void;
-  /** The live strip shown above the list when the rail is folded away. */
-  strip: ReactNode;
   rail: ReactNode;
   actionBar: ReactNode;
 }
@@ -41,10 +37,17 @@ function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Se
     if (ref.current) ref.current.indeterminate = count > 0 && !all;
   }, [count, all]);
   return (
-    <label className="check check--text selectall">
-      <input ref={ref} type="checkbox" checked={all} disabled={ids.length === 0} onChange={() => onToggleAll(ids, !all)} />
-      <span className="check__box" aria-hidden="true" />
-      <span>Select all</span>
+    <label className="check check--text selectall" title={all ? 'Clear the selection' : 'Select every job shown'}>
+      <input
+        ref={ref}
+        type="checkbox"
+        checked={all}
+        disabled={ids.length === 0}
+        onChange={() => onToggleAll(ids, !all)}
+        aria-label="Select all jobs shown"
+      />
+      <CheckBox />
+      <span aria-hidden="true">All</span>
     </label>
   );
 }
@@ -52,6 +55,7 @@ function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Se
 export function JobsPage(props: JobsPageProps) {
   const { candidates, visible, loading, error, selected, queued, minScore, query } = props;
   const selectable = visible.filter((j) => !queued.has(j.id)).map((j) => j.id);
+  const filtered = visible.length !== candidates.length;
 
   let body: ReactNode;
   let state = 'list';
@@ -81,29 +85,24 @@ export function JobsPage(props: JobsPageProps) {
         title="No scored jobs yet"
         action={
           <button type="button" className="btn btn--primary btn--sm" onClick={props.onSearch} disabled={props.searching}>
-            <IconRadar size={15} />
-            Find jobs now
+            {props.searching ? <span className="spinner" aria-hidden="true" /> : <IconRadar size={15} />}
+            Find jobs
           </button>
         }
-      >
-        When the agent runs, it searches the job database and scores each posting against your resume. The best ones show up
-        here.
-      </EmptyState>
+      />
     );
   } else if (visible.length === 0) {
     state = 'filtered';
     body = (
       <EmptyState
         icon={<IconSearch size={22} />}
-        title="No jobs match these filters"
+        title="No matches"
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={props.onClearFilters}>
             Clear filters
           </button>
         }
-      >
-        {plural(candidates.length, 'job')} hidden by the match or search filter.
-      </EmptyState>
+      />
     );
   } else {
     body = (
@@ -114,7 +113,6 @@ export function JobsPage(props: JobsPageProps) {
               key={job.id}
               index={i}
               job={job}
-              now={props.now}
               selected={selected.has(job.id)}
               queued={queued.has(job.id)}
               onToggle={props.onToggle}
@@ -128,7 +126,6 @@ export function JobsPage(props: JobsPageProps) {
   return (
     <div className="page page--rail">
       <div className="page__main">
-        {props.strip}
         <div className="toolbar">
           <SelectAll ids={selectable} selected={selected} onToggleAll={props.onToggleAll} />
           <PillGroup<MinScore>
@@ -136,9 +133,9 @@ export function JobsPage(props: JobsPageProps) {
             value={minScore}
             onChange={props.onMinScore}
             options={[
-              { value: 0, label: 'Any match' },
-              { value: 3, label: '3+' },
-              { value: 4, label: '4+' },
+              { value: 0, label: 'Any', title: 'Any match' },
+              { value: 3, label: '3+', title: 'Match 3 or more' },
+              { value: 4, label: '4+', title: 'Match 4 or more' },
             ]}
           />
           <label className="searchbox">
@@ -147,29 +144,31 @@ export function JobsPage(props: JobsPageProps) {
               type="search"
               value={query}
               onChange={(e) => props.onQuery(e.target.value)}
-              placeholder="Title or company"
+              placeholder="Search"
               aria-label="Search jobs by title or company"
             />
           </label>
-          <button type="button" className="btn btn--secondary toolbar__more" onClick={props.onSearch} disabled={props.searching}>
+          {!loading && !error && candidates.length > 0 ? (
+            <span
+              className="count mono"
+              title={filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}
+              aria-label={filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}
+            >
+              <AnimatedNumber value={visible.length} from={visible.length} duration={0.4} />
+              {filtered ? <span className="count__of"> / {candidates.length}</span> : null}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn--secondary toolbar__more"
+            onClick={props.onSearch}
+            disabled={props.searching}
+            title="Ask the agent for more jobs"
+          >
             {props.searching ? <span className="spinner" aria-hidden="true" /> : <IconRadar size={16} />}
-            Find more jobs
+            Find more
           </button>
         </div>
-        {!loading && !error && candidates.length > 0 ? (
-          <p className="listmeta">
-            {visible.length === candidates.length ? (
-              <>
-                <AnimatedNumber value={candidates.length} from={candidates.length} /> {candidates.length === 1 ? 'job' : 'jobs'} ready to
-                apply, best match first
-              </>
-            ) : (
-              <>
-                Showing <AnimatedNumber value={visible.length} from={visible.length} /> of {plural(candidates.length, 'job')}
-              </>
-            )}
-          </p>
-        ) : null}
         <StateFade state={state}>{body}</StateFade>
         {props.actionBar}
       </div>

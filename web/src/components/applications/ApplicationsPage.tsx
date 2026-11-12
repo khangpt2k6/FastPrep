@@ -1,13 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { LAYOUT_CAP, SPRING, cardHover, riseItem } from '../../lib/motion';
 import { StateFade, useJustSettled } from '../motion';
 import type { JobRow, LoadError } from '../../lib/types';
-import { companyName, reasonWords, timeAgo } from '../../lib/format';
-import { useOverflow } from '../../hooks/useOverflow';
+import { displayName, reasonWords, timeAgo } from '../../lib/format';
 import { useSignedUrl } from '../../hooks/useSignedUrl';
-import { Avatar, EmptyState, PillGroup, SkeletonCards } from '../common';
-import { IconAlert, IconImage, IconLink, IconMemory, IconSend } from '../Icons';
+import { CompanyLogo } from '../CompanyLogo';
+import { EmptyState, PillGroup, SkeletonCards } from '../common';
+import { IconAlert, IconChevronDown, IconImage, IconLink, IconMemory, IconRepeat, IconSend } from '../Icons';
 import { StatusChip } from '../StatusChip';
 
 type Group = 'all' | 'live' | 'sent' | 'notsent' | 'bad';
@@ -29,9 +29,8 @@ interface ApplicationsPageProps {
   onOpenAnswers: (job: JobRow) => void;
   /** How many saved answers each job has, by job id. */
   answerCounts: Map<string, number>;
-  strip: ReactNode;
   rail: ReactNode;
-  /** The header's dry-run switch: it decides whether "apply again" fills only or really sends. */
+  /** The header's dry-run switch: it decides whether "again" fills only or really sends. */
   dryRun: boolean;
   online: boolean;
   /** Jobs already in a command the agent has not finished. */
@@ -44,7 +43,7 @@ function canApplyAgain(job: JobRow): boolean {
   return job.status === 'blocked' || job.status === 'failed' || job.status === 'refused';
 }
 
-function Thumb({ job, onOpen }: { job: JobRow; onOpen: (url: string) => void }) {
+function Thumb({ job, name, onOpen }: { job: JobRow; name: string; onOpen: (url: string) => void }) {
   const { url, failed } = useSignedUrl(job.screenshot_path, job.updated_at);
   if (!job.screenshot_path) return null;
   if (failed) {
@@ -56,42 +55,21 @@ function Thumb({ job, onOpen }: { job: JobRow; onOpen: (url: string) => void }) 
   }
   if (!url) return <span className="thumb skeleton" aria-hidden="true" />;
   return (
-    <button type="button" className="thumb" onClick={() => onOpen(url)} aria-label={`View the screenshot for ${job.company}`}>
+    <button type="button" className="thumb" onClick={() => onOpen(url)} aria-label={`View the screenshot for ${name}`} title="Screenshot">
       <img src={url} alt="" loading="lazy" />
     </button>
   );
 }
 
-function Note({ job }: { job: JobRow }) {
-  const [open, setOpen] = useState(false);
-  const [ref, clamped] = useOverflow<HTMLParagraphElement>(job.note, open, job.status);
-  if (job.status === 'applying') {
-    return <p className="appcard__note appcard__note--live">The agent is filling this form right now.</p>;
-  }
-  if (!job.note) return null;
-  return (
-    <div>
-      <p ref={ref} className={`appcard__note ${open ? 'is-open' : ''}`}>
-        {job.note}
-      </p>
-      {open || clamped ? (
-        <button type="button" className="link-btn link-btn--sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-          {open ? 'Show less' : 'Show more'}
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
 const SETTLED = ['submitted', 'unconfirmed', 'blocked', 'refused', 'failed'];
 
-/** One application. When the agent finishes it, the card settles with a mint glow. */
-const AppCard = ({ job, index, children }: { job: JobRow; index: number; children: ReactNode }) => {
+/** One application. When the agent finishes it, the card settles with a glow in its result's colour. */
+function AppCard({ job, index, children }: { job: JobRow; index: number; children: ReactNode }) {
   const settled = useJustSettled(job.status, 'applying', SETTLED);
-  const good = job.status === 'submitted' || job.status === 'unconfirmed' || (job.status === 'blocked' && job.reason === 'dry_run');
+  const sent = job.status === 'submitted' || job.status === 'unconfirmed';
   return (
     <motion.li
-      className={`card appcard ${job.status === 'applying' ? 'is-live' : ''} ${settled ? (good ? 'is-settled' : 'is-settled is-settled--warn') : ''}`}
+      className={`card spot appcard ${job.status === 'applying' ? 'is-live' : ''} ${settled ? (sent ? 'is-settled' : 'is-settled is-settled--warn') : ''}`}
       layout={index < LAYOUT_CAP ? 'position' : false}
       variants={riseItem}
       custom={index}
@@ -104,10 +82,96 @@ const AppCard = ({ job, index, children }: { job: JobRow; index: number; childre
       {children}
     </motion.li>
   );
-};
+}
+
+function AppBody({ job, now, answers, dryRun, online, queued, onOpenShot, onOpenAnswers, onApplyAgain }: {
+  job: JobRow;
+  now: number;
+  answers: number;
+  dryRun: boolean;
+  online: boolean;
+  queued: boolean;
+  onOpenShot: (url: string) => void;
+  onOpenAnswers: () => void;
+  onApplyAgain: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const noteId = useId();
+  const name = displayName(job);
+  const reason = job.status !== 'applying' ? reasonWords(job.reason) : '';
+  const offline = online ? undefined : 'Start the agent on your computer first';
+
+  return (
+    <>
+      {job.status === 'applying' ? <span className="appcard__scan" aria-hidden="true" /> : null}
+      <CompanyLogo name={name} domain={job.company_domain} size={44} />
+      <div className="appcard__main">
+        <div className="appcard__who">
+          <span className="appcard__company">{name}</span>
+          <span className="appcard__title" title={job.title}>
+            {job.title}
+          </span>
+        </div>
+        <div className="appcard__row">
+          <div className="appcard__meta">
+            <StatusChip job={job} />
+            <time className="appcard__time mono" dateTime={job.updated_at}>
+              {timeAgo(job.updated_at, now)}
+            </time>
+            {job.dry_run && job.status !== 'blocked' ? <span className="tag tag--dry">Dry run</span> : null}
+            {reason ? <span className="appcard__reason">{reason}</span> : null}
+          </div>
+          <div className="appcard__actions">
+            <button
+              type="button"
+              className="icon-btn icon-btn--count"
+              onClick={onOpenAnswers}
+              aria-label={answers > 0 ? `Answers it wrote, ${answers}` : 'Answers it wrote'}
+              title={answers > 0 ? `Answers it wrote (${answers})` : 'Answers it wrote'}
+            >
+              <IconMemory size={17} />
+              {answers > 0 ? <span className="icon-btn__count mono">{answers}</span> : null}
+            </button>
+            {job.url ? (
+              <a className="icon-btn" href={job.url} target="_blank" rel="noreferrer" aria-label={`Open the ${name} posting`} title="Open posting">
+                <IconLink size={16} />
+              </a>
+            ) : null}
+            {canApplyAgain(job) ? (
+              queued ? (
+                <span className="tag tag--queued">Queued</span>
+              ) : dryRun ? (
+                <button type="button" className="icon-btn" onClick={onApplyAgain} disabled={!online} aria-label="Dry run again" title={offline ?? 'Dry run again'}>
+                  <IconRepeat size={16} />
+                </button>
+              ) : (
+                <button type="button" className="btn btn--live btn--sm" onClick={onApplyAgain} disabled={!online} title={offline ?? 'Fill and send this application'}>
+                  <IconSend size={14} />
+                  Apply for real
+                </button>
+              )
+            ) : null}
+            {job.note ? (
+              <button type="button" className="disclose" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={noteId}>
+                Details
+                <IconChevronDown size={14} />
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {open && job.note ? (
+          <p className="appcard__note mono" id={noteId}>
+            {job.note}
+          </p>
+        ) : null}
+      </div>
+      <Thumb job={job} name={name} onOpen={onOpenShot} />
+    </>
+  );
+}
 
 export function ApplicationsPage({
-  items, loading, error, onRetry, now, onOpenShot, onOpenAnswers, answerCounts, strip, rail, dryRun, online, queued, onApplyAgain,
+  items, loading, error, onRetry, now, onOpenShot, onOpenAnswers, answerCounts, rail, dryRun, online, queued, onApplyAgain,
 }: ApplicationsPageProps) {
   const [group, setGroup] = useState<Group>('all');
 
@@ -141,79 +205,29 @@ export function ApplicationsPage({
     body = <SkeletonCards count={3} />;
   } else if (items.length === 0) {
     state = 'none';
-    body = (
-      <EmptyState icon={<IconSend size={22} />} title="No applications yet">
-        Tick a few jobs on the Jobs page and press Apply. Each one shows up here while the agent works through it.
-      </EmptyState>
-    );
+    body = <EmptyState icon={<IconSend size={22} />} title="No applications yet" />;
   } else if (shown.length === 0) {
     state = 'filtered';
-    body = <p className="empty-line">Nothing in this group right now.</p>;
+    body = <p className="empty-line">Nothing here right now.</p>;
   } else {
     body = (
       <ul className="cardlist">
         <AnimatePresence>
-        {shown.map((job, index) => {
-          const answers = answerCounts.get(job.id) ?? 0;
-          return (
+          {shown.map((job, index) => (
             <AppCard job={job} index={index} key={job.id}>
-              <div className="appcard__top">
-                <Avatar name={companyName(job.company)} size={42} />
-                <div className="appcard__who">
-                  <span className="appcard__company">{companyName(job.company)}</span>
-                  <span className="appcard__title">{job.title}</span>
-                </div>
-                <StatusChip job={job} />
-              </div>
-              <div className="appcard__body">
-                <div className="appcard__text">
-                  <Note job={job} />
-                  <p className="appcard__meta">
-                    <time className="mono" dateTime={job.updated_at}>
-                      {timeAgo(job.updated_at, now)}
-                    </time>
-                    {job.dry_run && job.status !== 'blocked' ? <span className="tag tag--dry">Dry run</span> : null}
-                    {job.reason && job.status !== 'applying' && reasonWords(job.reason) ? <span className="appcard__reason">{reasonWords(job.reason)}</span> : null}
-                  </p>
-                  <p className="appcard__links">
-                    <button type="button" className="link-btn" onClick={() => onOpenAnswers(job)}>
-                      <IconMemory size={15} />
-                      View answers it wrote{answers > 0 ? ` (${answers})` : ''}
-                    </button>
-                    {job.url ? (
-                      <a className="link-btn link-btn--muted" href={job.url} target="_blank" rel="noreferrer">
-                        <IconLink size={14} />
-                        Posting
-                      </a>
-                    ) : null}
-                  </p>
-                  {canApplyAgain(job) ? (
-                    <div className="appcard__again">
-                      {queued.has(job.id) ? (
-                        <span className="tag tag--queued">Queued for the agent</span>
-                      ) : (
-                        <button
-                          type="button"
-                          className={`btn btn--sm ${dryRun ? 'btn--secondary' : 'btn--primary'}`}
-                          onClick={() => onApplyAgain(job)}
-                          disabled={!online}
-                          title={online ? undefined : 'Start the agent on your computer first'}
-                        >
-                          <IconSend size={15} />
-                          {dryRun ? 'Dry run again' : 'Apply for real'}
-                        </button>
-                      )}
-                      {dryRun && job.dry_run && job.reason === 'dry_run' ? (
-                        <span className="appcard__hint">Looks right? Turn off Dry run at the top, then apply for real.</span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-                <Thumb job={job} onOpen={(url) => onOpenShot(job, url)} />
-              </div>
+              <AppBody
+                job={job}
+                now={now}
+                answers={answerCounts.get(job.id) ?? 0}
+                dryRun={dryRun}
+                online={online}
+                queued={queued.has(job.id)}
+                onOpenShot={(url) => onOpenShot(job, url)}
+                onOpenAnswers={() => onOpenAnswers(job)}
+                onApplyAgain={() => onApplyAgain(job)}
+              />
             </AppCard>
-          );
-        })}
+          ))}
         </AnimatePresence>
       </ul>
     );
@@ -222,7 +236,6 @@ export function ApplicationsPage({
   return (
     <div className="page page--rail">
       <div className="page__main">
-        {strip}
         {items.length > 0 ? (
           <div className="toolbar">
             <PillGroup<Group>
@@ -231,10 +244,10 @@ export function ApplicationsPage({
               onChange={setGroup}
               options={[
                 { value: 'all', label: 'All', count: counts.all },
-                { value: 'live', label: 'In progress', count: counts.live },
+                { value: 'live', label: 'Applying', count: counts.live },
                 { value: 'sent', label: 'Sent', count: counts.sent },
-                { value: 'notsent', label: 'Not sent', count: counts.notsent },
-                { value: 'bad', label: 'Refused or failed', count: counts.bad },
+                { value: 'notsent', label: 'Not sent', count: counts.notsent, title: 'Filled in a dry run, or stopped' },
+                { value: 'bad', label: 'Failed', count: counts.bad, title: 'Refused or failed' },
               ]}
             />
           </div>

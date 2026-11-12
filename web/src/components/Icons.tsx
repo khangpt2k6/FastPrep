@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import { useId, type SVGProps } from 'react';
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
@@ -40,14 +40,6 @@ export const IconSearch = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="11" cy="11" r="6.5" />
     <path d="M20 20l-4.2-4.2" />
-  </Svg>
-);
-
-export const IconLogout = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
-    <path d="M10 16l-4-4 4-4" />
-    <path d="M6 12h10" />
   </Svg>
 );
 
@@ -259,13 +251,42 @@ export const IconLetter = (p: IconProps) => (
   </Svg>
 );
 
-/** Original mark: a black tile with a mint cursor and a small spark. */
+export const IconRepeat = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3L19.5 9" />
+    <path d="M19.5 4.5V9H15" />
+    <path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3L4.5 15" />
+    <path d="M4.5 19.5V15H9" />
+  </Svg>
+);
+
+export const IconChevronDown = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6.5 9.5l5.5 5.5 5.5-5.5" />
+  </Svg>
+);
+
+export const IconExpand = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />
+  </Svg>
+);
+
+/** The mark: a dark tile with a mint-to-aqua cursor and a small spark. */
 export function Logo({ size = 36 }: { size?: number }) {
+  const id = `mark${useId().replace(/:/g, '')}`;
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-      <rect width="40" height="40" rx="11" fill="#0B0B0F" />
-      <path d="M13 11.5l14.5 7.2-6.3 1.9-2.6 6.2z" fill="#13D38E" stroke="#13D38E" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M27.5 25.5l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#FFFFFF" />
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#34E5A5" />
+          <stop offset="1" stopColor="#22D3EE" />
+        </linearGradient>
+      </defs>
+      <rect width="40" height="40" rx="11" fill="#0C1016" />
+      <rect x="0.5" y="0.5" width="39" height="39" rx="10.5" fill="none" stroke="#FFFFFF" strokeOpacity="0.12" />
+      <path d="M13 11.5l14.5 7.2-6.3 1.9-2.6 6.2z" fill={`url(#${id})`} stroke={`url(#${id})`} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M27.5 25.5l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#E8EDF2" />
     </svg>
   );
 }

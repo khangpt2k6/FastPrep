@@ -8,7 +8,9 @@ export type ToastTone = 'ok' | 'info' | 'warn' | 'error';
 export interface Toast {
   id: number;
   tone: ToastTone;
+  /** One short line. */
   title: string;
+  /** Only for errors: the reason, kept to a short second line. */
   detail?: string;
 }
 
@@ -56,15 +58,15 @@ const ToastItem = forwardRef<HTMLDivElement, { toast: Toast; onDismiss: (id: num
       dragElastic={{ left: 0.05, right: 0.9 }}
       onDragEnd={onDragEnd}
     >
-      <span className="toast__icon">
-        {toast.tone === 'ok' ? <IconCheck size={16} /> : toast.tone === 'info' ? <IconSpark size={16} /> : <IconAlert size={16} />}
+      <span className="toast__icon" aria-hidden="true">
+        {toast.tone === 'ok' ? <IconCheck size={14} /> : toast.tone === 'info' ? <IconSpark size={14} /> : <IconAlert size={14} />}
       </span>
-      <div className="toast__text">
+      <div className="toast__text" title={toast.detail ? `${toast.title}: ${toast.detail}` : toast.title}>
         <strong>{toast.title}</strong>
         {toast.detail ? <span>{toast.detail}</span> : null}
       </div>
-      <button className="icon-btn toast__close" type="button" onClick={() => onDismiss(toast.id)} aria-label="Dismiss">
-        <IconX size={14} />
+      <button className="icon-btn icon-btn--sm toast__close" type="button" onClick={() => onDismiss(toast.id)} aria-label="Dismiss" title="Dismiss">
+        <IconX size={13} />
       </button>
       <span className="toast__timer" style={{ animationDuration: `${life}ms` }} aria-hidden="true" />
     </motion.div>
