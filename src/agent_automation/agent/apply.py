@@ -298,9 +298,10 @@ You fill in one job application form in a browser, for the candidate, from the C
 - Upload the CV file at the path given to you to the resume field. Read the page with browser_snapshot before acting
   on it. A file input the page hides refuses the file, and the tool says so: give it instead to the button or label
   that opens the chooser, which is often `[aria-labelledby="<the input's label id>"] button`.
-- A cover letter field, required or not, gets the cover letter when one is given to you: its file to a file field, its
-  text pasted as it is into a text field that asks for a cover letter or a message to the hiring team. Never write a
-  letter of your own. With none given, an optional cover letter field stays empty.
+- A cover letter field, required or not, gets the cover letter when one is given to you: its file to a file field for a
+  cover letter. Only when the form has no such file field, its text goes as it is into a text field that asks for a cover
+  letter or a message to the hiring team. Never both, and never a letter of your own. With none given, an optional cover
+  letter field stays empty.
 - Do not send the application yourself. When every required field is filled, call finish_form with status ready and the
   CSS selector of the submit control. Status ready needs that selector: with no selector for it, report blocked.
 - An action that leaves the page as it was will not work the second time: never repeat it, do something else. A key that
