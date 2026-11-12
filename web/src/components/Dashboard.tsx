@@ -111,9 +111,10 @@ export function Dashboard({ userId, email }: DashboardProps) {
   const online = isOnline(agent?.state, agent?.last_seen, now);
   const profileRow = profileT.row;
   const profileReady = !profileT.loading && !profileT.error;
-  const profileComplete = profileRow?.completed === true;
   const profile = useMemo(() => mergeProfile(profileRow?.data), [profileRow]);
   const sections = useMemo(() => profileProgress(profile), [profile]);
+  // Saved as complete and every section filled: a profile saved before a question became required is not complete.
+  const profileComplete = profileRow?.completed === true && sections.every((s) => s.done);
 
   // Jobs that can still be applied to, best first.
   const candidates = useMemo(
