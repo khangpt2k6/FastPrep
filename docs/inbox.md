@@ -20,11 +20,11 @@ To take the access away, delete the app password on the same Google page. Nothin
 ## Run
 
 ```powershell
-.venv\Scriptsgent-automation-inbox              # read what is new, then list every application
-.venv\Scriptsgent-automation-inbox --days 365   # look further back (default 180)
-.venv\Scriptsgent-automation-inbox --offline    # list what the last sync found, no mailbox read
-.venv\Scriptsgent-automation-inbox --json       # the same list as JSON
-.venv\Scriptsgent-automation-inbox --forget     # drop what was kept and read from the start
+.venv\Scripts\agent-automation-inbox              # read what is new, then list every application
+.venv\Scripts\agent-automation-inbox --days 365   # look further back (default 180)
+.venv\Scripts\agent-automation-inbox --offline    # list what the last sync found, no mailbox read
+.venv\Scripts\agent-automation-inbox --json       # the same list as JSON
+.venv\Scripts\agent-automation-inbox --forget     # drop what was kept and read from the start
 ```
 
 The "Sent by" column says `agent` when Agent Automation applied to that company and `you` when you did.
