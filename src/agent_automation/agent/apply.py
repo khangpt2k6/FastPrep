@@ -748,7 +748,11 @@ async def run_on_page(
         f"{_account_line(job, account)}\n\nThe CV:\n{cv_text}\n\nThe answers:\n{answers}"
     )
     if cover is not None:
-        brief += f"\n\nThe cover letter file to upload: {cover[1]}\nThe cover letter, for a field that takes text:\n{cover[0].strip()}"
+        brief += (
+            f"\n\nThe cover letter file to upload: {cover[1]}\n"
+            "The same letter as text, only for a form with no file field for a cover letter. When the form took the file, "
+            f"type it nowhere, not even in an optional box for a message:\n{cover[0].strip()}"
+        )
     trial = dry_run()
     tracing = trial or bool(os.environ.get(TRACE_ENV, "").strip())
     if tracing:
