@@ -210,3 +210,10 @@ def test_a_credit_that_is_finished_is_told_in_plain_words_and_what_to_do() -> No
 
     error = APIStatusError("Error code: 402", response=http.Response(402, request=http.Request("POST", "https://x.example")), body=None)
     assert explain(error) == "Your OrcaRouter credit is finished. Add credit at orcarouter.ai, then press → to go on."
+
+
+def test_a_candidate_who_will_relocate_is_asked_about_the_whole_country() -> None:
+    moving = question("Backend internships.", "Tampa, United States", "United States")
+    assert "based anywhere in United States, where they will relocate" in moving
+    assert "near Tampa" not in moving
+    assert "based in or near Tampa, United States" in question("Backend internships.", "Tampa, United States")

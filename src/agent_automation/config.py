@@ -30,7 +30,7 @@ PROVIDER_ENV = "AGENT_PROVIDER"
 BASE_URL_ENV = "AGENT_BASE_URL"
 OPENAI_MODEL = "gpt-5.4-mini"
 OPENAI_QUICK_MODEL = "gpt-5.4-mini"
-OPENAI_DECISION_MODEL = "gpt-5.4-nano"
+OPENAI_DECISION_MODEL = "gpt-5.4-mini"
 
 
 def _openai_key() -> str:

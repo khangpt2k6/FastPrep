@@ -199,7 +199,7 @@ class Session:
             self.store.set_description(item.job.id, text)
         jobs = [replace(item.job, description=text) for item, text in zip(batch, texts, strict=True)]
         cv = self.config.cv.read_text(encoding="utf-8-sig")
-        asked = question(self.config.goals, _places(self.config))
+        asked = question(self.config.goals, _places(self.config), _relocation(self.config, self.store.answers()))
         reasons: list[str] = []
         try:
             values = await fits(self.client, self.config.decision_model, cv, jobs, asked, reasons.append)
@@ -316,6 +316,15 @@ def _guidance(plugin: Plugin | None, everywhere: tuple[Plugin, ...]) -> str:
     says which is which."""
     held = "\n\n".join(extra.instructions for extra in everywhere)
     return "\n\n".join([*([plugin.instructions] if plugin else []), *([f"On every site, not only this one:\n\n{held}"] if held else [])])
+
+
+def _relocation(config: Config, answers: dict[str, str]) -> str:
+    """The countries a candidate who said they will relocate can be placed in: the search's places that are not their cities.
+    Empty when they did not say yes."""
+    if not answers.get("willing_to_relocate", "").strip().lower().startswith("y"):
+        return ""
+    cities = {city.lower() for city in config.filters.cities}
+    return ", ".join(place for place in config.filters.locations if place.lower() not in cities)
 
 
 def _places(config: Config) -> str:

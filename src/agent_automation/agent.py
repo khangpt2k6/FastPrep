@@ -44,6 +44,10 @@ def _env(*names: str) -> str:
     return next((os.environ[name].strip() for name in names if os.environ.get(name, "").strip()), "")
 
 
+def _moving(answers: dict[str, str]) -> bool:
+    return answers.get("willing_to_relocate", "").strip().lower().startswith("y")
+
+
 class Supabase:
     """The few Supabase calls the agent needs, signed in as the person so RLS applies."""
 
@@ -248,25 +252,26 @@ class Agent:
             return
         data = row["data"]
         answers = profile_answers(data)
+        moving_before = _moving(self.session.store.answers())
         for name, value in answers.items():
             self.session.store.set_answer(name, value, source="web")
         click.echo(f"Profile from the dashboard: {len(answers)} answers updated.")
-        await self.follow_places(data)
+        await self.follow_places(data, rescore=_moving(self.session.store.answers()) != moving_before)
 
-    async def follow_places(self, data: dict[str, Any]) -> None:
-        """The countries the person wants to work in decide where the search looks. A change drops the jobs not tried yet,
-        here and on the page, and searches again."""
+    async def follow_places(self, data: dict[str, Any], rescore: bool = False) -> None:
+        """The countries the person wants to work in decide where the search looks, and whether they will relocate decides
+        how far: a change drops the jobs not tried yet, here and on the page, and searches and scores again."""
         auth = data.get("authorization") if isinstance(data.get("authorization"), dict) else {}
         personal = data.get("personal") if isinstance(data.get("personal"), dict) else {}
         countries = [str(name) for name in auth.get("countries") or [] if str(name).strip()]
         async with self.search_lock:
-            if not set_search_places(self.session.config, countries, str(personal.get("city") or "")):
+            if not set_search_places(self.session.config, countries, str(personal.get("city") or "")) and not rescore:
                 return
             self.session.config = load_config(self.session.workspace)
             self.session.store.forget_untried()
             await self.db.delete("automation_jobs", {"user_id": f"eq.{self.db.user_id}", "status": "in.(new,scored,passed_over)"})
             self.target = SCORE_TARGET
-        self.say("searching", f"Looking for jobs in {', '.join(countries)}")
+        self.say("searching", f"Looking for jobs in {', '.join(countries) or 'your area'}")
         self.wake.set()
 
     async def profile_loop(self) -> None:

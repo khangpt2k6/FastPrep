@@ -42,11 +42,17 @@ class NotAnswering(Exception):
     """A round's request got no answer, so its postings were left to be read again."""
 
 
-def question(goals: str, places: str) -> str:
-    """The one question, asked of every posting: in or out."""
+def question(goals: str, places: str, relocate_to: str = "") -> str:
+    """The one question, asked of every posting: in or out. With `relocate_to` (the countries a candidate who will move
+    names), a posting anywhere in them is in reach."""
+    where = (
+        f"it is based anywhere in {relocate_to}, where they will relocate, or remote and open to people living there"
+        if relocate_to
+        else f"it is based in or near {places}, or remote and open to people living there"
+    )
     return (
         f"The candidate is looking for this: {goals} This job is in line with it: the same kind of work at their level, "
-        f"their CV shows what the posting requires, and it is based in or near {places}, or remote and open to people living there."
+        f"their CV shows what the posting requires, and {where}."
     )
 
 
@@ -136,8 +142,15 @@ VERDICTS_SCHEMA: dict[str, Any] = {
 async def _ask_openai(client: AsyncOpenAI, model: str, cv: str, jobs: list[Job], asked: str) -> dict[str, Any]:
     """The same verdicts from a plain OpenAI chat call, shaped like the /systemone reply."""
     system = (
-        "You screen job postings for a candidate. For each posting, decide whether the statement below holds, and give "
-        "certainty from 0.0 (surely false) to 1.0 (surely true). Answer every posting id exactly once.\n\nStatement: " + asked
+        "You screen job postings for a candidate, as a careful recruiter would. For each posting, decide whether the statement "
+        "below holds, and give certainty from 0.0 (surely false) to 1.0 (surely true). Answer every posting id exactly once.\n\n"
+        "Judge level strictly, from the CV's dates and roles, not from the skills alone:\n"
+        "- A posting for more seniority than the CV shows is not in line: senior, staff, principal, lead, manager or director in "
+        "the title, or years of professional experience the CV does not have. Give it at most 0.15.\n"
+        "- A candidate still in school (a graduation date still to come) fits internships, co-ops, part-time roles and new-grad "
+        "roles that start after they graduate. A full-time role that needs them now is not in line: at most 0.3.\n"
+        "- When level and timing fit, judge the work itself: the same kind of work, and the CV shows what the posting requires.\n\n"
+        "Statement: " + asked
     )
     postings = "\n\n".join(
         f"### {_name(i)}\n{job.title} at {job.company}. Location: {job.location}\n\n{job.description[:OPENAI_DESCRIPTION_CHARS]}" for i, job in enumerate(jobs)
