@@ -12,8 +12,8 @@ from typing import Any
 from openai import APIStatusError, AsyncOpenAI
 
 from aihawk import errors
-from aihawk.database import Job
 from aihawk.config import openai_mode
+from aihawk.database import Job
 from aihawk.llm import account_problem, not_answering, refused, structured
 
 DESCRIPTION_CHARS = 24000

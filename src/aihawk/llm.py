@@ -16,7 +16,7 @@ from openai import (
     RateLimitError,
 )
 
-from aihawk.config import base_url, KEY_ENV, KEY_URL, Config, ConfigError
+from aihawk.config import KEY_ENV, KEY_URL, Config, ConfigError, base_url
 
 # The SDK's own default is ten minutes a try, and a model that hangs would hold a request that long.
 TIMEOUT = 180.0

@@ -16,7 +16,7 @@ from openai import AsyncOpenAI
 from aihawk import errors
 from aihawk.apply import MAILBOXES, NOTE, Outcome, apply_to_job, signed_in, site_of
 from aihawk.apply import sign_in as sign_in_browser
-from aihawk.config import base_url, KEY_ENV, Config, ConfigError, load_config
+from aihawk.config import KEY_ENV, Config, ConfigError, base_url, load_config
 from aihawk.database import load_manifest, search
 from aihawk.library import Library
 from aihawk.llm import SPEND, Mark, make_client, no_credit, not_answering, refused
