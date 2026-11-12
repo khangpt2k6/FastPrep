@@ -118,6 +118,8 @@ class Filters:
     cities: tuple[str, ...] = ()
     countries: tuple[str, ...] = ()
     plan: Plan = field(default_factory=Plan)
+    # Words a title must hold one of, such as Intern: a title with none of them is never fetched.
+    require: tuple[str, ...] = ()
 
     def titles(self) -> str:
         """What a person reads as the job titles searched: the first wording of each of the plan's first nodes, not their ids."""
@@ -299,7 +301,7 @@ def load_config(workspace: Path) -> Config:
 
     filters = raw.get("filters") or {}
     if not isinstance(filters, dict):
-        raise ConfigError("filters must be a mapping with include, exclude, locations, cities, countries and plan")
+        raise ConfigError("filters must be a mapping with include, exclude, require, locations, cities, countries and plan")
     return Config(
         workspace=workspace,
         goals=str(raw.get("goals") or ""),
@@ -315,5 +317,6 @@ def load_config(workspace: Path) -> Config:
             _words(filters.get("cities"), "filters.cities"),
             _words(filters.get("countries"), "filters.countries"),
             _plan(filters.get("plan")),
+            _words(filters.get("require"), "filters.require"),
         ),
     )

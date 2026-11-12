@@ -50,6 +50,7 @@ def database(tmp_path: Path) -> str:
     [
         (Filters(include=("python",)), ["Senior Python Engineer", "Python Intern"]),
         (Filters(include=("PYTHON",), exclude=("senior",)), ["Python Intern"]),
+        (Filters(include=("python",), require=("intern", "co-op")), ["Python Intern"]),
         (Filters(include=("python",), locations=("italy",)), ["Senior Python Engineer"]),
         (Filters(include=("java",)), []),
     ],

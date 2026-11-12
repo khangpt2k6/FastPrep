@@ -223,6 +223,10 @@ def search(library: Library, filters: Filters, max_age_days: int, limit: int = R
     clause, words = _any_word("title", tuple(dict.fromkeys(form.text for node in nodes if node.weight > 0 for form in node.forms)))
     # A posting's address comes from a source, and it is fetched and opened: only the web's, never a file on this computer.
     clauses, parameters = [*place_clauses, clause, "regexp_matches(url, '(?i)^https?://')"], [*place_parameters, *words]
+    if filters.require:
+        clause, words = _any_word("title", filters.require)
+        clauses.append(clause)
+        parameters += words
     if filters.exclude:
         clause, words = _any_word("title", filters.exclude)
         clauses.append(f"NOT {clause}")

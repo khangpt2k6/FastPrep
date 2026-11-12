@@ -28,7 +28,7 @@ from agent_automation.tools.database import DatabaseError
 from agent_automation.tools.library import LibraryError, Stopped
 from agent_automation.ui.screens import WIDE_ENOUGH, Confirm, JobDetails, Rows, Said, SendBatch, SentList, Settings, SignIn, StopSending, TextPrompt, clipped
 
-SEARCH_SETTINGS = {"places", "exclude", "max_age_days"}
+SEARCH_SETTINGS = {"places", "require", "exclude", "max_age_days"}
 
 
 def whole_days(answer: str) -> str | None:
@@ -39,6 +39,7 @@ def whole_days(answer: str) -> str | None:
 # What each setting asks, and what makes an answer wrong.
 SETTING_QUESTIONS = {
     "places": ("Where (cities or countries, separated by commas)", None),
+    "require": ("Only titles with (words like Intern, separated by commas)", None),
     "exclude": ("Leave out (words in job titles, separated by commas)", None),
     "max_age_days": ("Posted within (days)", whole_days),
 }
@@ -737,6 +738,7 @@ class AutomationApp(App[None]):
         return [
             ("places", "Where", ", ".join(config.filters.locations)),
             ("exclude", "Leave out", ", ".join(config.filters.exclude)),
+            ("require", "Only titles with", ", ".join(config.filters.require)),
             ("max_age_days", "Posted within (days)", str(config.max_age_days)),
             ("resume", "Resume", (self.session.resume_name() or "loaded") if config.cv.is_file() else "none yet"),
             ("answers", "Your answers", str(len(self.own_answers()))),

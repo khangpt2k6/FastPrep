@@ -278,7 +278,7 @@ def _write_settings(config: Config, settings: dict[str, Any]) -> None:
 
 
 def save_setting(config: Config, name: str, value: str) -> None:
-    """One setting as the Settings screen changes it. `places` and `exclude` are lists written with commas; the others are read
+    """One setting as the Settings screen changes it. `places`, `exclude` and `require` are lists written with commas; the others are read
     as they stand, and an empty one goes back to its default. The titles are not among them: they come from the resume."""
     path = config.workspace / CONFIG_FILE
     settings = (yaml.safe_load(path.read_text(encoding="utf-8-sig")) or {}) if path.is_file() else {}
@@ -287,8 +287,8 @@ def save_setting(config: Config, name: str, value: str) -> None:
     if name == "places":
         # Places the person names replace the ones read from the CV, whose country codes would rule the new ones out.
         filters.update({"locations": words, "cities": words, "countries": []})
-    elif name == "exclude":
-        filters["exclude"] = words
+    elif name in ("exclude", "require"):
+        filters[name] = words
     elif value.strip():
         settings[name] = int(value) if name == "max_age_days" and value.strip().isdigit() else value.strip()
     else:

@@ -30,6 +30,7 @@ What the forms are told about you beyond the CV (email, phone, location, links, 
 | `decision_model` | `typesafe/jev-1.14` | Jev, which answers for each posting whether it is in line with you; how sure it is makes the score, from 1 to 5. |
 | `filters.include` | empty | Title words to search for. With no `plan`, each word is one title. Agent Automation asks for a resume until there is a CV and at least one of these. Reading a resume writes this and `plan`, and the Settings screen does not offer them: a different search comes from a different resume. |
 | `filters.exclude` | empty | Whole words: a posting whose title has one of them is left out. |
+| `filters.require` | empty | Whole words: only a posting whose title has one of them is fetched, such as `[Intern, Internship, Co-op]`. |
 | `filters.locations` | empty | Places a posting's location must name, as whole words. |
 | `filters.countries` | empty | Countries. A posting in one of them passes. With `locations`, a posting that names one of those places passes only if its country is empty or one of these. |
 | `filters.cities` | empty | Cities. A posting whose location names one ranks higher; others are not left out. |
