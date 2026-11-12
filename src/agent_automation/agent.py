@@ -44,6 +44,14 @@ def _env(*names: str) -> str:
     return next((os.environ[name].strip() for name in names if os.environ.get(name, "").strip()), "")
 
 
+def _quiet(loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
+    """Windows' event loop reports a connection the other side already closed as an error with a traceback; it is not one."""
+    error = context.get("exception")
+    if isinstance(error, (ConnectionAbortedError, ConnectionResetError)) and "_call_connection_lost" in repr(context.get("handle") or context.get("message")):
+        return
+    loop.default_exception_handler(context)
+
+
 def _moving(answers: dict[str, str]) -> bool:
     return answers.get("willing_to_relocate", "").strip().lower().startswith("y")
 
@@ -141,6 +149,7 @@ class Agent:
         self.profile_seen = ""
         # One search at a time: a change of places must not land in the middle of a round.
         self.search_lock = asyncio.Lock()
+        self.fresh = True
 
     # What the page shows about the agent.
 
@@ -210,6 +219,10 @@ class Agent:
                     self.say("searching", "Searching the job database")
                     await self.session.find()
                     await self.score_rounds()
+                    if self.fresh:
+                        # The first push of this run replaces what an earlier run left on the page, so the two agree.
+                        await self.db.delete("automation_jobs", {"user_id": f"eq.{self.db.user_id}", "status": "in.(new,scored,passed_over)"})
+                        self.fresh = False
                     await self.push_jobs()
                 self.say("ready", f"{self.scored()} jobs scored. Pick the ones to apply to.")
             except Exception as error:  # noqa: BLE001  Said on the page; the next search tries again.
@@ -288,7 +301,8 @@ class Agent:
         while True:
             try:
                 rows = await self.db.select(
-                    "automation_commands", {"status": "eq.pending", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
+                    "automation_commands",
+                    {"status": "eq.pending", "kind": "in.(apply,search)", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
                 )
                 if rows:
                     await self.handle(rows[0])
@@ -304,7 +318,7 @@ class Agent:
             if command["kind"] == "search":
                 self.target = self.scored() + SCORE_MORE
                 self.wake.set()
-            else:
+            elif command["kind"] == "apply":
                 await self.apply_all(command["job_ids"], bool(command["dry_run"]))
             await self.db.update("automation_commands", {"id": f"eq.{command['id']}"}, {"status": "done"})
         except Exception as error:  # noqa: BLE001  The page shows the command as failed, with why.
@@ -380,6 +394,7 @@ class Agent:
         self.say("ready", f"Done with {len(job_ids)} application(s){mode}.")
 
     async def run(self) -> None:
+        asyncio.get_running_loop().set_exception_handler(_quiet)
         await self.db.sign_in()
         click.echo(f"Signed in to Supabase as {self.db.email}")
         try:

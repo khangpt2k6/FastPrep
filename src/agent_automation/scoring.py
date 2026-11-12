@@ -128,8 +128,14 @@ VERDICTS_SCHEMA: dict[str, Any] = {
             "type": "array",
             "items": {
                 "type": "object",
-                "properties": {"id": {"type": "string"}, "certainty": {"type": "number"}},
-                "required": ["id", "certainty"],
+                "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string", "description": "The posting's title, copied exactly."},
+                    "seniority_fits": {"type": "boolean"},
+                    "timing_fits": {"type": "boolean"},
+                    "certainty": {"type": "number"},
+                },
+                "required": ["id", "title", "seniority_fits", "timing_fits", "certainty"],
                 "additionalProperties": False,
             },
         }
@@ -138,26 +144,57 @@ VERDICTS_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
+# Caps on a verdict whose level or timing the model said does not fit, so one judgement cannot be talked over by the other.
+SENIORITY_CAP = 0.15
+TIMING_CAP = 0.3
+
+OPENAI_SCORING_RULES = (
+    "You screen job postings for a candidate, as a careful recruiter would. Judge each posting on its own, and answer every "
+    "posting id exactly once, copying its title exactly.\n\n"
+    "- seniority_fits: false when the posting wants more seniority than the CV shows: senior, staff, principal, lead, manager, "
+    "director, a level II or higher, or years of professional experience the CV does not have. Internships and part-time "
+    "roles held during school do not count as years of professional experience.\n"
+    "- timing_fits: for a candidate still in school (a graduation date still to come), true for internships, co-ops, "
+    "part-time roles, and new-grad roles for their graduation year or later; false for a full-time role that needs them before "
+    "they graduate. For a candidate who has graduated, true.\n"
+    "- certainty, from 0.0 to 1.0: how sure you are that the statement below holds, judging the work itself: the same kind of "
+    "work, and the CV shows what the posting requires.\n\n"
+    "Statement: "
+)
+
+
+def _same_title(said: str, title: str) -> bool:
+    """Whether the title the model copied is this posting's: a verdict filed under the wrong id is worse than none."""
+    def words(text: str) -> str:
+        return " ".join("".join(char if char.isalnum() else " " for char in text.lower()).split())
+
+    said, title = words(said), words(title)
+    return bool(said) and (said == title or said.startswith(title[:30]) or title.startswith(said[:30]))
+
 
 async def _ask_openai(client: AsyncOpenAI, model: str, cv: str, jobs: list[Job], asked: str) -> dict[str, Any]:
-    """The same verdicts from a plain OpenAI chat call, shaped like the /systemone reply."""
-    system = (
-        "You screen job postings for a candidate, as a careful recruiter would. For each posting, decide whether the statement "
-        "below holds, and give certainty from 0.0 (surely false) to 1.0 (surely true). Answer every posting id exactly once.\n\n"
-        "Judge level strictly, from the CV's dates and roles, not from the skills alone:\n"
-        "- A posting for more seniority than the CV shows is not in line: senior, staff, principal, lead, manager or director in "
-        "the title, or years of professional experience the CV does not have. Give it at most 0.15.\n"
-        "- A candidate still in school (a graduation date still to come) fits internships, co-ops, part-time roles and new-grad "
-        "roles that start after they graduate. A full-time role that needs them now is not in line: at most 0.3.\n"
-        "- When level and timing fit, judge the work itself: the same kind of work, and the CV shows what the posting requires.\n\n"
-        "Statement: " + asked
-    )
+    """The same verdicts from a plain OpenAI chat call, shaped like the /systemone reply. Level and timing are asked as
+    yes or no and cap the certainty; a verdict whose copied title is not its posting's is dropped."""
     postings = "\n\n".join(
         f"### {_name(i)}\n{job.title} at {job.company}. Location: {job.location}\n\n{job.description[:OPENAI_DESCRIPTION_CHARS]}" for i, job in enumerate(jobs)
     )
     user = f"## Candidate CV\n{cv}\n\n## Postings\n{postings}"
-    reply = await structured(client, model, system, user, "verdicts", VERDICTS_SCHEMA)
-    return {"answers": {f"{a['id']}_fit": {"noul": a["certainty"]} for a in reply.get("answers", []) if isinstance(a, dict) and "id" in a}}
+    reply = await structured(client, model, OPENAI_SCORING_RULES + asked, user, "verdicts", VERDICTS_SCHEMA)
+    titles = {_name(i): job.title for i, job in enumerate(jobs)}
+    answers: dict[str, Any] = {}
+    for answer in reply.get("answers", []):
+        if not isinstance(answer, dict) or answer.get("id") not in titles or not _same_title(str(answer.get("title") or ""), titles[answer["id"]]):
+            continue
+        try:
+            certainty = float(answer["certainty"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if answer.get("seniority_fits") is False:
+            certainty = min(certainty, SENIORITY_CAP)
+        if answer.get("timing_fits") is False:
+            certainty = min(certainty, TIMING_CAP)
+        answers[f"{answer['id']}_fit"] = {"noul": certainty}
+    return {"answers": answers}
 
 
 def request_body(model: str, cv: str, jobs: list[Job], asked: str) -> dict[str, Any]:
