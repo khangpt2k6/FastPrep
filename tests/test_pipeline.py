@@ -257,14 +257,14 @@ def days_ago(days: int) -> str:
     return (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
 
 
-def test_a_chunk_holds_what_aihawk_reads_and_a_short_text_goes_to_the_chunks_without_one(tmp_path: Path) -> None:
+def test_a_chunk_holds_what_the_app_reads_and_a_short_text_goes_to_the_chunks_without_one(tmp_path: Path) -> None:
     write_source(tmp_path, "s", [("https://a.example/1", "One", text("First text")), ("https://a.example/2", "Two", "Too short to say anything")])
     merged(tmp_path)
     out = (tmp_path / "out").as_posix()
     connection = duckdb.connect()
     assert sorted(path.name for path in (tmp_path / "out").glob("*.parquet")) == ["jobs_0.parquet", "titles_0.parquet"]
     held = [row[0] for row in connection.execute(f"DESCRIBE SELECT * FROM read_parquet('{out}/jobs_0.parquet')").fetchall()]
-    assert held == list(build.CHUNK_COLUMNS), "a chunk holds what AIHawk reads, the address being the key"
+    assert held == list(build.CHUNK_COLUMNS), "a chunk holds what Agent Automation reads, the address being the key"
     assert connection.execute(f"SELECT url, description FROM read_parquet('{out}/jobs_0.parquet')").fetchall() == [("https://a.example/1", text("First text"))]
     assert connection.execute(f"SELECT url, description FROM read_parquet('{out}/titles_0.parquet')").fetchall() == [("https://a.example/2", None)]
 

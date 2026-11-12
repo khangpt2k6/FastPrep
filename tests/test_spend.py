@@ -6,8 +6,8 @@ import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 
-from aihawk.llm import Spend, money
-from aihawk.store import Store
+from agent_automation.llm import Spend, money
+from agent_automation.store import Store
 
 
 def usage(prompt: int, completion: int, cached: int = 0) -> SimpleNamespace:

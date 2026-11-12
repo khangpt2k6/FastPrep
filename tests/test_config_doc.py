@@ -6,13 +6,13 @@ import re
 from dataclasses import fields
 from pathlib import Path
 
-from aihawk.config import Config, Filters
+from agent_automation.config import Config, Filters
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def read_keys() -> set[str]:
-    """The keys aihawk.yaml feeds, from the code: each Config field, and each Filters field under `filters.`. The folder is not a key."""
+    """The keys automation.yaml feeds, from the code: each Config field, and each Filters field under `filters.`. The folder is not a key."""
     keys = {field.name for field in fields(Config) if field.name not in ("workspace", "filters")}
     return keys | {f"filters.{field.name}" for field in fields(Filters)}
 

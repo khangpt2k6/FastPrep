@@ -1,9 +1,9 @@
-"""Publishes work/out to the Hugging Face dataset AIHawk reads, in one commit: the build's chunks, its delta and the
+"""Publishes work/out to the Hugging Face dataset Agent Automation reads, in one commit: the build's chunks, its delta and the
 manifest that names them, so a reader never sees a half-replaced database.
 
 Everything is under `library/`: the chunks of a build in `library/builds/<tag>/`, the deltas in `library/deltas/`, the
 manifest at `library/manifest.json`. The layout before it, an index and description files read in place at the dataset's
-root, is removed by the first commit that finds it: AIHawk brings itself up to date at every start, and nothing reads it.
+root, is removed by the first commit that finds it: Agent Automation brings itself up to date at every start, and nothing reads it.
 
 A database much smaller than the one before it is refused: losing a big source must not silently empty everyone's search.
 The last KEEP builds stay, so a reader still downloading one does not lose its chunks. Each build also publishes the delta

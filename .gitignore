@@ -7,9 +7,9 @@ dist/
 build/
 *.egg-info/
 
-# A search's own files: your CV, your answers and what AIHawk records.
-.aihawk/
-aihawk.yaml
+# A search's own files: your CV, your answers and what Agent Automation records.
+.agent-automation/
+automation.yaml
 cv.md
 answers.yaml
 

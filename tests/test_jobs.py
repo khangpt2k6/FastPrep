@@ -15,10 +15,10 @@ from pathlib import Path
 import duckdb
 import pytest
 
-from aihawk.config import Arc, ConfigError, Filters, Form, Node, Plan, load_config
-from aihawk.database import RECALL, UNDESCRIBED, DatabaseError, Job, load_manifest, rarity, search
-from aihawk.library import Library, LibraryError
-from aihawk.store import COLUMNS, Proof, Store, said, sent_word, write_applied
+from agent_automation.config import Arc, ConfigError, Filters, Form, Node, Plan, load_config
+from agent_automation.database import RECALL, UNDESCRIBED, DatabaseError, Job, load_manifest, rarity, search
+from agent_automation.library import Library, LibraryError
+from agent_automation.store import COLUMNS, Proof, Store, said, sent_word, write_applied
 from fakes import publish
 
 JOB = Job("g:a:1", "Acme", "Senior Python Engineer", "Rome, Italy", "u", "a", "d")
@@ -142,7 +142,7 @@ def test_an_arc_multiplier_is_clamped_to_three_at_most_and_a_twentieth_at_least(
 
 
 def test_a_plan_is_read_from_the_settings_with_unused_conditions_left_empty(tmp_path: Path) -> None:
-    (tmp_path / "aihawk.yaml").write_text(
+    (tmp_path / "automation.yaml").write_text(
         textwrap.dedent("""\
             filters:
               plan:
@@ -174,7 +174,7 @@ def test_a_plan_is_read_from_the_settings_with_unused_conditions_left_empty(tmp_
     ],
 )
 def test_a_plan_that_cannot_be_used_is_refused(tmp_path: Path, text: str) -> None:
-    (tmp_path / "aihawk.yaml").write_text(text, encoding="utf-8")
+    (tmp_path / "automation.yaml").write_text(text, encoding="utf-8")
     with pytest.raises(ConfigError):
         load_config(tmp_path)
 
@@ -286,7 +286,7 @@ def test_a_database_that_cannot_be_reached_says_so_in_plain_words_and_keeps_the_
     monkeypatch.setattr("urllib.request.urlopen", down)
     with pytest.raises(DatabaseError) as raised:
         load_manifest("https://example.test/manifest.json")
-    assert str(raised.value) == "Cannot reach the job list. Check your internet connection, then start AIHawk again."
+    assert str(raised.value) == "Cannot reach the job list. Check your internet connection, then start Agent Automation again."
     assert "getaddrinfo" not in str(raised.value) and isinstance(raised.value.__cause__, urllib.error.URLError)
 
 
@@ -396,7 +396,7 @@ def test_the_list_weighs_the_score_and_the_title_together_and_keeps_what_jev_pas
     ["filters: {include: python}", "a: [", "- a"],
 )
 def test_settings_that_cannot_be_used_are_refused(tmp_path: Path, text: str) -> None:
-    (tmp_path / "aihawk.yaml").write_text(text, encoding="utf-8")
+    (tmp_path / "automation.yaml").write_text(text, encoding="utf-8")
     with pytest.raises(ConfigError):
         load_config(tmp_path)
 
@@ -406,7 +406,7 @@ def test_settings_that_cannot_be_used_are_refused(tmp_path: Path, text: str) -> 
     [("max_age_days: sixty", "max_age_days"), ("max_age_days: [1]", "max_age_days"), ("filters: [python]", "filters")],
 )
 def test_a_setting_of_the_wrong_type_is_a_config_error_that_names_the_key(tmp_path: Path, text: str, key: str) -> None:
-    (tmp_path / "aihawk.yaml").write_text(text, encoding="utf-8")
+    (tmp_path / "automation.yaml").write_text(text, encoding="utf-8")
     with pytest.raises(ConfigError, match=key):
         load_config(tmp_path)
 
@@ -416,7 +416,7 @@ def test_a_posting_whose_address_is_not_the_webs_is_left_out(tmp_path: Path) -> 
     connection.execute("CREATE TABLE t (key VARCHAR, url VARCHAR, title VARCHAR, company VARCHAR, location VARCHAR, description VARCHAR, posted_at VARCHAR)")
     connection.executemany(
         "INSERT INTO t VALUES (?, ?, 'Java Developer', ?, 'Rome', 'd', NULL)",
-        [("web", "HTTPS://a.example/1", "a"), ("disk", "file:///home/me/.aihawk/key", "b"), ("app", "javascript:alert(1)", "c")],
+        [("web", "HTTPS://a.example/1", "a"), ("disk", "file:///home/me/.agent-automation/key", "b"), ("app", "javascript:alert(1)", "c")],
     )
     path = publish(connection, tmp_path, 4)
     assert [job.id for job in found(path, Filters(include=("java",)), 60, tmp_path)] == ["web"]
@@ -487,7 +487,7 @@ def test_a_new_folder_defaults_to_the_published_database(tmp_path: Path) -> None
     config = load_config(tmp_path)
     assert config.model == "deepseek/deepseek-v4.1-flash" and config.database == "https://huggingface.co/datasets/feder-cr/jobs/resolve/main/library/manifest.json"
     # A settings file that names the layout before 2026-11-09 reads the new one.
-    (tmp_path / "aihawk.yaml").write_text("database: https://huggingface.co/datasets/feder-cr/jobs/resolve/main/manifest.json\n", encoding="utf-8")
+    (tmp_path / "automation.yaml").write_text("database: https://huggingface.co/datasets/feder-cr/jobs/resolve/main/manifest.json\n", encoding="utf-8")
     assert load_config(tmp_path).database.endswith("/library/manifest.json")
 
 
@@ -561,7 +561,7 @@ def test_a_chain_that_cannot_be_followed_starts_over_from_the_newest_build(tmp_p
 
 
 def test_many_deltas_become_one_and_a_search_finds_the_same(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import aihawk.library as library_module
+    import agent_automation.library as library_module
 
     monkeypatch.setattr(library_module, "DELTAS_APART", 2)
     site = tmp_path / "site"
@@ -619,7 +619,7 @@ def test_a_search_can_run_on_the_first_chunk_while_the_others_still_come(tmp_pat
 
 
 def test_the_bytes_that_came_are_told_from_nothing_to_all_of_them_and_never_go_back(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import aihawk.library as library_module
+    import agent_automation.library as library_module
 
     monkeypatch.setattr(library_module, "READ_BYTES", 64)
     monkeypatch.setattr(library_module, "TELL_EVERY", 0.0)
@@ -639,7 +639,7 @@ def test_the_bytes_that_came_are_told_from_nothing_to_all_of_them_and_never_go_b
 
 
 def test_a_download_is_told_at_most_every_half_second(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import aihawk.library as library_module
+    import agent_automation.library as library_module
 
     monkeypatch.setattr(library_module, "READ_BYTES", 16)
     site = tmp_path / "site" / "b1"
@@ -671,9 +671,9 @@ def test_a_build_the_dataset_no_longer_has_starts_over_from_the_newest(tmp_path:
     assert titles_here(library) == {"https://a/9": "From b2"} and library.state["build"] == "b2"
 
 
-def test_a_download_stops_at_its_next_part_when_aihawk_closes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import aihawk.library as library_module
-    from aihawk.library import Stopped
+def test_a_download_stops_at_its_next_part_when_the_app_closes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import agent_automation.library as library_module
+    from agent_automation.library import Stopped
 
     monkeypatch.setattr(library_module, "READ_BYTES", 64)
     site = tmp_path / "site" / "b1"

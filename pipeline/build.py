@@ -1,4 +1,4 @@
-"""Builds AIHawk's job database: every public job database we know of, in one schema, one row per posting.
+"""Builds Agent Automation's job database: every public job database we know of, in one schema, one row per posting.
 
     python pipeline/build.py --out work                 # everything
     python pipeline/build.py --out work --only riley    # only these sources
@@ -6,8 +6,8 @@
 Scheduled every five hours in .github/workflows/jobs-database.yml, which publishes work/out to the Hugging Face dataset feder-cr/jobs. Each source is read into
 work/sources/<name>.parquet in the columns of COMMON. A source that fails is left out of that build's database and named in
 the manifest; publish.py refuses a database that lost too much of itself. Postings are the same posting when their links
-are the same after `posting_key` (src/aihawk/key.sql), and of those the row with the longest description is kept. The
-output is cut in chunks of CHUNK_ROWS complete postings, the newest first, which AIHawk downloads one after the other:
+are the same after `posting_key` (src/agent_automation/key.sql), and of those the row with the longest description is kept. The
+output is cut in chunks of CHUNK_ROWS complete postings, the newest first, which Agent Automation downloads one after the other:
 every column it reads and nothing else, the posting's address being its key.
 """
 
@@ -39,7 +39,7 @@ RAW = "https://raw.githubusercontent.com"
 JOBHIVE = "https://storage.stapply.ai/jobhive/v1/all.parquet"
 # The private dataset that keeps each source as the last build read it, with the version it was read at.
 SOURCES_DATASET = "feder-cr/jobs-sources"
-# The database is a list of chunks, each CHUNK_ROWS complete postings, the newest first: AIHawk downloads them one after the
+# The database is a list of chunks, each CHUNK_ROWS complete postings, the newest first: Agent Automation downloads them one after the
 # other and searches what it has, so a person who has just come sees jobs arrive instead of waiting for all of them. A
 # posting with a description of at least DESCRIBED characters is in a `jobs_N` chunk; the others, whose text says nothing a
 # title does not, are in `titles_N` chunks, which come last and which a search puts below the rest.
@@ -73,7 +73,7 @@ FIRST_SEEN = 2
 LIBRARY = "https://huggingface.co/datasets/feder-cr/jobs/resolve/main/library/manifest.json"
 # What a remote posting's location says when it does not narrow the job to a place; the database says "Remote" instead.
 NO_PLACE = ("", "remote", "anywhere", "worldwide", "global")
-# What a chunk holds: nothing AIHawk does not read. The posting's address is its key.
+# What a chunk holds: nothing Agent Automation does not read. The posting's address is its key.
 CHUNK_COLUMNS = ("url", "title", "company", "location", "country", "posted_at", "description")
 # A description shorter than this says nothing a title does not: it is not published, and the posting is a `titles_N` one.
 DESCRIBED = 200
@@ -84,8 +84,8 @@ COMMON = (
 )  # fmt: skip
 
 # The posting's identity in its link: no scheme, no www, no tracking, no /apply step, in lower case.
-# The key a posting is known by, defined once for the build and for AIHawk, which stores every job under it.
-KEY_SQL = Path(__file__).resolve().parents[1] / "src" / "aihawk" / "key.sql"
+# The key a posting is known by, defined once for the build and for Agent Automation, which stores every job under it.
+KEY_SQL = Path(__file__).resolve().parents[1] / "src" / "agent_automation" / "key.sql"
 KEY = "posting_key(url)"
 
 # The country of a posting as ISO 3166's two letters, whatever a source writes: its name, in English or in its own language,
@@ -136,7 +136,7 @@ AGGREGATORS = (
     "trudvsem", "directemployers", "usajobs", "glints", "jobvision", "jobinja", "irantalent", "51job", "myjobmu", "hrge",
     "jobmaster", "reed",
 )  # fmt: skip
-# Boards whose posting pages, opened on 2026-11-08, sent the applicant on to one of the companies' own forms AIHawk applies
+# Boards whose posting pages, opened on 2026-11-08, sent the applicant on to one of the companies' own forms Agent Automation applies
 # on: such a posting goes, as the job is the form's. EURES, the Bundesagentur, Welcome to the Jungle and Job Bank showed no
 # such link in their pages, and are not opened.
 LINKING_BOARDS = ("jobsch", "arbeitnow", "wellfound", "cryptojobs", "workingnomads", "arbetsformedlingen", "remotive")
@@ -492,7 +492,7 @@ def _hf_revision(dataset: str) -> str:
 def _file_version(url: str) -> str | None:
     """What a server says of a file without sending it: its ETag, or its date and size; None when it says neither."""
     # Named: Cloudflare, in front of jobhive's storage, refuses Python's own user agent.
-    request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "AIHawk-pipeline (+https://github.com/feder-cr/Jobs_Applier_AI_Agent)"})
+    request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Agent Automation-pipeline (+https://github.com/khangpt2k6/agent-automation)"})
     with urllib.request.urlopen(request, timeout=60) as response:
         etag, modified, size = (response.headers.get(name, "") for name in ("ETag", "Last-Modified", "Content-Length"))
     return etag or (f"{modified} {size}" if modified else None)
@@ -594,7 +594,7 @@ class SourceCache:
 
 def sends_on(url: str) -> bool:
     """Whether a board's posting page sends the applicant on to a company's own form: by its address after redirects, or a
-    link in it to one of the forms AIHawk applies on. A page that cannot be read does not."""
+    link in it to one of the forms Agent Automation applies on. A page that cannot be read does not."""
     forms = [re.escape(host) for host, vendor in VENDOR_HOSTS if vendor not in AGGREGATORS]
     request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"})
     try:
@@ -808,7 +808,7 @@ def seen_dates(connection: duckdb.DuckDBPyConnection) -> bool:
     """`seen`, the date of each posting in the database now published, when its builds date every posting; False when they
     do not yet, and the postings no source dates are to be backdated."""
     try:
-        with urllib.request.urlopen(urllib.request.Request(LIBRARY, headers={"User-Agent": "AIHawk build"}), timeout=60) as response:
+        with urllib.request.urlopen(urllib.request.Request(LIBRARY, headers={"User-Agent": "Agent Automation build"}), timeout=60) as response:
             manifest = json.load(response)
     except urllib.error.HTTPError as error:
         # The first build of all has no manifest before it; any other failure stops the build, rather than date anew,
@@ -850,7 +850,7 @@ def chunk_entry(connection: duckdb.DuckDBPyConnection, path: Path) -> dict[str, 
 
 
 def chunk_order(path: Path) -> tuple[int, int]:
-    """The order AIHawk downloads them in: the `jobs_N` chunks, then the `titles_N` ones, each the newest first."""
+    """The order Agent Automation downloads them in: the `jobs_N` chunks, then the `titles_N` ones, each the newest first."""
     kind, _, number = path.stem.partition("_")
     return (kind == "titles", int(number))
 
@@ -880,7 +880,7 @@ def main() -> None:
     counts = merge(connection, work, board_check(cache, work), backdate=not dated)
     out = work / "out"
     manifest = {
-        # 3: the database is a list of chunks of complete postings, the newest first, which AIHawk downloads one after the
+        # 3: the database is a list of chunks of complete postings, the newest first, which Agent Automation downloads one after the
         # other, and a delta of the postings added, changed or gone for each build.
         "schema": 3,
         "built_at": datetime.now(UTC).isoformat(timespec="seconds"),

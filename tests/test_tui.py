@@ -19,21 +19,21 @@ from openai import APIConnectionError, APIStatusError, APITimeoutError, Authenti
 from pypdf import PdfWriter
 from textual.widgets import DataTable, Input, RichLog, Static
 
-import aihawk.tui as tui_module
-from aihawk import apply as apply_module
-from aihawk import session as session_module
-from aihawk import telemetry
-from aihawk.apply import Outcome
-from aihawk.cli import main as cli_main
-from aihawk.config import Config, ConfigError, load_config
-from aihawk.database import Job
-from aihawk.library import Library
-from aihawk.llm import explain
-from aihawk.profile import import_answers_file, install_resume, read_resume
-from aihawk.screens import Confirm, JobDetails, Said, SendBatch, SentDetails, SentList, Settings, SignIn, StopSending, TextPrompt
-from aihawk.session import Session
-from aihawk.store import Proof, Store, Stored
-from aihawk.tui import AIHawk
+import agent_automation.tui as tui_module
+from agent_automation import apply as apply_module
+from agent_automation import session as session_module
+from agent_automation import telemetry
+from agent_automation.apply import Outcome
+from agent_automation.cli import main as cli_main
+from agent_automation.config import Config, ConfigError, load_config
+from agent_automation.database import Job
+from agent_automation.library import Library
+from agent_automation.llm import explain
+from agent_automation.profile import import_answers_file, install_resume, read_resume
+from agent_automation.screens import Confirm, JobDetails, Said, SendBatch, SentDetails, SentList, Settings, SignIn, StopSending, TextPrompt
+from agent_automation.session import Session
+from agent_automation.store import Proof, Store, Stored
+from agent_automation.tui import AutomationApp
 from fakes import ScriptedBrowser, publish
 
 PROFILE = {
@@ -79,7 +79,7 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("ORCAROUTER_API_KEY", "test-key")
     folder = tmp_path / "home"
     folder.mkdir()
-    (folder / "aihawk.yaml").write_text(f"database: {published(tmp_path)}\n", encoding="utf-8")
+    (folder / "automation.yaml").write_text(f"database: {published(tmp_path)}\n", encoding="utf-8")
     # A home where the mail was already left for later: the first-run question about it has its own tests.
     store = Store(folder / "data" / "jobs.db")
     store.set_answer("mail_provider", "later")
@@ -94,8 +94,8 @@ def resume(tmp_path: Path) -> Path:
     return path
 
 
-def scripted_app(home: Path, resume: Path | None, **options: Any) -> AIHawk:
-    app = AIHawk(home, resume, **options)
+def scripted_app(home: Path, resume: Path | None, **options: Any) -> AutomationApp:
+    app = AutomationApp(home, resume, **options)
     model = ScriptedModelForApp()
     app.session._client = model
     return app
@@ -128,7 +128,7 @@ class ScriptedModelForApp:
         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content, tool_calls=None))])
 
 
-async def settle(pilot: Any, app: AIHawk) -> None:
+async def settle(pilot: Any, app: AutomationApp) -> None:
     """Until the flow's workers are done or waiting on the person: the scoring, the jobs coming and the searches over them."""
     for _ in range(200):
         await pilot.pause(0.05)
@@ -139,7 +139,7 @@ async def settle(pilot: Any, app: AIHawk) -> None:
 
 
 def test_a_scored_posting_with_no_text_keeps_its_score_and_the_row_carries_no_status(home: Path) -> None:
-    app = AIHawk(home)
+    app = AutomationApp(home)
     judged = Stored(Job("x", "Co", "Engineer", "Milan", "u", "u", ""), "scored", 3.0, None)
     read = Stored(Job("y", "Co", "Engineer", "Milan", "u", "u", "A posting."), "scored", 3.0, None)
     # The row says the score and nothing else; that the text was missing is said in the details, on Enter.
@@ -147,7 +147,7 @@ def test_a_scored_posting_with_no_text_keeps_its_score_and_the_row_carries_no_st
     assert str(app.row(judged)[0]) == "" and str(app.row(read)[0]) == ""
 
 
-def companies(app: AIHawk) -> list[str]:
+def companies(app: AutomationApp) -> list[str]:
     table = app.query_one(DataTable)
     return [str(table.get_row_at(index)[2]) for index in range(table.row_count)]
 
@@ -199,7 +199,7 @@ def test_no_key_asks_for_one_and_keeps_it_on_this_computer(home: Path, resume: P
     monkeypatch.delenv("ORCAROUTER_API_KEY")
 
     async def run() -> None:
-        app = AIHawk(home, resume)
+        app = AutomationApp(home, resume)
         async with app.run_test(size=(140, 40)) as pilot:
             await settle(pilot, app)
             assert isinstance(app.screen, TextPrompt)
@@ -214,19 +214,19 @@ def test_no_key_asks_for_one_and_keeps_it_on_this_computer(home: Path, resume: P
     assert (home / "key").read_text(encoding="utf-8") == "sk-orca-typed"
 
 
-def fake_apply(app: AIHawk, outcomes: list[Outcome], calls: list[Any]) -> None:
+def fake_apply(app: AutomationApp, outcomes: list[Outcome], calls: list[Any]) -> None:
     async def apply_to_job(client: Any, model: str, job: Any, cv: str, answers: str, cv_file: Path, data_dir: Path, profile: Path, guidance: str = "", reaches: frozenset[str] = frozenset(), key_env: str = "") -> Outcome:
         calls.append({"job": job, "answers": answers, "guidance": guidance, "cv_file": cv_file, "profile": profile})
         return outcomes.pop(0)
 
-    import aihawk.session as session_module
+    import agent_automation.session as session_module
 
     session_module.apply_to_job = apply_to_job  # type: ignore[assignment]
 
 
 @pytest.fixture
 def restored_apply() -> Any:
-    import aihawk.session as session_module
+    import agent_automation.session as session_module
 
     original = session_module.apply_to_job
     yield
@@ -241,7 +241,7 @@ async def wait_for_screen(pilot: Any, kind: type) -> None:
     raise AssertionError(f"{kind.__name__} never came")
 
 
-async def wait_for_apply(pilot: Any, app: AIHawk) -> None:
+async def wait_for_apply(pilot: Any, app: AutomationApp) -> None:
     for _ in range(100):
         await pilot.pause(0.05)
         if not app.applying():
@@ -320,7 +320,7 @@ def test_a_form_on_a_company_host_is_the_site_other_and_its_host_is_in_no_event(
 
 
 def test_a_dry_run_is_not_counted(home: Path, resume: Path, restored_apply: Any, tracked: list[dict[str, Any]], monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("AIHAWK_DRY_RUN", "1")
+    monkeypatch.setenv("AGENT_DRY_RUN", "1")
     asyncio.run(send_applications(home, resume, ["space"], [Outcome("blocked", "Dry run: nothing sent.")]))
     assert tracked == []
 
@@ -423,7 +423,7 @@ def test_s_lists_what_was_tried_newest_first_and_enter_opens_one_in_full(home: P
     asyncio.run(run())
 
 
-def logged(app: AIHawk) -> str:
+def logged(app: AutomationApp) -> str:
     return "\n".join(strip.text for strip in app.query_one(RichLog).lines)
 
 
@@ -575,7 +575,7 @@ def test_a_resume_and_the_files_beside_it_saved_with_a_byte_order_mark_are_read(
     path.write_bytes(bom + CV_TEXT.encode("utf-8"))
     assert read_resume(path).startswith("# Ada")
     (home / "answers.yaml").write_bytes(bom + b"email: ada@example.com\n")
-    (home / "aihawk.yaml").write_bytes(bom + f"database: {published(tmp_path)}\n".encode())
+    (home / "automation.yaml").write_bytes(bom + f"database: {published(tmp_path)}\n".encode())
     monkeypatch.delenv("ORCAROUTER_API_KEY")
     (home / "key").write_bytes(bom + b"sk-orca-typed\n")
     config = load_config(home)
@@ -621,7 +621,7 @@ def test_a_new_resume_never_invents_a_contact_detail(home: Path, resume: Path) -
 
 
 def test_a_new_resume_replaces_the_plan_and_keeps_what_the_person_excluded(home: Path, resume: Path) -> None:
-    (home / "aihawk.yaml").write_text("filters:\n  exclude: [intern]\n", encoding="utf-8")
+    (home / "automation.yaml").write_text("filters:\n  exclude: [intern]\n", encoding="utf-8")
     asyncio.run(install_resume(ScriptedModelForApp(), load_config(home), resume, Store(load_config(home).store_file)))  # type: ignore[arg-type]
     config = load_config(home)
     assert config.filters.exclude == ("intern",)
@@ -662,7 +662,7 @@ def scripted_server(monkeypatch: pytest.MonkeyPatch, server: ScriptedServer) -> 
     monkeypatch.setattr(apply_module, "_server", started)
 
 
-async def wait_for_sign_in_to_close(pilot: Any, app: AIHawk) -> None:
+async def wait_for_sign_in_to_close(pilot: Any, app: AutomationApp) -> None:
     for _ in range(100):
         await pilot.pause(0.05)
         if not app.signing_in:
@@ -689,7 +689,7 @@ class RefusingModel:
         raise status_error(AuthenticationError, 401)
 
 
-def log_text(app: AIHawk) -> str:
+def log_text(app: AutomationApp) -> str:
     return "\n".join(line.text for line in app.query_one(RichLog).lines)
 
 
@@ -698,7 +698,7 @@ def test_a_key_from_the_file_that_orcarouter_refuses_is_forgotten_and_asked_for_
     (home / "key").write_text("sk-orca-wrong", encoding="utf-8")
 
     async def run() -> None:
-        app = AIHawk(home, resume)
+        app = AutomationApp(home, resume)
         app.session._client = RefusingModel()  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
             await settle(pilot, app)
@@ -715,7 +715,7 @@ def test_a_key_from_the_file_that_orcarouter_refuses_is_forgotten_and_asked_for_
 
 def test_a_key_from_the_environment_that_orcarouter_refuses_is_named_and_not_asked_for(home: Path, resume: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home, resume)
+        app = AutomationApp(home, resume)
         app.session._client = RefusingModel()  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
             await settle(pilot, app)
@@ -746,7 +746,7 @@ def test_ctrl_c_at_the_key_prompt_leaves(home: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.delenv("ORCAROUTER_API_KEY")
 
     async def run() -> None:
-        app = AIHawk(home, None)
+        app = AutomationApp(home, None)
         async with app.run_test(size=(80, 24)) as pilot:
             await settle(pilot, app)
             assert isinstance(app.screen, TextPrompt)
@@ -762,7 +762,7 @@ def test_leaving_while_a_prompt_is_open_raises_nothing(home: Path, monkeypatch: 
     monkeypatch.delenv("ORCAROUTER_API_KEY")
 
     async def run() -> None:
-        app = AIHawk(home, None)
+        app = AutomationApp(home, None)
         async with app.run_test(size=(80, 24)) as pilot:
             await settle(pilot, app)
             assert isinstance(app.screen, TextPrompt)
@@ -791,7 +791,7 @@ def test_at_80_columns_a_message_wraps_whole_and_quit_is_on_the_footer(home: Pat
 
 def test_a_posting_whose_words_look_like_markup_is_shown_as_it_is(home: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home)
+        app = AutomationApp(home)
         app.session.store.add(Job("odd", "Co [/y]", "[/x] Engineer", "Milan [bold", "https://a.example/", "https://a.example/", ""))
         app.start = lambda: None  # type: ignore[method-assign]
         async with app.run_test(size=(140, 40)) as pilot:
@@ -806,7 +806,7 @@ def test_a_posting_whose_words_look_like_markup_is_shown_as_it_is(home: Path) ->
 
 def test_a_page_shows_whole_and_sorted_and_a_later_score_never_moves_it(home: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home)
+        app = AutomationApp(home)
         store = app.session.store
         for n in range(4):
             store.add(Job(f"j{n}", f"Firm {n}", "Engineer", "Milan", f"https://a.example/{n}", f"https://a.example/{n}", "d"))
@@ -831,7 +831,7 @@ def test_a_page_shows_whole_and_sorted_and_a_later_score_never_moves_it(home: Pa
 
 def test_home_and_end_take_the_cursor_and_a_new_width_refits_the_columns_and_the_log(home: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home)
+        app = AutomationApp(home)
         for n in range(80):
             app.session.store.add(Job(f"j{n}", f"Firm {n}", "Engineer", "Milan", f"https://a.example/{n}", f"https://a.example/{n}", "d"))
         app.start = lambda: None  # type: ignore[method-assign]
@@ -906,10 +906,10 @@ def test_settings_change_the_search_from_the_screen_and_search_again(home: Path,
 
 def test_a_setting_that_would_not_load_is_refused_and_the_file_stays_as_it_was(home: Path) -> None:
     session = Session(home)
-    before = (home / "aihawk.yaml").read_text(encoding="utf-8")
+    before = (home / "automation.yaml").read_text(encoding="utf-8")
     with pytest.raises(ConfigError, match="max_age_days"):
         session.change_setting("max_age_days", "soon")
-    assert (home / "aihawk.yaml").read_text(encoding="utf-8") == before
+    assert (home / "automation.yaml").read_text(encoding="utf-8") == before
     session.close()
 
 
@@ -1018,7 +1018,7 @@ def test_the_mail_question_left_with_escape_is_not_asked_again_at_the_next_start
 
 def test_jev_scores_one_page_ahead_and_only_the_side_arrows_turn_the_pages(home: Path, resume: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # A page of one job, and Jev reading two at a time: the three postings make three pages.
-    import aihawk.session as session_module
+    import agent_automation.session as session_module
 
     monkeypatch.setattr(session_module, "WIDE", 2)
     monkeypatch.setattr(tui_module, "PAGE", 1)
@@ -1066,7 +1066,7 @@ def test_the_right_arrow_says_so_when_there_is_nothing_left_to_read(home: Path, 
 
 
 def test_a_postings_html_reads_as_paragraphs_and_bullets_even_when_escaped() -> None:
-    from aihawk.screens import readable
+    from agent_automation.screens import readable
 
     html_text = "<h2>About us</h2><p>We build <strong>tools</strong>.</p><ul><li>Python</li><li>Go &amp; Rust</li></ul><script>x()</script>"
     expected = "About us\n\nWe build tools.\n\n• Python\n• Go & Rust"
@@ -1092,12 +1092,12 @@ class Flaky(ScriptedModelForApp):
         return await super().post(path, body=body, cast_to=cast_to)
 
 
-def last_line(app: AIHawk) -> str:
+def last_line(app: AutomationApp) -> str:
     """The last thing the log was told, whole: what it shows is wrapped to its width."""
     return app.query_one(Said).said[-1]
 
 
-def footer_text(app: AIHawk) -> str:
+def footer_text(app: AutomationApp) -> str:
     return " ".join("".join(segment.text for segment in strip) for strip in app.screen._compositor.render_strips())
 
 
@@ -1105,7 +1105,7 @@ def test_a_round_the_service_does_not_answer_is_asked_again_and_no_job_is_set_as
     monkeypatch.setattr(tui_module, "RETRY_PAUSES", (0.01, 0.01, 0.01, 0.01))
 
     async def run() -> None:
-        app = AIHawk(home, resume)
+        app = AutomationApp(home, resume)
         model = Flaky(2)
         app.session._client = model  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
@@ -1122,7 +1122,7 @@ def test_after_four_pauses_it_stops_says_how_to_ask_again_and_the_right_arrow_as
     monkeypatch.setattr(tui_module, "RETRY_PAUSES", (0.01, 0.01, 0.01, 0.01))
 
     async def run() -> None:
-        app = AIHawk(home, resume)
+        app = AutomationApp(home, resume)
         model = Flaky(100)
         app.session._client = model  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
@@ -1142,7 +1142,7 @@ def test_after_four_pauses_it_stops_says_how_to_ask_again_and_the_right_arrow_as
 
 def test_a_key_the_service_refuses_while_scoring_still_asks_for_another(home: Path, resume: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home, resume)
+        app = AutomationApp(home, resume)
         app.session._client = RefusingModel()  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
             await settle(pilot, app)
@@ -1194,7 +1194,7 @@ def test_with_no_key_the_line_says_the_next_key_and_it_works(home: Path, monkeyp
     monkeypatch.delenv("ORCAROUTER_API_KEY")
 
     async def run() -> None:
-        app = AIHawk(home, None)
+        app = AutomationApp(home, None)
         async with app.run_test(size=(80, 24)) as pilot:
             await settle(pilot, app)
             await pilot.press("escape")
@@ -1305,8 +1305,8 @@ def test_leaving_a_word_out_drops_the_listed_jobs_that_have_it(home: Path, resum
     asyncio.run(run())
 
 
-def test_the_answers_the_person_sees_and_counts_leave_out_aihawks_own(home: Path) -> None:
-    app = AIHawk(home)
+def test_the_answers_the_person_sees_and_counts_leave_out_the_apps_own(home: Path) -> None:
+    app = AutomationApp(home)
     store = app.session.store
     store.set_answer("account_password", "G-secret")
     store.set_answer("phone", "123")
@@ -1317,7 +1317,7 @@ def test_the_answers_the_person_sees_and_counts_leave_out_aihawks_own(home: Path
 
 
 def test_every_reason_a_form_stops_for_has_plain_words_and_an_unknown_one_does_not_blame_the_service() -> None:
-    from aihawk.apply import BLOCKED_BY, WHY_NOT_SENT, why_not_sent
+    from agent_automation.apply import BLOCKED_BY, WHY_NOT_SENT, why_not_sent
 
     for reason in (*BLOCKED_BY, "stuck", "no_code", "mailbox_signed_out", "never_clicked", "form_not_loaded", "refused_by_form"):
         assert reason in WHY_NOT_SENT, reason
@@ -1331,7 +1331,7 @@ def test_every_reason_a_form_stops_for_has_plain_words_and_an_unknown_one_does_n
 def test_a_time_the_store_wrote_in_utc_is_shown_on_the_persons_own_clock() -> None:
     from datetime import datetime
 
-    from aihawk.screens import when_short
+    from agent_automation.screens import when_short
 
     moment = datetime.fromisoformat("2026-11-05T10:00:00+00:00").astimezone()
     assert when_short("2026-11-05T10:00:00+00:00") == moment.strftime("%Y-%m-%d %H:%M")
@@ -1351,7 +1351,7 @@ def test_a_store_from_before_reasons_were_kept_gets_the_column(tmp_path: Path) -
     assert [item.reason for item in store.sent()] == ["captcha"]
 
 
-async def send_batch(app: AIHawk, pilot: Any, presses: list[str]) -> None:
+async def send_batch(app: AutomationApp, pilot: Any, presses: list[str]) -> None:
     await settle(pilot, app)
     await pilot.press(*presses, "a")
     await wait_for_screen(pilot, SendBatch)
@@ -1364,7 +1364,7 @@ def test_the_batch_confirmation_says_what_it_will_do_and_the_keys_are_in_the_foo
         async with app.run_test(size=(80, 24)) as pilot:
             await send_batch(app, pilot, ["space"])
             hint = str(app.screen.query_one(".hint", Static).content)
-            assert hint.startswith("AIHawk fills each company's form in the browser with your resume and your answers (e shows them), and sends it in your name.")
+            assert hint.startswith("Agent Automation fills each company's form in the browser with your resume and your answers (e shows them), and sends it in your name.")
             assert "Enter" not in hint and "Esc" not in hint
             assert "Send" in footer_text(app) and "Cancel" in footer_text(app)
             await pilot.press("escape")
@@ -1411,7 +1411,7 @@ def test_while_a_batch_is_sent_one_line_names_the_job_it_is_on_and_changes_in_pl
             await gates.pop(0).wait()
             return Outcome("submitted", "ok")
 
-        import aihawk.session as session_module
+        import agent_automation.session as session_module
 
         session_module.apply_to_job = slow  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
@@ -1484,7 +1484,7 @@ def test_quitting_while_applications_are_sent_asks_once_and_escape_goes_back(hom
             await gate.wait()
             return Outcome("submitted", "ok")
 
-        import aihawk.session as session_module
+        import agent_automation.session as session_module
 
         session_module.apply_to_job = slow  # type: ignore[assignment]
         async with app.run_test(size=(80, 24)) as pilot:
@@ -1528,7 +1528,7 @@ def test_s_a_and_e_while_applications_are_sent_say_to_wait(home: Path, resume: P
             await gate.wait()
             return Outcome("submitted", "ok")
 
-        import aihawk.session as session_module
+        import agent_automation.session as session_module
 
         session_module.apply_to_job = slow  # type: ignore[assignment]
         async with app.run_test(size=(140, 40)) as pilot:
@@ -1550,12 +1550,12 @@ def test_the_key_prompt_says_what_orcarouter_is_that_it_costs_and_that_esc_is_al
     monkeypatch.delenv("ORCAROUTER_API_KEY")
 
     async def run() -> None:
-        app = AIHawk(home, None)
+        app = AutomationApp(home, None)
         async with app.run_test(size=(80, 24)) as pilot:
             await settle(pilot, app)
             assert app.screen.question == "Paste your OrcaRouter key"
             hint = str(app.screen.query_one(".hint", Static).content).splitlines()
-            assert hint[0] == "AIHawk uses OrcaRouter, a paid AI service, to read your resume and fill the forms: a few cents per application."
+            assert hint[0] == "Agent Automation uses OrcaRouter, a paid AI service, to read your resume and fill the forms: a few cents per application."
             # The address on a line of its own, whole, the referral path in it.
             assert hint[1] == "Get a key at orcarouter.ai/ref/ref_accd17afb78fc95ac4d7"
             assert hint[2] == "Ctrl+O opens it in your browser · It stays on this computer"
@@ -1576,7 +1576,7 @@ def test_the_mail_question_is_plain_and_an_address_that_is_neither_gmail_nor_out
         async with app.run_test(size=(80, 24)) as pilot:
             await settle(pilot, app)
             assert app.screen.question == "Some job sites email a code to confirm it is you. Which email do you apply with?"
-            assert str(app.screen.query_one(".hint", Static).content) == "AIHawk opens that inbox in its browser only to read those codes · Enter · Esc later"
+            assert str(app.screen.query_one(".hint", Static).content) == "Agent Automation opens that inbox in its browser only to read those codes · Enter · Esc later"
             app.screen.query_one(Input).value = "ada@yahoo.com"
             await pilot.press("enter")
             await pilot.pause(0.3)
@@ -1730,7 +1730,7 @@ def test_the_heading_says_how_many_are_selected_names_a_place_once_and_a_cut_wor
         app = scripted_app(home, resume)
         async with app.run_test(size=(80, 24)) as pilot:
             await settle(pilot, app)
-            assert str(app.query_one("#heading", Static).render()) == "AIHawk · Python Engineer · Milan, Italy"
+            assert str(app.query_one("#heading", Static).render()) == "Agent Automation · Python Engineer · Milan, Italy"
             assert str(app.query_one("#count", Static).render()) == "Page 1 · 4 jobs"
             await pilot.press("space", "space")
             assert str(app.query_one("#count", Static).render()) == "Page 1 · 4 jobs · 2 selected"
@@ -1748,7 +1748,7 @@ def test_the_heading_says_how_many_are_selected_names_a_place_once_and_a_cut_wor
 
 def test_a_job_with_no_description_says_it_can_still_be_applied_to_and_the_details_name_o(home: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home)
+        app = AutomationApp(home)
         app.start = lambda: None  # type: ignore[method-assign]
         job = Job("x", "Co", "Engineer", "Milan", "https://a.example/", "https://a.example/", "")
         async with app.run_test(size=(80, 24)) as pilot:
@@ -1783,7 +1783,7 @@ def two_chunk_home(home: Path, tmp_path: Path) -> None:
     )
     site = tmp_path / "two"
     site.mkdir()
-    (home / "aihawk.yaml").write_text(f"database: {publish(connection, site, 2)}\n", encoding="utf-8")
+    (home / "automation.yaml").write_text(f"database: {publish(connection, site, 2)}\n", encoding="utf-8")
 
 
 def hold_second_chunk(monkeypatch: pytest.MonkeyPatch) -> threading.Event:
@@ -1851,10 +1851,10 @@ def test_while_the_jobs_come_the_right_arrow_says_when_more_pages_come(home: Pat
     asyncio.run(run())
 
 
-def live_app(home: Path, monkeypatch: pytest.MonkeyPatch, count: int, page: int) -> AIHawk:
+def live_app(home: Path, monkeypatch: pytest.MonkeyPatch, count: int, page: int) -> AutomationApp:
     """An app whose jobs are still coming, with `count` scored jobs, the best first: job 0 is the best."""
     monkeypatch.setattr(tui_module, "PAGE", page)
-    app = AIHawk(home)
+    app = AutomationApp(home)
     app.start = lambda: None  # type: ignore[method-assign]
     for number in range(count):
         job = Job(f"j{number:02d}", f"Firm {number:02d}", "Engineer", "Milan", f"https://x.example/{number:02d}", f"https://x.example/{number:02d}", "")
@@ -1864,7 +1864,7 @@ def live_app(home: Path, monkeypatch: pytest.MonkeyPatch, count: int, page: int)
     return app
 
 
-def shown(app: AIHawk) -> list[str]:
+def shown(app: AutomationApp) -> list[str]:
     return [str(row[2]).replace("Firm ", "") for row in (app.query_one(DataTable).get_row_at(index) for index in range(app.query_one(DataTable).row_count))]
 
 
@@ -1928,7 +1928,7 @@ def test_a_selected_job_stays_on_the_live_page_even_when_better_ones_come(home: 
 
 
 def test_the_wait_line_counts_megabytes_and_says_how_long_once_the_speed_is_known(home: Path) -> None:
-    app = AIHawk(home)
+    app = AutomationApp(home)
     app.bytes = (12_000_000, 667_000_000)
     assert app.download_line() == "Getting the jobs, first time only: 12 of 667 MB. The first ones appear in a moment."
     # One megabyte a second over the last half minute: 547 seconds left, ten minutes rounded up.
@@ -1949,7 +1949,7 @@ def test_the_wait_line_counts_megabytes_and_says_how_long_once_the_speed_is_know
 
 def test_the_download_line_does_not_cover_a_scoring_that_did_not_go_through(home: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home)
+        app = AutomationApp(home)
         app.start = lambda: None  # type: ignore[method-assign]
         async with app.run_test(size=(120, 40)) as pilot:
             app.bytes = (1_000_000, 10_000_000)
@@ -2091,7 +2091,7 @@ def test_ctrl_c_copies_what_is_selected_and_stays_and_with_nothing_selected_it_l
     copied: list[str] = []
 
     async def run() -> None:
-        app = AIHawk(home)
+        app = AutomationApp(home)
         app.start = lambda: None  # type: ignore[method-assign]
         monkeypatch.setattr(app, "copy_to_clipboard", copied.append)
         async with app.run_test(size=(80, 24)) as pilot:
@@ -2128,12 +2128,12 @@ def test_ctrl_c_on_a_selected_answer_in_a_text_question_copies_it_and_a_password
 def test_ctrl_o_at_the_key_question_opens_the_address_in_the_browser_and_the_hint_says_so(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ORCAROUTER_API_KEY")
     opened: list[str] = []
-    import aihawk.screens as screens_module
+    import agent_automation.screens as screens_module
 
     monkeypatch.setattr(screens_module.webbrowser, "open", lambda url: opened.append(url) or True)
 
     async def run() -> None:
-        app = AIHawk(home, None)
+        app = AutomationApp(home, None)
         async with app.run_test(size=(80, 24)) as pilot:
             await settle(pilot, app)
             assert "Ctrl+O opens it in your browser" in str(app.screen.query_one(".hint", Static).content)
@@ -2162,7 +2162,7 @@ class NoCredit(ScriptedModelForApp):
 
 def test_with_no_credit_the_jobs_stay_new_scoring_stops_and_says_what_to_do_and_the_arrow_goes_on(home: Path, resume: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home, resume)
+        app = AutomationApp(home, resume)
         model = NoCredit()
         app.session._client = model  # type: ignore[assignment]
         async with app.run_test(size=(80, 24)) as pilot:
@@ -2190,7 +2190,7 @@ def test_an_application_that_fails_for_want_of_credit_says_so_and_the_batch_stop
             calls.append(job.company)
             raise status_error(APIStatusError, 402)
 
-        import aihawk.session as session_module
+        import agent_automation.session as session_module
 
         session_module.apply_to_job = broke  # type: ignore[assignment]
         async with app.run_test(size=(120, 40)) as pilot:
@@ -2224,7 +2224,7 @@ def test_what_an_application_waits_for_is_said_in_the_line_of_the_batch_and_the_
             note("")
             return Outcome("submitted", "ok")
 
-        import aihawk.session as session_module
+        import agent_automation.session as session_module
 
         session_module.apply_to_job = slowed  # type: ignore[assignment]
         async with app.run_test(size=(80, 24)) as pilot:
@@ -2269,7 +2269,7 @@ def test_the_engine_is_brought_in_the_background_once_and_only_when_it_is_not_he
 
     assert command == [system.executable, "-m", "invisible_playwright", "fetch"]
     assert keywords["stdin"] == keywords["stdout"] == keywords["stderr"] == subprocess.DEVNULL
-    # It does not outlive AIHawk.
+    # It does not outlive Agent Automation.
     process = session.engine
     assert process is not None and not process.ended  # type: ignore[attr-defined]
     session.close()
@@ -2350,7 +2350,7 @@ class Broken(ScriptedModelForApp):
 
 def test_an_unexpected_error_says_where_the_details_are_and_shows_none_of_them(home: Path, resume: Path) -> None:
     async def run() -> None:
-        app = AIHawk(home, resume)
+        app = AutomationApp(home, resume)
         app.session._client = Broken()  # type: ignore[assignment]
         async with app.run_test(size=(80, 24)) as pilot:
             await settle(pilot, app)

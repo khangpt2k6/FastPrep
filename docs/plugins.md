@@ -6,21 +6,21 @@ A plugin is a prompt, not code: it explains the site to the model.
 
 ## Where a plugin lives
 
-- `src/aihawk/plugins/<name>.md`: the bundled plugins. Add yours here for a pull request.
-- `plugins/<name>.md` in your AIHawk folder: yours alone. A file with the same name as a bundled one replaces it.
+- `src/agent_automation/plugins/<name>.md`: the bundled plugins. Add yours here for a pull request.
+- `plugins/<name>.md` in your Agent Automation folder: yours alone. A file with the same name as a bundled one replaces it.
 
-AIHawk reads the plugins when it starts, so restart it after you change one.
+Agent Automation reads the plugins when it starts, so restart it after you change one.
 
 ## Front matter
 
 | Field | What it does |
 |---|---|
-| `name` | The name AIHawk shows while it fills the form. Default: the file name without `.md`. |
+| `name` | The name Agent Automation shows while it fills the form. Default: the file name without `.md`. |
 | `hosts` | The sites the plugin is for, as a list, such as `[jobs.lever.co]`. A posting matches when its host is one of these or ends with `.` and one of them, so `jobs.eu.lever.co` matches too. Required unless `when` is `always`. |
 | `apply_path` | Added to the posting's path to reach the form, once: `/apply` turns `https://jobs.lever.co/acme/1` into `https://jobs.lever.co/acme/1/apply`. A link that already ends with it is left as it is. The query string is kept. Without it, the posting's own link is the form's link. |
-| `when` | Only `always`. The body is then added to every form's instructions, beside the site's own plugin. Such a plugin has no `hosts` and does not make a site count as one AIHawk can apply to. Three are bundled: `gmail.md` and `outlook.md` for a code a site sends by email, and `menus.md`, which tells the model how each kind of list is worked on any site. Say in a site's plugin only what differs from those, and never repeat how a list is worked or where to look in a mailbox. |
+| `when` | Only `always`. The body is then added to every form's instructions, beside the site's own plugin. Such a plugin has no `hosts` and does not make a site count as one Agent Automation can apply to. Three are bundled: `gmail.md` and `outlook.md` for a code a site sends by email, and `menus.md`, which tells the model how each kind of list is worked on any site. Say in a site's plugin only what differs from those, and never repeat how a list is worked or where to look in a mailbox. |
 
-A file that does not parse (no front matter, `hosts` missing, a `when` other than `always`, empty instructions) stops AIHawk at start with a message that names the plugin. Save the file as UTF-8. A byte-order mark at its start, as some Windows editors write, is fine: AIHawk skips it.
+A file that does not parse (no front matter, `hosts` missing, a `when` other than `always`, empty instructions) stops Agent Automation at start with a message that names the plugin. Save the file as UTF-8. A byte-order mark at its start, as some Windows editors write, is fine: Agent Automation skips it.
 
 ## The order of sections
 
@@ -85,7 +85,7 @@ Two things are not road but boundary, and they stay. What the model must not do,
 
 ## A real example
 
-`src/aihawk/plugins/lever.md`, as it is in this version:
+`src/agent_automation/plugins/lever.md`, as it is in this version:
 
 ```markdown
 ---
@@ -110,13 +110,13 @@ After sending: the "Success!" shown after the CV upload is the upload, not the s
 
 ## Try a plugin without touching the repository
 
-Put your file in `~/.aihawk/plugins/` (on Windows, `%USERPROFILE%\.aihawk\plugins`), and restart AIHawk. A file with the name of a bundled plugin replaces it.
+Put your file in `~/.agent-automation/plugins/` (on Windows, `%USERPROFILE%.agent-automation\plugins`), and restart Agent Automation. A file with the name of a bundled plugin replaces it.
 
 ## Test a plugin without sending anything to an employer
 
-AIHawk fills a form only after your yes, and that yes sends it. So do not test a plugin on a live posting unless you mean to apply. Test it in one of these ways:
+Agent Automation fills a form only after your yes, and that yes sends it. So do not test a plugin on a live posting unless you mean to apply. Test it in one of these ways:
 
-- **A dry run on a real posting.** Set `AIHAWK_DRY_RUN` in the environment. The form is filled and the send control is named, and nothing is sent: the job is recorded as blocked, with a screenshot, and every step the model took goes to `data/trace.log`.
+- **A dry run on a real posting.** Set `AGENT_DRY_RUN` in the environment. The form is filled and the send control is named, and nothing is sent: the job is recorded as blocked, with a screenshot, and every step the model took goes to `data/trace.log`.
 - **Unit tests.** `tests/test_plugins.py` shows how a plugin is checked: `fill_form` runs against `ScriptedModel` and `ScriptedBrowser` from `tests/fakes.py`, with no network and no send. Run `pytest -m "not browser"`.
 - **A local page.** `tests/test_real_browser.py` serves a form from `127.0.0.1` and runs the real browser on it. Copy a site's form structure into such a page to check the selectors, with `pytest -m browser`.
 - **The batch screen.** If you select a job and press `a` by mistake, Esc at the confirmation sends nothing and says "Nothing was sent."

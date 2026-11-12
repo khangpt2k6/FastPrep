@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 import pytest
 
-from aihawk import telemetry
+from agent_automation import telemetry
 
 
 class _Inline:
@@ -24,7 +24,7 @@ class _Inline:
 @pytest.fixture(autouse=True)
 def no_engine_download(monkeypatch: pytest.MonkeyPatch) -> None:
     """No test starts the browser's download: the engine is here, unless a test says it is not."""
-    from aihawk import session
+    from agent_automation import session
 
     monkeypatch.setattr(session.Session, "engine_here", staticmethod(lambda: True))
 
@@ -33,7 +33,7 @@ def no_engine_download(monkeypatch: pytest.MonkeyPatch) -> None:
 def a_computer_the_browser_can_open_on(monkeypatch: pytest.MonkeyPatch) -> None:
     """A test's browser is a scripted one: on a Linux machine with no desktop, as the ones that run these tests are, the
     check for one would stop every application before it. A test of that check names its own system."""
-    from aihawk import apply
+    from agent_automation import apply
 
     monkeypatch.setattr(apply, "PLATFORM", "a test")
 
@@ -43,7 +43,7 @@ def no_key_check_over_the_network(monkeypatch: pytest.MonkeyPatch) -> None:
     """A key typed in is tried against the service: in a test the service cannot be reached, which never blocks a key."""
     from openai import APIConnectionError
 
-    from aihawk import session
+    from agent_automation import session
 
     async def unreachable(path: str, cast_to: type) -> None:
         raise APIConnectionError(request=httpx.Request("GET", "https://api.orcarouter.ai/v1" + path))
@@ -53,7 +53,7 @@ def no_key_check_over_the_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture(autouse=True)
 def tracked(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
-    """AIHawk's events go to PostHog: in a test they go here, as they are sent, and a test that asks for them reads what was sent."""
+    """Agent Automation's events go to PostHog: in a test they go here, as they are sent, and a test that asks for them reads what was sent."""
     events: list[dict[str, Any]] = []
     monkeypatch.setattr(telemetry, "send", events.append)
     monkeypatch.setattr(telemetry, "threading", SimpleNamespace(Thread=_Inline))

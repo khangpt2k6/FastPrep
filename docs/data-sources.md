@@ -1,8 +1,8 @@
 # Data sources
 
-AIHawk's job database merges 37 public sources. No posting with a LinkedIn link is kept, whatever source carries it, and a board's posting whose page sends the applicant on to a company's own form gives way to that form. `pipeline/build.py` reads each one every five hours, and the [feder-cr/jobs](https://huggingface.co/datasets/feder-cr/jobs) dataset on Hugging Face keeps the postings that survive the merge. Each posting names the sources that carried it.
+Agent Automation's job database merges 37 public sources. No posting with a LinkedIn link is kept, whatever source carries it, and a board's posting whose page sends the applicant on to a company's own form gives way to that form. `pipeline/build.py` reads each one every five hours, and the [feder-cr/jobs](https://huggingface.co/datasets/feder-cr/jobs) dataset on Hugging Face keeps the postings that survive the merge. Each posting names the sources that carried it.
 
-The licence column says what the source's own page or dataset card states. "Not stated" means no licence was found on that page or in the repository's files. Nothing here is a legal opinion. Postings belong to their employers, and the link in each row goes to the page this table relies on. AIHawk's MIT licence covers its code, not this data.
+The licence column says what the source's own page or dataset card states. "Not stated" means no licence was found on that page or in the repository's files. Nothing here is a legal opinion. Postings belong to their employers, and the link in each row goes to the page this table relies on. Agent Automation's MIT licence covers its code, not this data.
 
 The repository does not state how many postings each source gives. The total in [README.md](../README.md) is for the whole database.
 

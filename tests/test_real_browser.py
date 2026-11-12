@@ -14,8 +14,8 @@ import pytest
 from mcp import ClientSession
 from mcp.client.stdio import stdio_client
 
-from aihawk.apply import _open_browser, _server, apply_to_job, server_parameters
-from aihawk.database import Job
+from agent_automation.apply import _open_browser, _server, apply_to_job, server_parameters
+from agent_automation.database import Job
 from fakes import ScriptedModel, tool_call
 
 pytestmark = pytest.mark.browser
@@ -213,7 +213,7 @@ class Jar(BaseHTTPRequestHandler):
         self.send_response(200)
         if self.path == "/set":
             # A session cookie, with no lifetime, is dropped when the browser closes: a profile keeps the ones that last.
-            self.send_header("Set-Cookie", "aihawk_profile=kept; Path=/; Max-Age=86400")
+            self.send_header("Set-Cookie", "automation_profile=kept; Path=/; Max-Age=86400")
         body = b"<title>Jar</title>"
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -246,10 +246,10 @@ def test_a_cookie_kept_in_the_profile_is_there_the_next_time_it_opens(tmp_path: 
     finally:
         server.shutdown()
     # The same profile carries the cookie to its next open; another profile never sees it.
-    assert Jar.sent == ["aihawk_profile=kept", ""]
+    assert Jar.sent == ["automation_profile=kept", ""]
 
 
-def test_the_newest_server_still_has_what_aihawk_calls(tmp_path: Path) -> None:
+def test_the_newest_server_still_has_what_the_app_calls(tmp_path: Path) -> None:
     async def check() -> None:
         async with stdio_client(server_parameters(tmp_path, tmp_path), errlog=sys.stderr) as (read, write), ClientSession(read, write) as session:
             started = await session.initialize()

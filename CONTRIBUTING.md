@@ -1,25 +1,25 @@
 # Contributing
 
-AIHawk is a command-line program in Python. The most useful contribution is a plugin for a job site: a Markdown file that tells the model how that site's application form works. Write one by following [docs/plugins.md](docs/plugins.md).
+Agent Automation is a command-line program in Python. The most useful contribution is a plugin for a job site: a Markdown file that tells the model how that site's application form works. Write one by following [docs/plugins.md](docs/plugins.md).
 
 ## Setup
 
 You need Python 3.11 or newer. CI runs the unit tests on 3.11 and 3.12, on Ubuntu, Windows and macOS.
 
 ```sh
-git clone https://github.com/feder-cr/Jobs_Applier_AI_Agent
+git clone https://github.com/khangpt2k6/agent-automation
 cd Jobs_Applier_AI_Agent
 python -m venv .venv
 . .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
-aihawk --help
+agent-automation-tui --help
 ```
 
-The install pulls in `invisible-playwright-mcp` at its newest release from PyPI. It is not pinned, on purpose: the CI runs every day to show when a new release stops working with AIHawk.
+The install pulls in `invisible-playwright-mcp` at its newest release from PyPI. It is not pinned, on purpose: the CI runs every day to show when a new release stops working with Agent Automation.
 
-Running `aihawk` for real needs an OrcaRouter key and makes model calls. The tests need neither: they use scripted fakes (`tests/fakes.py`) and make no network calls to a model.
+Running `agent-automation-tui` for real needs an OrcaRouter key and makes model calls. The tests need neither: they use scripted fakes (`tests/fakes.py`) and make no network calls to a model.
 
-AIHawk keeps its files in `~/.aihawk` (on Windows, `%USERPROFILE%\.aihawk`).
+Agent Automation keeps its files in `~/.agent-automation` (on Windows, `%USERPROFILE%.agent-automation`).
 
 ## Tests
 
@@ -46,7 +46,7 @@ The workflow is `.github/workflows/tests.yml`. It runs on every push to `main`, 
 - **browser**, on Ubuntu: installs the Firefox libraries and xvfb, then `xvfb-run -a -s "-screen 0 1920x1080x24" pytest -m browser`.
 - **gate**: passes only if both jobs pass.
 
-The other workflow, `.github/workflows/jobs-database.yml`, builds the job database and publishes it to the Hugging Face dataset AIHawk reads. It runs on a schedule and by hand, not on pull requests.
+The other workflow, `.github/workflows/jobs-database.yml`, builds the job database and publishes it to the Hugging Face dataset Agent Automation reads. It runs on a schedule and by hand, not on pull requests.
 
 ## Before you open a pull request
 
@@ -60,7 +60,7 @@ The other workflow, `.github/workflows/jobs-database.yml`, builds the job databa
 - Anything that weakens what the person controls: a change that lets the model send a form or an email without the person's yes, that lets a page's text steer the model past the rules in `apply.py`, that reads mail beyond what the mail plugins allow, or that gets around a captcha or a login.
 - Real personal data in fixtures or examples: no real CVs, names, e-mail addresses, phone numbers or screenshots of someone's application. Invent the data.
 
-Use the issue templates for bugs and plugin requests. For a security problem, do not open an issue: follow [SECURITY.md](SECURITY.md). Questions go to [Discussions](https://github.com/feder-cr/Jobs_Applier_AI_Agent/discussions).
+Use the issue templates for bugs and plugin requests. For a security problem, do not open an issue: follow [SECURITY.md](SECURITY.md). Questions go to [Discussions](https://github.com/khangpt2k6/agent-automation/discussions).
 
 ## License
 

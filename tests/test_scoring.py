@@ -13,9 +13,9 @@ import httpx
 import pytest
 from openai import AsyncOpenAI
 
-from aihawk.config import DEFAULT_BASE_URL, load_config
-from aihawk.database import Job
-from aihawk.scoring import DESCRIPTION_CHARS, MAX_CHARS, MAX_POSTINGS, NOT_JUDGED, fits, question, score
+from agent_automation.config import DEFAULT_BASE_URL, load_config
+from agent_automation.database import Job
+from agent_automation.scoring import DESCRIPTION_CHARS, MAX_CHARS, MAX_POSTINGS, NOT_JUDGED, fits, question, score
 
 KEY = "sk-test-key"
 JOB = Job("g:a:1", "Acme", "Python Engineer", "Rome", "u", "a", "Build Python services.")
@@ -159,7 +159,7 @@ def test_a_failing_batch_is_split_until_the_bad_posting_is_alone() -> None:
 
 def test_the_decision_model_is_pinned_and_settable_in_the_settings(tmp_path: Path) -> None:
     assert load_config(tmp_path).decision_model == "typesafe/jev-1.14"
-    (tmp_path / "aihawk.yaml").write_text("decision_model: other/model\n", encoding="utf-8")
+    (tmp_path / "automation.yaml").write_text("decision_model: other/model\n", encoding="utf-8")
     assert load_config(tmp_path).decision_model == "other/model"
 
 
@@ -206,7 +206,7 @@ def test_a_credit_that_is_finished_is_told_in_plain_words_and_what_to_do() -> No
     import httpx as http
     from openai import APIStatusError
 
-    from aihawk.llm import explain
+    from agent_automation.llm import explain
 
     error = APIStatusError("Error code: 402", response=http.Response(402, request=http.Request("POST", "https://x.example")), body=None)
     assert explain(error) == "Your OrcaRouter credit is finished. Add credit at orcarouter.ai, then press → to go on."

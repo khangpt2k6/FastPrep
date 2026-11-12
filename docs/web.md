@@ -1,9 +1,9 @@
 # Web dashboard
 
-The dashboard in `web/` runs on Vercel. It cannot run a browser, so the work happens on your computer in `aihawk-agent`. The two talk through Supabase.
+The dashboard in `web/` runs on Vercel. It cannot run a browser, so the work happens on your computer in `agent-automation`. The two talk through Supabase.
 
 ```
-web page (Vercel)  --commands-->  Supabase  <--jobs, status--  aihawk-agent (your PC)  -->  Firefox
+web page (Vercel)  --commands-->  Supabase  <--jobs, status--  agent-automation (your PC)  -->  Firefox
 ```
 
 ## One-time setup
@@ -15,20 +15,20 @@ web page (Vercel)  --commands-->  Supabase  <--jobs, status--  aihawk-agent (you
    OPENAI_API_KEY=sk-...
    VITE_SUPABASE_URL=https://<project>.supabase.co
    VITE_SUPABASE_ANON_KEY=sb_publishable_...
-   AIHAWK_EMAIL=you@example.com
-   AIHAWK_PASSWORD=...
+   AGENT_EMAIL=you@example.com
+   AGENT_PASSWORD=...
    ```
 
-   `AIHAWK_EMAIL` and `AIHAWK_PASSWORD` are the account you sign in with on the dashboard.
+   `AGENT_EMAIL` and `AGENT_PASSWORD` are the account you sign in with on the dashboard.
 
 3. Install: `python -m venv .venv`, then `.venv\Scripts\pip install -e .`
-4. Optional, but needed for sites that email a code: run `aihawk your-resume.pdf` once and sign in to your mailbox when it asks.
+4. Optional, but needed for sites that email a code: run `agent-automation-tui your-resume.pdf` once and sign in to your mailbox when it asks.
 
 ## Run
 
 ```powershell
-.venv\Scripts\aihawk-agent resumes\your-resume.pdf   # first time, or to change resume
-.venv\Scripts\aihawk-agent                           # after that
+.venv\Scripts\agent-automation resumes\your-resume.pdf   # first time, or to change resume
+.venv\Scripts\agent-automation                           # after that
 ```
 
 The agent downloads the job database (about 250 MB the first time), scores about 300 jobs against your resume and pushes them to the dashboard. Pick jobs on the page and press Apply. Dry run is on by default: the form is filled and nothing is sent.

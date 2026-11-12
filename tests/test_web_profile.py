@@ -1,4 +1,4 @@
-from aihawk.web_profile import empty_profile, profile_answers
+from agent_automation.web_profile import empty_profile, profile_answers
 
 
 def test_empty_profile_gives_no_answers():

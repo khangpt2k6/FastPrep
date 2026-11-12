@@ -5,9 +5,9 @@ from __future__ import annotations
 import string
 from pathlib import Path
 
-from aihawk.config import load_config
-from aihawk.profile import ACCOUNT_PASSWORD, PASSWORD_SYMBOLS, ensure_account_password, import_answers_file, new_password
-from aihawk.store import Store
+from agent_automation.config import load_config
+from agent_automation.profile import ACCOUNT_PASSWORD, PASSWORD_SYMBOLS, ensure_account_password, import_answers_file, new_password
+from agent_automation.store import Store
 
 
 def test_answers_are_kept_in_the_store_and_the_persons_answer_wins_over_the_cv(tmp_path: Path) -> None:
@@ -87,7 +87,7 @@ def test_a_plain_password_left_by_an_older_store_is_sealed_on_its_first_read(tmp
 def test_a_sealed_password_with_a_replaced_key_says_so(tmp_path: Path) -> None:
     import pytest
 
-    from aihawk.secret import SecretError
+    from agent_automation.secret import SecretError
 
     store = Store(tmp_path / "jobs.db")
     store.set_answer(ACCOUNT_PASSWORD, "Secret!9x")

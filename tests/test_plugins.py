@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from aihawk.apply import SYSTEM, instructions
-from aihawk.plugins import Plugin, PluginError, always_plugins, load_plugins, parse_plugin, plugin_for
+from agent_automation.apply import SYSTEM, instructions
+from agent_automation.plugins import Plugin, PluginError, always_plugins, load_plugins, parse_plugin, plugin_for
 
 PLUGIN = Plugin("lever", ("jobs.lever.co",), "Upload first.", "/apply")
 

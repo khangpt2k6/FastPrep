@@ -1,15 +1,15 @@
 """A local copy of a Workday application flow, for trying the Workday plugin without touching an employer's site.
 
     python tests/sites/workday_local.py                 # serves http://127.0.0.1:8765
-    AIHAWK_TEST_SMTP=smtp.gmail.com:587:you@gmail.com:app-password python tests/sites/workday_local.py
+    AGENT_TEST_SMTP=smtp.gmail.com:587:you@gmail.com:app-password python tests/sites/workday_local.py
 
 The pages carry the `data-automation-id` values read on a real Workday site on 2026-11-07, up to the "Create Account"
 page: `applyManually`, `SignInWithEmailButton`, `email`, `password`, `signInSubmitButton`, `createAccountLink`,
 `verifyPassword`, `createAccountCheckbox`, `createAccountSubmitButton`, the robots-only field `beecatcher`. The steps
 after the account are Workday's usual form, as the plugin describes them, and are not read from a real site.
 
-After "Create Account" the site asks for a six-digit code sent to the address: by SMTP when AIHAWK_TEST_SMTP is set,
-otherwise the code is only printed here; AIHAWK_TEST_CODE fixes the code, for a message sent by hand beforehand. The posting is /en-US/Careers/job/US-Remote/Software-Engineer_JR1.
+After "Create Account" the site asks for a six-digit code sent to the address: by SMTP when AGENT_TEST_SMTP is set,
+otherwise the code is only printed here; AGENT_TEST_CODE fixes the code, for a message sent by hand beforehand. The posting is /en-US/Careers/job/US-Remote/Software-Engineer_JR1.
 What was submitted is listed at /applications as JSON, and /reset forgets every account and application.
 """
 
@@ -51,9 +51,9 @@ def log(line: str) -> None:
 
 def send_code(email: str, code: str) -> str:
     """The code by mail when SMTP is configured, as host:port:user:password; what happened, for the log."""
-    setting = os.environ.get("AIHAWK_TEST_SMTP", "").strip()
+    setting = os.environ.get("AGENT_TEST_SMTP", "").strip()
     if not setting:
-        return f"no AIHAWK_TEST_SMTP: the code for {email} is {code} (not mailed)"
+        return f"no AGENT_TEST_SMTP: the code for {email} is {code} (not mailed)"
     host, port, user, password = setting.split(":", 3)
     message = EmailMessage()
     message["From"] = f"Example Careers (Workday test) <{user}>"
@@ -61,7 +61,7 @@ def send_code(email: str, code: str) -> str:
     message["Subject"] = "Your verification code"
     message.set_content(
         f"Verify your email\n\nYour verification code is {code}.\n\nEnter it on the page to continue your application "
-        f"for Software Engineer at Example. The code expires in 10 minutes.\n\nThis message was sent by the local Workday test site of AIHawk."
+        f"for Software Engineer at Example. The code expires in 10 minutes.\n\nThis message was sent by the local Workday test site of Agent Automation."
     )
     with smtplib.SMTP(host, int(port), timeout=30) as smtp:
         smtp.starttls()
@@ -89,7 +89,7 @@ input,select{{padding:6px;min-width:280px}}button{{padding:8px 16px;margin:12px 
 <div data-automation-id="header"><div data-automation-id="headerTitle">CAREERS AT EXAMPLE</div>
 <button data-automation-id="utilityButtonSignIn" type="button" onclick="location.href='/en-US/Careers/login'">Sign In</button></div>
 {bar}{body}
-<div data-automation-id="footerContainer" class="muted">Local copy of a Workday flow, for AIHawk's tests. © Workday, Inc. look-alike, no affiliation.</div>
+<div data-automation-id="footerContainer" class="muted">Local copy of a Workday flow, for Agent Automation's tests. © Workday, Inc. look-alike, no affiliation.</div>
 </body></html>"""
     return doc.encode("utf-8")
 
@@ -306,8 +306,8 @@ class Handler(BaseHTTPRequestHandler):
         return self.start_verification(email, "account creation")
 
     def start_verification(self, email: str, why: str) -> None:
-        # A fixed code for a trial where the message is sent by hand: AIHAWK_TEST_CODE=424242 and the mail with it beforehand.
-        code = os.environ.get("AIHAWK_TEST_CODE", "").strip() or f"{secrets.randbelow(900000) + 100000}"
+        # A fixed code for a trial where the message is sent by hand: AGENT_TEST_CODE=424242 and the mail with it beforehand.
+        code = os.environ.get("AGENT_TEST_CODE", "").strip() or f"{secrets.randbelow(900000) + 100000}"
         with STATE_LOCK:
             STATE["codes"][email] = code
         try:
@@ -416,7 +416,7 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    log(f"serving http://{HOST}:{PORT}{JOB_PATH}  (SMTP {'set' if os.environ.get('AIHAWK_TEST_SMTP') else 'not set: codes are printed here'})")
+    log(f"serving http://{HOST}:{PORT}{JOB_PATH}  (SMTP {'set' if os.environ.get('AGENT_TEST_SMTP') else 'not set: codes are printed here'})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

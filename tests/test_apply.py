@@ -13,8 +13,8 @@ from typing import Any
 import anyio
 import pytest
 
-from aihawk import apply as apply_module
-from aihawk.apply import (
+from agent_automation import apply as apply_module
+from agent_automation.apply import (
     LOOP_STOP,
     PAGE_CHARS,
     SYSTEM,
@@ -27,8 +27,8 @@ from aihawk.apply import (
     server_parameters,
     sign_in,
 )
-from aihawk.config import DRY_RUN_ENV
-from aihawk.database import Job
+from agent_automation.config import DRY_RUN_ENV
+from agent_automation.database import Job
 from fakes import ScriptedBrowser, ScriptedModel, tool_call
 
 JOB = Job("g:a:1", "Acme", "Engineer", "Rome", "https://u", "https://u/apply", "Build things")
@@ -553,7 +553,7 @@ def test_a_dry_run_fills_the_form_names_the_send_control_and_sends_nothing(tmp_p
     browser = ScriptedBrowser({"#send": SUBMIT}, page={"url": "https://u/apply", "text": "the form"})
     outcome = asyncio.run(run_on_page(browser, [], ScriptedModel(ready()), "m", JOB, "cv", "account_password: Secret!9x\nemail: a@b.c", Path("cv.pdf"), tmp_path / "proofs" / "shot.png"))  # type: ignore[arg-type]
     assert outcome.status == "blocked"
-    assert outcome.summary.startswith("Dry run (AIHAWK_DRY_RUN is set): filled, send control #send found, nothing sent.")
+    assert outcome.summary.startswith("Dry run (AGENT_DRY_RUN is set): filled, send control #send found, nothing sent.")
     assert not browser.clicks()
     assert outcome.proof.url == "https://u/apply"
     # Every step is written beside the proofs, and the password never is.
@@ -813,7 +813,7 @@ def test_on_linux_with_no_desktop_the_browser_is_not_tried_and_the_person_is_tol
     monkeypatch.setattr(apply_module, "_server", never)
     outcome = asyncio.run(apply_to_job(ScriptedModel(), "m", JOB, "cv", "answers", tmp_path / "cv.pdf", tmp_path, tmp_path / "profile"))
     assert outcome.status == "blocked" and outcome.reason == "no_display"
-    assert outcome.summary == "The browser needs a desktop: run AIHawk on a computer with a screen."
+    assert outcome.summary == "The browser needs a desktop: run Agent Automation on a computer with a screen."
     assert apply_module.why_not_sent("no_display") == "the browser needs a desktop"
 
 

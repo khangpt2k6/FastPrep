@@ -1,4 +1,4 @@
-"""What AIHawk tells its makers: one anonymous id, nothing about the person or the job, and only the events it declares."""
+"""What Agent Automation tells its makers: one anonymous id, nothing about the person or the job, and only the events it declares."""
 
 from __future__ import annotations
 
@@ -12,16 +12,16 @@ from typing import Any
 
 import pytest
 
-from aihawk import session as session_module
-from aihawk import telemetry
-from aihawk.apply import Outcome
-from aihawk.database import Job
-from aihawk.llm import Spend
-from aihawk.session import Session
-from aihawk.telemetry import EVENTS, KNOWN_SITES, Telemetry, install_id, vendor_of
+from agent_automation import session as session_module
+from agent_automation import telemetry
+from agent_automation.apply import Outcome
+from agent_automation.database import Job
+from agent_automation.llm import Spend
+from agent_automation.session import Session
+from agent_automation.telemetry import EVENTS, KNOWN_SITES, Telemetry, install_id, vendor_of
 from fakes import ROOT, load_script
 
-SOURCE = ROOT / "src" / "aihawk"
+SOURCE = ROOT / "src" / "agent_automation"
 SENDING = telemetry.send
 
 
@@ -49,7 +49,7 @@ def test_every_event_has_the_one_id_the_version_and_no_person_profile(tmp_path: 
 
 
 def test_a_dry_run_sends_nothing_and_leaves_no_id(tmp_path: Path, tracked: list[dict[str, Any]], monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("AIHAWK_DRY_RUN", "1")
+    monkeypatch.setenv("AGENT_DRY_RUN", "1")
     Telemetry(tmp_path).started()
     assert tracked == [] and not (tmp_path / "install_id").exists()
 

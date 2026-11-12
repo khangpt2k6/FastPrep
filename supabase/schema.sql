@@ -1,8 +1,8 @@
--- AIHawk web dashboard: run once in the Supabase SQL editor.
--- The local agent writes aihawk_agent and aihawk_jobs; the web page writes aihawk_commands.
+-- Agent Automation web dashboard: run once in the Supabase SQL editor.
+-- The local agent writes automation_agent and automation_jobs; the web page writes automation_commands.
 -- Every row belongs to one signed-in user and RLS keeps it that way.
 
-create table if not exists public.aihawk_agent (
+create table if not exists public.automation_agent (
   user_id uuid primary key default auth.uid() references auth.users on delete cascade,
   state text not null default 'idle',
   message text not null default '',
@@ -13,7 +13,7 @@ create table if not exists public.aihawk_agent (
   last_seen timestamptz not null default now()
 );
 
-create table if not exists public.aihawk_jobs (
+create table if not exists public.automation_jobs (
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   id text not null,
   title text not null,
@@ -29,9 +29,9 @@ create table if not exists public.aihawk_jobs (
   updated_at timestamptz not null default now(),
   primary key (user_id, id)
 );
-create index if not exists aihawk_jobs_user_score on public.aihawk_jobs (user_id, score desc nulls last);
+create index if not exists automation_jobs_user_score on public.automation_jobs (user_id, score desc nulls last);
 
-create table if not exists public.aihawk_commands (
+create table if not exists public.automation_commands (
   id bigint generated always as identity primary key,
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   kind text not null check (kind in ('apply', 'search')),
@@ -41,11 +41,11 @@ create table if not exists public.aihawk_commands (
   error text not null default '',
   created_at timestamptz not null default now()
 );
-create index if not exists aihawk_commands_pending on public.aihawk_commands (user_id, created_at) where status = 'pending';
+create index if not exists automation_commands_pending on public.automation_commands (user_id, created_at) where status = 'pending';
 
 -- What the forms are told about you, filled in the page's profile wizard. The agent turns it into answers.
 -- updated_by says who wrote last: 'agent' when it prefilled it from the resume, 'web' when you saved it.
-create table if not exists public.aihawk_profile (
+create table if not exists public.automation_profile (
   user_id uuid primary key default auth.uid() references auth.users on delete cascade,
   data jsonb not null default '{}'::jsonb,
   completed boolean not null default false,
@@ -53,48 +53,48 @@ create table if not exists public.aihawk_profile (
   updated_at timestamptz not null default now()
 );
 
-alter table public.aihawk_profile enable row level security;
-drop policy if exists "own profile" on public.aihawk_profile;
-create policy "own profile" on public.aihawk_profile for all to authenticated
+alter table public.automation_profile enable row level security;
+drop policy if exists "own profile" on public.automation_profile;
+create policy "own profile" on public.automation_profile for all to authenticated
   using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
-alter table public.aihawk_agent enable row level security;
-alter table public.aihawk_jobs enable row level security;
-alter table public.aihawk_commands enable row level security;
+alter table public.automation_agent enable row level security;
+alter table public.automation_jobs enable row level security;
+alter table public.automation_commands enable row level security;
 
-drop policy if exists "own agent" on public.aihawk_agent;
-create policy "own agent" on public.aihawk_agent for all to authenticated
+drop policy if exists "own agent" on public.automation_agent;
+create policy "own agent" on public.automation_agent for all to authenticated
   using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
-drop policy if exists "own jobs" on public.aihawk_jobs;
-create policy "own jobs" on public.aihawk_jobs for all to authenticated
+drop policy if exists "own jobs" on public.automation_jobs;
+create policy "own jobs" on public.automation_jobs for all to authenticated
   using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
-drop policy if exists "own commands" on public.aihawk_commands;
-create policy "own commands" on public.aihawk_commands for all to authenticated
+drop policy if exists "own commands" on public.automation_commands;
+create policy "own commands" on public.automation_commands for all to authenticated
   using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
 -- Live updates on the page.
 do $$
 begin
-  begin alter publication supabase_realtime add table public.aihawk_agent; exception when duplicate_object then null; end;
-  begin alter publication supabase_realtime add table public.aihawk_jobs; exception when duplicate_object then null; end;
-  begin alter publication supabase_realtime add table public.aihawk_commands; exception when duplicate_object then null; end;
-  begin alter publication supabase_realtime add table public.aihawk_profile; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.automation_agent; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.automation_jobs; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.automation_commands; exception when duplicate_object then null; end;
+  begin alter publication supabase_realtime add table public.automation_profile; exception when duplicate_object then null; end;
 end $$;
 
 -- Screenshots of each application, private, one folder per user.
-insert into storage.buckets (id, name, public) values ('aihawk-proofs', 'aihawk-proofs', false)
+insert into storage.buckets (id, name, public) values ('automation-proofs', 'automation-proofs', false)
 on conflict (id) do nothing;
 
 drop policy if exists "own proofs read" on storage.objects;
 create policy "own proofs read" on storage.objects for select to authenticated
-  using (bucket_id = 'aihawk-proofs' and (storage.foldername(name))[1] = (select auth.uid())::text);
+  using (bucket_id = 'automation-proofs' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
 drop policy if exists "own proofs write" on storage.objects;
 create policy "own proofs write" on storage.objects for insert to authenticated
-  with check (bucket_id = 'aihawk-proofs' and (storage.foldername(name))[1] = (select auth.uid())::text);
+  with check (bucket_id = 'automation-proofs' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
 drop policy if exists "own proofs update" on storage.objects;
 create policy "own proofs update" on storage.objects for update to authenticated
-  using (bucket_id = 'aihawk-proofs' and (storage.foldername(name))[1] = (select auth.uid())::text);
+  using (bucket_id = 'automation-proofs' and (storage.foldername(name))[1] = (select auth.uid())::text);
