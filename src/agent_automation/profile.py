@@ -169,10 +169,36 @@ def read_resume(path: Path) -> str:
     return text
 
 
+def clean_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    """The plan as the settings accept it. Some models break the schema's rules (an arc with both when and unless, or one
+    that targets no node): such a part is dropped, not saved, so a resume never leaves settings that cannot load."""
+    nodes = []
+    for node in plan.get("nodes") or []:
+        forms = [form for form in node.get("forms") or [] if str(form.get("text") or "").strip() and _weight_ok(form.get("weight"))]
+        if str(node.get("id") or "").strip() and _weight_ok(node.get("weight")) and forms:
+            nodes.append({**node, "forms": forms})
+    ids = {node["id"] for node in nodes}
+    arcs = []
+    for arc in plan.get("arcs") or []:
+        when, unless = str(arc.get("when") or "").strip(), str(arc.get("unless") or "").strip()
+        then = [
+            target for target in arc.get("then") or []
+            if (target.get("target") == "*" or target.get("target") in ids) and _weight_ok(target.get("multiplier"))
+        ]
+        if bool(when) != bool(unless) and then:
+            arcs.append({**arc, "when": when, "unless": unless, "then": then})
+    return {**plan, "nodes": nodes, "arcs": arcs}
+
+
+def _weight_ok(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
+
+
 async def install_resume(client: AsyncOpenAI, config: Config, path: Path, store: Store) -> dict[str, Any]:
     """Read the resume and write what the search needs. What the person already answered stays."""
     cv = read_resume(path)
     profile = await structured(client, config.quick_model, PROFILE_SYSTEM, cv, "search_profile", PROFILE_SCHEMA)
+    profile["plan"] = clean_plan(profile["plan"])
     config.workspace.mkdir(parents=True, exist_ok=True)
     config.cv.write_text(cv, encoding="utf-8")
     # The file as the person gave it: the CV every application sends.
@@ -200,6 +226,55 @@ async def install_resume(client: AsyncOpenAI, config: Config, path: Path, store:
 
     store.add_answers({key: value for key, value in profile["answers"].items() if value.strip()}, source="cv")
     return profile
+
+
+COUNTRY_CODES = {
+    "united states": "US", "united states of america": "US", "usa": "US", "us": "US", "canada": "CA", "mexico": "MX",
+    "united kingdom": "GB", "uk": "GB", "ireland": "IE", "germany": "DE", "france": "FR", "netherlands": "NL", "belgium": "BE",
+    "spain": "ES", "portugal": "PT", "italy": "IT", "switzerland": "CH", "austria": "AT", "sweden": "SE", "norway": "NO",
+    "denmark": "DK", "finland": "FI", "poland": "PL", "vietnam": "VN", "viet nam": "VN", "india": "IN", "singapore": "SG",
+    "japan": "JP", "south korea": "KR", "korea": "KR", "china": "CN", "hong kong": "HK", "taiwan": "TW", "philippines": "PH",
+    "indonesia": "ID", "malaysia": "MY", "thailand": "TH", "australia": "AU", "new zealand": "NZ", "brazil": "BR",
+    "argentina": "AR", "israel": "IL", "united arab emirates": "AE", "uae": "AE",
+}
+
+
+def set_search_places(config: Config, countries: list[str], city: str) -> bool:
+    """The countries the person wants to work in (from the web profile) become the search's places: a posting must be in one
+    of them, and their own city ranks first. Names with no known code are skipped. Whether the settings changed."""
+    known = [(name.strip(), COUNTRY_CODES[name.strip().lower()]) for name in countries if name.strip().lower() in COUNTRY_CODES]
+    if not known:
+        return False
+    path = config.workspace / CONFIG_FILE
+    settings = (yaml.safe_load(path.read_text(encoding="utf-8-sig")) or {}) if path.is_file() else {}
+    filters = settings.setdefault("filters", {})
+    city = city.strip()
+    wanted = {
+        "locations": list(dict.fromkeys([*([city] if city else []), *(name for name, _ in known)])),
+        "cities": list(dict.fromkeys([*([city] if city else []), *(filters.get("cities") or [])])),
+        "countries": list(dict.fromkeys(code for _, code in known)),
+    }
+    if all(filters.get(key) == value for key, value in wanted.items()):
+        return False
+    filters.update(wanted)
+    _write_settings(config, settings)
+    return True
+
+
+def _write_settings(config: Config, settings: dict[str, Any]) -> None:
+    """The settings written, and put back as they were if they would not load: a bad setting must not stop the next start."""
+    path = config.workspace / CONFIG_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    before = path.read_text(encoding="utf-8") if path.is_file() else None
+    path.write_text(yaml.safe_dump(settings, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    try:
+        load_config(config.workspace)
+    except ConfigError:
+        if before is None:
+            path.unlink()
+        else:
+            path.write_text(before, encoding="utf-8")
+        raise
 
 
 def save_setting(config: Config, name: str, value: str) -> None:

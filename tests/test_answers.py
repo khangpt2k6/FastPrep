@@ -95,3 +95,47 @@ def test_a_sealed_password_with_a_replaced_key_says_so(tmp_path: Path) -> None:
     (tmp_path / "secret.key").write_bytes(b"ZmFrZWtleWZha2VrZXlmYWtla2V5ZmFrZWtleWZha2U=")
     with pytest.raises(SecretError, match="key file replaced"):
         Store(tmp_path / "jobs.db").answers()
+
+
+def test_a_plan_from_the_model_is_cleaned_of_what_the_settings_refuse() -> None:
+    from agent_automation.config import _plan
+    from agent_automation.profile import clean_plan
+
+    plan = {
+        "nodes": [
+            {"id": "role", "weight": 1, "forms": [{"text": "Software Engineer", "weight": 1}, {"text": " ", "weight": 1}]},
+            {"id": "empty", "weight": 1, "forms": []},
+        ],
+        "arcs": [
+            {"when": "Distributed Systems", "unless": "Machine Learning", "then": []},
+            {"when": "DevOps", "unless": "", "then": [{"target": "*", "multiplier": 0.2}]},
+            {"when": "", "unless": "", "then": [{"target": "*", "multiplier": 0.5}]},
+            {"when": "Data", "unless": "", "then": [{"target": "empty", "multiplier": 1.5}]},
+        ],
+    }
+    cleaned = clean_plan(plan)
+    assert [node["id"] for node in cleaned["nodes"]] == ["role"]
+    assert cleaned["nodes"][0]["forms"] == [{"text": "Software Engineer", "weight": 1}]
+    assert cleaned["arcs"] == [{"when": "DevOps", "unless": "", "then": [{"target": "*", "multiplier": 0.2}]}]
+    assert len(_plan(cleaned).arcs) == 1
+
+
+def test_the_countries_of_the_web_profile_become_the_search_places(tmp_path: Path) -> None:
+    import yaml
+
+    from agent_automation.config import load_config
+    from agent_automation.profile import set_search_places
+
+    (tmp_path / "automation.yaml").write_text(
+        yaml.safe_dump({"filters": {"include": ["role"], "locations": ["Tampa", "Ho Chi Minh City", "United States", "Vietnam"],
+                                    "cities": ["Tampa", "Ho Chi Minh City"], "countries": ["US", "VN"]}}),
+        encoding="utf-8",
+    )
+    config = load_config(tmp_path)
+    assert set_search_places(config, ["United States", "Atlantis"], "Tampa") is True
+    filters = load_config(tmp_path).filters
+    assert filters.countries == ("US",)
+    assert filters.locations == ("Tampa", "United States")
+    assert filters.cities[0] == "Tampa"
+    assert set_search_places(config, ["United States"], "Tampa") is False
+    assert set_search_places(config, ["Atlantis"], "Tampa") is False

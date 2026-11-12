@@ -19,7 +19,8 @@ from typing import Any
 import click
 import httpx
 
-from agent_automation.config import DRY_RUN_ENV, ConfigError, default_home, load_dotenv
+from agent_automation.config import DRY_RUN_ENV, ConfigError, default_home, load_config, load_dotenv
+from agent_automation.profile import set_search_places
 from agent_automation.scoring import NotAnswering
 from agent_automation.session import Session
 from agent_automation.store import SENT_WORDS, SUBMITTED, Stored, safe_name
@@ -103,6 +104,10 @@ class Supabase:
         reply.raise_for_status()
         return reply.json()
 
+    async def delete(self, table: str, params: dict[str, str]) -> None:
+        reply = await self.http.delete(f"{self.url}/rest/v1/{table}", params=params, headers=await self._headers({"Prefer": "return=minimal"}))
+        reply.raise_for_status()
+
     async def upload(self, path: str, data: bytes) -> None:
         reply = await self.http.post(
             f"{self.url}/storage/v1/object/{BUCKET}/{path}", headers=await self._headers({"Content-Type": "image/png", "x-upsert": "true"}), content=data,
@@ -124,6 +129,8 @@ class Agent:
         self.wake = asyncio.Event()
         self.target = SCORE_TARGET
         self.profile_seen = ""
+        # One search at a time: a change of places must not land in the middle of a round.
+        self.search_lock = asyncio.Lock()
 
     # What the page shows about the agent.
 
@@ -189,10 +196,11 @@ class Agent:
             if not self.session.library.has_postings():
                 continue
             try:
-                self.say("searching", "Searching the job database")
-                await self.session.find()
-                await self.score_rounds()
-                await self.push_jobs()
+                async with self.search_lock:
+                    self.say("searching", "Searching the job database")
+                    await self.session.find()
+                    await self.score_rounds()
+                    await self.push_jobs()
                 self.say("ready", f"{self.scored()} jobs scored. Pick the ones to apply to.")
             except Exception as error:  # noqa: BLE001  Said on the page; the next search tries again.
                 self.say("error", f"Search failed: {error}")
@@ -232,16 +240,30 @@ class Agent:
         self.profile_seen = row["updated_at"]
         if row.get("updated_by") != "web":
             return
-        answers = profile_answers(row["data"])
+        data = row["data"]
+        answers = profile_answers(data)
         for name, value in answers.items():
             self.session.store.set_answer(name, value, source="web")
         click.echo(f"Profile from the dashboard: {len(answers)} answers updated.")
+        await self.follow_places(data)
+
+    async def follow_places(self, data: dict[str, Any]) -> None:
+        """The countries the person wants to work in decide where the search looks. A change drops the jobs not tried yet,
+        here and on the page, and searches again."""
+        auth = data.get("authorization") if isinstance(data.get("authorization"), dict) else {}
+        personal = data.get("personal") if isinstance(data.get("personal"), dict) else {}
+        countries = [str(name) for name in auth.get("countries") or [] if str(name).strip()]
+        async with self.search_lock:
+            if not set_search_places(self.session.config, countries, str(personal.get("city") or "")):
+                return
+            self.session.config = load_config(self.session.workspace)
+            self.session.store.forget_untried()
+            await self.db.delete("automation_jobs", {"user_id": f"eq.{self.db.user_id}", "status": "in.(new,scored,passed_over)"})
+            self.target = SCORE_TARGET
+        self.say("searching", f"Looking for jobs in {', '.join(countries)}")
+        self.wake.set()
 
     async def profile_loop(self) -> None:
-        try:
-            await self.sync_profile(first=True)
-        except Exception as error:  # noqa: BLE001  The applications still run on the answers already here.
-            click.echo(f"profile: {error}")
         while True:
             await asyncio.sleep(PROFILE_SECONDS)
             try:
@@ -323,6 +345,11 @@ class Agent:
             if self.session.needs_resume():
                 raise ConfigError("no resume yet: run  agent-automation path/to/resume.pdf")
             self.say("starting", "Agent online")
+            # The profile first: its countries may change where the first search looks.
+            try:
+                await self.sync_profile(first=True)
+            except Exception as error:  # noqa: BLE001  The applications still run on the answers already here.
+                click.echo(f"profile: {error}")
             await asyncio.gather(self.heartbeat(), self.profile_loop(), self.commands(), self.bring_jobs(), self.searching())
         finally:
             self.state, self.message, self.download = "offline", "", ""
