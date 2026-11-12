@@ -23,6 +23,7 @@ from agent_automation.tools.inbox import (
     DEFAULT_DAYS,
     PASSWORD_ENV,
     PASSWORD_URL,
+    RULES,
     STATUS_WORDS,
     Application,
     Connect,
@@ -34,7 +35,7 @@ from agent_automation.tools.inbox import (
 )
 
 INBOX_FILE = "inbox.db"
-STATUS_STYLE = {"applied": "white", "assessment": "yellow", "interview": "cyan", "offer": "bold green", "rejected": "red"}
+STATUS_STYLE = {"applied": "white", "assessment": "yellow", "interview": "cyan", "offer": "bold green", "rejected": "red", "withdrawn": "dim"}
 
 
 def address_of(store: Store) -> str:
@@ -63,8 +64,12 @@ def sync(workspace: Path, days: int = DEFAULT_DAYS, connecting: Connect = connec
         address = address_of(store)
         if not address.lower().endswith(("@gmail.com", "@googlemail.com")):
             raise InboxError(f"the inbox sync reads Gmail only, and the address here is {address or 'not set'}: set {ADDRESS_ENV} in .env")
+        # What older rules made of the mail is not what these would: it is read again.
+        inbox.keep_rules(RULES)
         _, mails = read(address, os.environ.get(PASSWORD_ENV, ""), days, inbox.known, connecting)
-        events = [event for event in map(classify, mails) if event is not None]
+        answers = store.answers()
+        me = " ".join(answers.get(name, "") for name in ("first_name", "last_name", "full_name", "preferred_name"))
+        events = [event for event in (classify(mail, me) for mail in mails) if event is not None]
         new = inbox.add([mail.uid for mail in mails], events, datetime.now(UTC).isoformat(timespec="seconds"))
         return new, applications(inbox.events(), sent_by_agent(store))
     finally:

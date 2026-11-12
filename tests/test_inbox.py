@@ -117,7 +117,7 @@ def test_messages_about_one_application_add_up_to_its_latest_stage() -> None:
     ))
     assert [(item.company, item.role, item.status, item.mails) for item in found] == [
         ("Figma", "", "rejected", 2),
-        ("Stripe, Inc.", "Software Engineer Intern", "interview", 3),
+        ("Stripe", "Software Engineer Intern", "interview", 3),
     ]
     assert found[1].applied_at == "2026-10-01" and found[1].updated_at == "2026-10-12"
 

@@ -43,6 +43,13 @@ class InboxStore:
     def _set_meta(self, name: str, value: str) -> None:
         self._db.execute("INSERT INTO meta (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value", (name, value))
 
+    def keep_rules(self, version: int) -> None:
+        """Everything read under other rules is dropped, so the next read sorts the whole mailbox by these."""
+        if self._meta("rules") != str(version):
+            self.forget()
+            self._set_meta("rules", str(version))
+            self._db.commit()
+
     def known(self, validity: int, uids: list[int]) -> set[int]:
         """Which of these message numbers were read before. The numbers of another validity are another mailbox's, or the
         same one renumbered: they are forgotten, and every message is read again. The events stay, known by Gmail's own ids."""

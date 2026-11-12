@@ -1,6 +1,6 @@
 # Inbox sync
 
-`agent-automation-inbox` reads your Gmail for news of your applications and lists where each one stands: applied, assessment, interview, offer or rejected. It covers the ones the agent sent and the ones you sent by hand.
+`agent-automation-inbox` reads your Gmail for news of your applications and lists where each one stands: applied, assessment, interview, offer, rejected or withdrawn. It covers the ones the agent sent and the ones you sent by hand.
 
 ## Set up, once
 
@@ -38,10 +38,13 @@ The "Sent by" column says `agent` when Agent Automation applied to that company 
 
 ## How it decides
 
-- A rejection ends an application, whatever came before. An offer after a rejection is the news.
-- Otherwise the furthest stage counts: offer, then interview, then assessment, then applied.
-- A confirmation that only mentions a later interview ("if you are selected for an interview") stays applied.
-- The company comes from the message's words, then the name the sender shows, then the sender's own domain. Mail sent through Greenhouse, Lever, Workday, LinkedIn and the like never takes the carrier's name as the company.
-- Messages about the same company and role are one application. A message that names no role joins the application of its thread, or else the company's latest one.
+- Forums, course sites and digests (Reddit, LeetCode, Glassdoor and the like) are never an application, whatever they talk about. Mail sent to a list counts only when its subject is an application's: an article about interviews is not an invitation.
+- The subject speaks first. An invitation, a test or an offer named there is that. A subject that reads as a receipt ("Thank you for applying", "Update on your application") is a receipt unless the text refuses: most refusals come under such a subject.
+- A confirmation that only says what may come next ("if you are selected for an interview", "we will reach out to schedule a time if...") stays applied.
+- A rejection, or your own withdrawal, ends an application, whatever came before. An offer after a rejection is the news. Otherwise the furthest stage counts: offer, then interview, then assessment, then applied.
+- The company is the sender's own when the mail comes from an employer's address: a recruiter's name is never the company, `hdean@hubspot.com` is HubSpot. Mail sent through Greenhouse, Lever, Workday, LinkedIn and the like never takes the carrier's name: the employer is read from the carrier's address when it names one (`cisco@myworkday.com`, `acme.tal.net`), then from the subject, then from the name the sender shows. Your own name is never a company.
+- Messages about the same company and role are one application, and a company's short and long names are one company ("IMC", "IMC Trading"). A message that names no role joins the application of its thread, or else the company's latest one still open. News that comes after every application at a company was closed starts another one.
 
-A company or role the rules read wrongly can be reported with the message's subject and sender: the fix is a rule and a test in `tests/test_inbox.py`.
+When the rules change, the next sync drops what the old ones kept and reads the mailbox again.
+
+A company or role the rules read wrongly can be reported with the message's subject and sender: the fix is a rule and a test in `tests/test_inbox_cases.py`.
