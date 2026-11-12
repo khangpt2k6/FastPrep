@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, type PanInfo } from 'motion/react';
+import { DUR, EASE, SPRING } from '../lib/motion';
 import { IconAlert, IconCheck, IconSpark, IconX } from './Icons';
 
 export type ToastTone = 'ok' | 'info' | 'warn' | 'error';
@@ -27,14 +29,33 @@ export function useToasts() {
   return { toasts, push, dismiss };
 }
 
-function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
+const ToastItem = forwardRef<HTMLDivElement, { toast: Toast; onDismiss: (id: number) => void }>(function ToastItem({ toast, onDismiss }, ref) {
+  const life = toast.tone === 'error' ? 8000 : 5000;
   useEffect(() => {
-    const timer = window.setTimeout(() => onDismiss(toast.id), toast.tone === 'error' ? 8000 : 5000);
+    const timer = window.setTimeout(() => onDismiss(toast.id), life);
     return () => window.clearTimeout(timer);
-  }, [toast, onDismiss]);
+  }, [toast, onDismiss, life]);
+
+  // A flick or a long drag to the right dismisses it.
+  function onDragEnd(_: unknown, info: PanInfo) {
+    if (info.offset.x > 90 || info.velocity.x > 500) onDismiss(toast.id);
+  }
 
   return (
-    <div className={`toast toast--${toast.tone}`} role={toast.tone === 'error' ? 'alert' : 'status'}>
+    <motion.div
+      ref={ref}
+      layout
+      className={`toast toast--${toast.tone}`}
+      role={toast.tone === 'error' ? 'alert' : 'status'}
+      initial={{ opacity: 0, x: 56, scale: 0.96 }}
+      animate={{ opacity: 1, x: 0, scale: 1, transition: SPRING }}
+      exit={{ opacity: 0, x: 72, scale: 0.96, transition: { duration: DUR.base, ease: EASE } }}
+      transition={{ layout: SPRING }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={{ left: 0.05, right: 0.9 }}
+      onDragEnd={onDragEnd}
+    >
       <span className="toast__icon">
         {toast.tone === 'ok' ? <IconCheck size={16} /> : toast.tone === 'info' ? <IconSpark size={16} /> : <IconAlert size={16} />}
       </span>
@@ -45,16 +66,19 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       <button className="icon-btn toast__close" type="button" onClick={() => onDismiss(toast.id)} aria-label="Dismiss">
         <IconX size={14} />
       </button>
-    </div>
+      <span className="toast__timer" style={{ animationDuration: `${life}ms` }} aria-hidden="true" />
+    </motion.div>
   );
-}
+});
 
 export function Toasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
   return (
     <div className="toasts" aria-live="polite">
-      {toasts.map((t) => (
-        <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
-      ))}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {toasts.map((t) => (
+          <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

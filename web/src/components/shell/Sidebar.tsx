@@ -1,5 +1,7 @@
 import type { ComponentType, MouseEvent, ReactNode, SVGProps } from 'react';
+import { motion } from 'motion/react';
 import type { Page } from '../../hooks/useRoute';
+import { SPRING } from '../../lib/motion';
 import { IconBot, IconBriefcase, IconLetter, IconLogout, IconMemory, IconSend, IconSliders, IconUser, Logo } from '../Icons';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
@@ -47,6 +49,7 @@ export function Sidebar({ page, onNavigate, marks, email, onSignOut, notify }: S
               aria-label={marks[target] ? `${label}, ${marks[target]?.label}` : label}
               onClick={go(target)}
             >
+              {page === target ? <motion.span className="navitem__pill" layoutId="nav-active" transition={SPRING} aria-hidden="true" /> : null}
               <span className="navitem__icon" aria-hidden="true">
                 <Icon size={21} />
                 {marks[target]?.node ?? null}

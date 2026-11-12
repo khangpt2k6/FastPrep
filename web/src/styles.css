@@ -4348,7 +4348,7 @@ a.infochip:hover {
   }
 
   .shell:has(.actionbar) .toasts {
-    bottom: calc(var(--tabbar) + 132px + env(safe-area-inset-bottom));
+    bottom: calc(var(--tabbar) + 166px + env(safe-area-inset-bottom));
   }
 
   .actionbar__count {
@@ -5055,4 +5055,878 @@ a.infochip:hover {
   .cl-gallery {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* ------------------------------------------------------------------
+   Motion layer: calm precision with a live pulse.
+   Quick and springy (150 to 450 ms). Only transform, opacity, filter
+   and clip-path animate. JS-driven motion lives in src/lib/motion.ts.
+   ------------------------------------------------------------------ */
+
+:root {
+  --dur-fast: 0.15s;
+  --dur: 0.24s;
+  --dur-slow: 0.4s;
+  --spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --glow-mint: 0 0 0 4px rgba(19, 211, 142, 0.16), 0 10px 30px -12px rgba(0, 196, 140, 0.45);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+}
+
+@keyframes logIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+    filter: blur(3px);
+  }
+}
+
+@keyframes focusIn {
+  from {
+    outline-offset: 7px;
+    outline-color: transparent;
+  }
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0.7);
+  }
+  55% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes checkDraw {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* 119.38 is the ring's circumference (2 * pi * 19), so the arc sweeps in from empty. */
+@keyframes arcIn {
+  from {
+    stroke-dashoffset: 119.38;
+  }
+}
+
+@keyframes growX {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+}
+
+@keyframes haloPulse {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes burstRing {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+@keyframes burstSpark {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(0) scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(-26px) scaleY(0.4);
+  }
+}
+
+@keyframes land {
+  0% {
+    transform: scale(0.86);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes settleGlow {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes blobA {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(8vw, 6vh) scale(1.15);
+  }
+}
+
+@keyframes blobB {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate(-10vw, -4vh) scale(0.9);
+  }
+}
+
+@keyframes blobC {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(0.95);
+  }
+  50% {
+    transform: translate(-4vw, 8vh) scale(1.12);
+  }
+}
+
+/* Focus: the ring draws in instead of snapping on. */
+:focus-visible {
+  animation: focusIn var(--dur) var(--ease);
+}
+
+/* Buttons: lift on hover, a small press on click. */
+.btn {
+  transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.22s var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn--dark:hover:not(:disabled) {
+  box-shadow: 0 10px 22px -10px rgba(11, 11, 15, 0.55);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  box-shadow: 0 8px 18px -12px rgba(16, 24, 40, 0.35);
+}
+
+.btn--live:hover:not(:disabled) {
+  box-shadow: 0 10px 22px -10px rgba(229, 72, 77, 0.6);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+.icon-btn {
+  transition: background-color 0.18s, color 0.18s, transform var(--dur-fast) var(--ease);
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+.link-btn svg {
+  transition: transform var(--dur) var(--spring);
+}
+
+.link-btn:hover svg {
+  transform: translateX(3px);
+}
+
+/* Cards: shadows deepen on hover. Motion cards lift through motion (whileHover); plain cards lift here. */
+.card {
+  transition: border-color 0.2s, box-shadow 0.25s var(--ease), background-color 0.2s, transform var(--dur) var(--ease);
+}
+
+/* Motion owns these transforms; a CSS transform transition would smear its per-frame updates. */
+.jobcard,
+.appcard,
+.memcard,
+.auth__panel {
+  transition: border-color 0.2s, box-shadow 0.25s var(--ease), background-color 0.2s;
+}
+
+.jobcard:hover,
+.appcard:hover,
+.memcard:hover {
+  box-shadow: 0 2px 4px rgba(16, 24, 40, 0.04), 0 16px 32px -16px rgba(16, 24, 40, 0.22);
+}
+
+.railcard:hover,
+.stat:hover,
+.agentcard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(16, 24, 40, 0.04), 0 16px 32px -16px rgba(16, 24, 40, 0.2);
+}
+
+.cl-tile {
+  transition: border-color 0.18s var(--ease), box-shadow 0.25s var(--ease), transform var(--dur) var(--ease);
+}
+
+.cl-tile:hover {
+  transform: translateY(-2px);
+}
+
+.cl-tile:active,
+.pilltoggle:active,
+.tab:active {
+  transform: scale(0.97);
+}
+
+.cl-tile.is-focus {
+  box-shadow: 0 0 0 3px var(--mint-50), 0 12px 26px -16px rgba(0, 196, 140, 0.55);
+}
+
+/* Job selection: border and glow ease in, the box pops, the tick draws. */
+.jobcard.is-selected,
+.jobcard.is-selected:hover {
+  box-shadow: var(--glow-mint);
+}
+
+.check__box {
+  transition: background-color 0.15s, border-color 0.15s, transform var(--dur-fast) var(--ease);
+}
+
+.check input:checked + .check__box {
+  animation: checkPop 0.32s var(--ease);
+}
+
+.check input:checked + .check__box::after {
+  animation: checkDraw 0.26s var(--ease) 0.05s backwards;
+}
+
+.check:active .check__box {
+  transform: scale(0.9);
+}
+
+/* Page wrapper used by the route transition. */
+.pagefx,
+.statefade {
+  min-width: 0;
+}
+
+/* Sidebar: one mint pill slides between items. */
+.navitem {
+  position: relative;
+  isolation: isolate;
+  transition: background-color 0.18s, color 0.18s, transform var(--dur-fast) var(--ease);
+}
+
+.navitem.is-active,
+.navitem.is-active:hover {
+  background: transparent;
+}
+
+.navitem:active {
+  transform: scale(0.95);
+}
+
+.navitem__pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 16px;
+  background: var(--mint-50);
+  box-shadow: inset 0 0 0 1px rgba(0, 196, 140, 0.18);
+}
+
+.navitem__icon svg {
+  transition: transform var(--dur) var(--spring);
+}
+
+.navitem:hover .navitem__icon svg {
+  transform: translateY(-2px) scale(1.07);
+}
+
+.navitem.is-active .navitem__icon svg {
+  transform: scale(1.06);
+}
+
+/* Pill toggles and profile tabs share the same sliding indicator idea. */
+.pilltoggle {
+  position: relative;
+  isolation: isolate;
+  transition: border-color 0.18s, background-color 0.18s, color 0.18s, transform var(--dur-fast) var(--ease);
+}
+
+.pilltoggle.is-on {
+  background: var(--surface);
+  border-color: transparent;
+}
+
+.pilltoggle__pill {
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: 999px;
+  border: 1px solid var(--mint-strong);
+  background: var(--mint-50);
+}
+
+.tab {
+  position: relative;
+  transition: color 0.18s, transform var(--dur-fast) var(--ease);
+}
+
+.tab.is-on {
+  border-bottom-color: transparent;
+}
+
+.tab__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--mint-strong);
+}
+
+/* Header title and subtitle crossfade on route change. */
+.pagehead {
+  position: relative;
+}
+
+/* Inline crossfade for words that change in place. */
+.swap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: bottom;
+}
+
+.swap__item {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: inherit;
+  vertical-align: bottom;
+}
+
+/* Staggered entrances for static grids (lists with motion get theirs from motion). */
+.rail > *,
+.stats > *,
+.cl-gallery > *,
+.profile-side > *,
+.cl-letter-list > li,
+.checklist li,
+.hero,
+.cmds,
+.tabs,
+.tabpanel,
+.prefs,
+.preview,
+.cl-card,
+.toolbar,
+.livestrip,
+.listmeta {
+  animation: enter var(--dur-slow) var(--ease) backwards;
+}
+
+.toolbar {
+  animation-delay: 30ms;
+}
+
+.listmeta {
+  animation-delay: 60ms;
+}
+
+.rail > :nth-child(1),
+.stats > :nth-child(1),
+.cl-gallery > :nth-child(1),
+.cl-letter-list > li:nth-child(1),
+.checklist li:nth-child(1) {
+  animation-delay: 60ms;
+}
+.rail > :nth-child(2),
+.stats > :nth-child(2),
+.cl-gallery > :nth-child(2),
+.cl-letter-list > li:nth-child(2),
+.checklist li:nth-child(2) {
+  animation-delay: 100ms;
+}
+.rail > :nth-child(3),
+.stats > :nth-child(3),
+.cl-gallery > :nth-child(3),
+.cl-letter-list > li:nth-child(3),
+.checklist li:nth-child(3) {
+  animation-delay: 140ms;
+}
+.rail > :nth-child(4),
+.stats > :nth-child(4),
+.cl-gallery > :nth-child(4),
+.cl-letter-list > li:nth-child(4),
+.checklist li:nth-child(4) {
+  animation-delay: 180ms;
+}
+.rail > :nth-child(5),
+.stats > :nth-child(5),
+.cl-gallery > :nth-child(5),
+.cl-letter-list > li:nth-child(5),
+.checklist li:nth-child(5) {
+  animation-delay: 220ms;
+}
+.rail > :nth-child(6),
+.stats > :nth-child(6),
+.cl-gallery > :nth-child(6),
+.cl-letter-list > li:nth-child(6),
+.checklist li:nth-child(6) {
+  animation-delay: 260ms;
+}
+.stats > :nth-child(n + 7),
+.cl-gallery > :nth-child(n + 7),
+.cl-letter-list > li:nth-child(n + 7),
+.checklist li:nth-child(n + 7) {
+  animation-delay: 300ms;
+}
+
+.cmds,
+.tabpanel,
+.preview {
+  animation-delay: 120ms;
+}
+
+.profile-side > * {
+  animation-delay: 90ms;
+}
+
+.cl-letter__body--in {
+  animation: enter var(--dur) var(--ease);
+}
+
+/* Scores: the ring sweeps in, the five bars fill one after another. */
+.match__arc {
+  animation: arcIn 0.7s var(--ease) 0.08s backwards;
+}
+
+.match__seg > span {
+  transform-origin: left center;
+  animation: growX 0.36s var(--ease) backwards;
+}
+
+.match__seg:nth-child(1) > span {
+  animation-delay: 0.12s;
+}
+.match__seg:nth-child(2) > span {
+  animation-delay: 0.17s;
+}
+.match__seg:nth-child(3) > span {
+  animation-delay: 0.22s;
+}
+.match__seg:nth-child(4) > span {
+  animation-delay: 0.27s;
+}
+.match__seg:nth-child(5) > span {
+  animation-delay: 0.32s;
+}
+
+.progressbar > span {
+  transform-origin: left center;
+  animation: growX 0.7s var(--ease) 0.15s backwards;
+  transition: width 0.5s var(--ease);
+}
+
+/* Skeletons: a softer, wider shimmer. */
+.skeleton {
+  background: linear-gradient(100deg, var(--surface-3) 20%, #fafbfc 50%, var(--surface-3) 80%);
+  background-size: 220% 100%;
+  animation: shimmer 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.skelcard {
+  animation: enter var(--dur) var(--ease) backwards;
+}
+
+.skelcard:nth-child(2) {
+  animation-delay: 50ms;
+}
+.skelcard:nth-child(3) {
+  animation-delay: 100ms;
+}
+.skelcard:nth-child(4) {
+  animation-delay: 150ms;
+}
+.skelcard:nth-child(5) {
+  animation-delay: 200ms;
+}
+
+/* Empty states: the icon idles gently with a soft mint halo. */
+.emptystate {
+  isolation: isolate;
+}
+
+.emptystate__icon {
+  position: relative;
+  animation: float 3.6s ease-in-out infinite;
+}
+
+.emptystate__icon::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: 22px;
+  background: radial-gradient(closest-side, rgba(19, 211, 142, 0.22), transparent);
+  animation: haloPulse 3.6s ease-in-out infinite;
+}
+
+/* Dialogs: motion runs the backdrop and panel, so the old CSS entrances step aside. */
+.overlay,
+.dialog {
+  animation: none;
+}
+
+.overlay {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.wizard__body {
+  position: relative;
+  overflow-x: hidden;
+}
+
+.wizard__stepfx {
+  min-width: 0;
+}
+
+.wsteps__num {
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform var(--dur) var(--spring);
+}
+
+.wsteps__item.is-current .wsteps__num {
+  transform: scale(1.1);
+}
+
+/* Toasts: motion springs them in; a thin bar shows the time left. */
+.toast {
+  animation: none;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.toast:active {
+  cursor: grabbing;
+}
+
+.toast__timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  transform-origin: left center;
+  background: var(--mint-strong);
+  opacity: 0.55;
+  animation: timer linear forwards;
+}
+
+.toast--warn .toast__timer {
+  background: #f5a524;
+}
+
+.toast--error .toast__timer {
+  background: var(--live);
+}
+
+/* Live agent: earlier lines keep their dimming on the children, so motion can own the row's opacity. */
+.logtail li:nth-child(n + 3) {
+  opacity: 1;
+}
+
+.logtail li:nth-child(n + 3) > * {
+  opacity: 0.7;
+}
+
+.agentpill {
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.25s var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.agentpill.is-on:hover {
+  box-shadow: 0 0 0 4px rgba(19, 211, 142, 0.14);
+}
+
+.agentpill:active {
+  transform: scale(0.97);
+}
+
+.switch__thumb {
+  transition: transform var(--dur) var(--spring), background-color 0.2s;
+}
+
+/* The finish moment: the chip lands, a mint ring and sparks fly, the card glows once. */
+.chip {
+  position: relative;
+  transition: background-color 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.chip.is-landing {
+  animation: land 0.5s var(--ease);
+}
+
+.chip.is-landing .chip__check {
+  animation: checkDraw 0.35s var(--ease) 0.1s backwards;
+}
+
+.burst {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.burst__ring {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--mint-strong);
+  opacity: 0;
+  animation: burstRing 0.7s var(--ease);
+}
+
+.burst__spark {
+  position: absolute;
+  left: -1.5px;
+  top: -10px;
+  width: 3px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--mint-strong);
+  transform-origin: 50% 10px;
+  opacity: 0;
+  animation: burstSpark 0.65s var(--ease) 0.05s;
+}
+
+.burst--amber .burst__ring {
+  border-color: #f5a524;
+}
+
+.burst--amber .burst__spark {
+  background: #f5a524;
+}
+
+.appcard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 0 2px var(--mint-strong), inset 0 0 40px -12px rgba(19, 211, 142, 0.5);
+}
+
+.appcard.is-settled::after {
+  animation: settleGlow 1.4s var(--ease);
+}
+
+.appcard.is-settled--warn::after {
+  box-shadow: inset 0 0 0 2px #f5a524, inset 0 0 40px -12px rgba(245, 165, 36, 0.4);
+}
+
+/* Sign in: soft mint blobs drift behind a calm entrance. */
+.auth {
+  position: relative;
+}
+
+.auth > section {
+  position: relative;
+  z-index: 1;
+}
+
+.auth__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.auth__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  will-change: transform;
+}
+
+.auth__blob--a {
+  width: 46vmax;
+  height: 46vmax;
+  left: -12vmax;
+  top: -14vmax;
+  background: radial-gradient(closest-side, rgba(19, 211, 142, 0.26), transparent);
+  animation: blobA 22s ease-in-out infinite;
+}
+
+.auth__blob--b {
+  width: 40vmax;
+  height: 40vmax;
+  right: -14vmax;
+  bottom: -16vmax;
+  background: radial-gradient(closest-side, rgba(0, 196, 140, 0.2), transparent);
+  animation: blobB 26s ease-in-out infinite;
+}
+
+.auth__blob--c {
+  width: 28vmax;
+  height: 28vmax;
+  left: 38%;
+  top: 30%;
+  background: radial-gradient(closest-side, rgba(120, 200, 255, 0.14), transparent);
+  animation: blobC 30s ease-in-out infinite;
+}
+
+.auth__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.auth__story > .brand,
+.auth__headline,
+.auth__lede {
+  animation: enter 0.5s var(--ease) backwards;
+}
+
+.auth__headline {
+  animation-delay: 70ms;
+}
+
+.auth__lede {
+  animation-delay: 140ms;
+}
+
+.auth__job,
+.auth__log {
+  opacity: 1;
+  animation: enter 0.5s var(--ease) backwards;
+}
+
+.auth__job {
+  transition: box-shadow 0.25s var(--ease);
+}
+
+.auth__job:hover {
+  box-shadow: 0 2px 4px rgba(16, 24, 40, 0.04), 0 18px 36px -18px rgba(16, 24, 40, 0.28);
+}
+
+.form-msg {
+  animation: enter var(--dur) var(--ease);
+}
+
+.input {
+  transition: border-color 0.18s, box-shadow 0.22s var(--ease), background-color 0.18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :focus-visible,
+  .emptystate__icon,
+  .emptystate__icon::after,
+  .auth__blob,
+  .skeleton,
+  .toast__timer {
+    animation: none !important;
+  }
+
+  .btn:hover:not(:disabled),
+  .railcard:hover,
+  .stat:hover,
+  .agentcard:hover,
+  .cl-tile:hover,
+  .navitem:hover .navitem__icon svg {
+    transform: none;
+  }
+
+  .burst {
+    display: none;
+  }
+}
+
+/* Toasts and cards slide in from the right edge; clip (not hidden) so sticky parts keep working. */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Finish burst, tuned: the check pops first, then the ring and sparks fly out from behind it. */
+.chip.is-landing {
+  isolation: isolate;
+}
+
+.chip.is-landing .chip__check {
+  animation: checkPop 0.32s var(--ease);
+}
+
+.burst {
+  left: 19.5px;
+  z-index: -1;
+}
+
+.burst__ring {
+  animation-delay: 60ms;
+}
+
+.burst__spark {
+  animation-delay: 110ms;
+}
+
+.burst__spark {
+  top: -17px;
+  height: 6px;
+  transform-origin: 50% 17px;
 }

@@ -1,4 +1,7 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
+import { motion } from 'motion/react';
+import { SPRING } from '../lib/motion';
+import { AnimatedNumber } from './motion/AnimatedNumber';
 import { avatarColors, initialOf, matchInfo } from '../lib/format';
 
 /** A colored circle with the company's first letter. */
@@ -36,7 +39,7 @@ export function MatchBadge({ score }: { score: number | null }) {
             transform="rotate(-90 24 24)"
           />
         </svg>
-        <span className="match__num mono">{score.toFixed(1)}</span>
+        <AnimatedNumber className="match__num mono" value={score} decimals={1} from={score * 0.6} duration={0.5} />
       </span>
       <span className="match__text" aria-hidden="true">
         <span className="match__label">{label}</span>
@@ -88,6 +91,7 @@ export function PillGroup<T extends string | number>({ label, options, value, on
   value: T;
   onChange: (value: T) => void;
 }) {
+  const group = useId();
   return (
     <div className="pills" role="group" aria-label={label}>
       {options.map((o) => (
@@ -98,8 +102,9 @@ export function PillGroup<T extends string | number>({ label, options, value, on
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
         >
-          {o.label}
-          {o.count !== undefined ? <span className="pilltoggle__count mono">{o.count}</span> : null}
+          {value === o.value ? <motion.span className="pilltoggle__pill" layoutId={`pill-${group}`} transition={SPRING} aria-hidden="true" /> : null}
+          <span className="pilltoggle__label">{o.label}</span>
+          {o.count !== undefined ? <AnimatedNumber className="pilltoggle__count mono" id={`pill-${label}-${String(o.value)}`} value={o.count} /> : null}
         </button>
       ))}
     </div>

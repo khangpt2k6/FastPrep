@@ -1,4 +1,7 @@
+import { forwardRef } from 'react';
+import { motion } from 'motion/react';
 import type { JobRow } from '../../lib/types';
+import { LAYOUT_CAP, SPRING, cardHover, riseItem } from '../../lib/motion';
 import { companyName, timeAgo } from '../../lib/format';
 import { Avatar, MatchBadge } from '../common';
 import { IconClock, IconLink, IconMapPin } from '../Icons';
@@ -9,11 +12,24 @@ interface JobCardProps {
   queued: boolean;
   now: number;
   onToggle: (id: string) => void;
+  /** Position in the list: drives the entrance stagger and whether it gets layout animation. */
+  index?: number;
 }
 
-export function JobCard({ job, selected, queued, now, onToggle }: JobCardProps) {
+export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard({ job, selected, queued, now, onToggle, index = 0 }, ref) {
   return (
-    <li className={`card jobcard ${selected ? 'is-selected' : ''} ${queued ? 'is-queued' : ''}`}>
+    <motion.li
+      ref={ref}
+      className={`card jobcard ${selected ? 'is-selected' : ''} ${queued ? 'is-queued' : ''}`}
+      layout={index < LAYOUT_CAP ? 'position' : false}
+      variants={riseItem}
+      custom={index}
+      initial="hidden"
+      animate="shown"
+      exit="gone"
+      whileHover={cardHover}
+      transition={{ layout: SPRING }}
+    >
       <label className="jobcard__hit">
         <span className="check jobcard__check">
           <input
@@ -50,6 +66,6 @@ export function JobCard({ job, selected, queued, now, onToggle }: JobCardProps) 
           <IconLink size={17} />
         </a>
       ) : null}
-    </li>
+    </motion.li>
   );
-}
+});

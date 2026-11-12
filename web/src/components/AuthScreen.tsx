@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
+import { SPRING_SOFT, swapVariants } from '../lib/motion';
 import { Avatar, MatchBadge } from './common';
 import { Logo } from './Icons';
 
@@ -50,6 +52,12 @@ export function AuthScreen() {
 
   return (
     <main className="auth">
+      <div className="auth__bg" aria-hidden="true">
+        <span className="auth__blob auth__blob--a" />
+        <span className="auth__blob auth__blob--b" />
+        <span className="auth__blob auth__blob--c" />
+        <span className="auth__grain" />
+      </div>
       <section className="auth__story" aria-label="About Agent Automation">
         <div className="brand">
           <Logo size={38} />
@@ -85,13 +93,22 @@ export function AuthScreen() {
         </div>
       </section>
 
-      <section className="card auth__panel" aria-labelledby="auth-title">
-        <h2 id="auth-title" className="auth__title">
-          {signin ? 'Welcome back' : 'Create your account'}
-        </h2>
-        <p className="auth__sub">
-          {signin ? 'Sign in with the account your agent uses.' : 'Your agent signs in with the same email and password.'}
-        </p>
+      <motion.section
+        className="card auth__panel"
+        aria-labelledby="auth-title"
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1, transition: { ...SPRING_SOFT, delay: 0.12 } }}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={mode} variants={swapVariants} initial="hidden" animate="shown" exit="gone">
+            <h2 id="auth-title" className="auth__title">
+              {signin ? 'Welcome back' : 'Create your account'}
+            </h2>
+            <p className="auth__sub">
+              {signin ? 'Sign in with the account your agent uses.' : 'Your agent signs in with the same email and password.'}
+            </p>
+          </motion.div>
+        </AnimatePresence>
 
         <form onSubmit={submit} className="auth__form">
           <div className="field">
@@ -149,7 +166,7 @@ export function AuthScreen() {
             {signin ? 'Create one' : 'Sign in'}
           </button>
         </p>
-      </section>
+      </motion.section>
     </main>
   );
 }

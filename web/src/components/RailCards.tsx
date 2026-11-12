@@ -1,6 +1,7 @@
 import type { JobRow } from '../lib/types';
 import type { SectionState } from '../lib/profile';
 import { IconArrowRight, IconCheck } from './Icons';
+import { AnimatedNumber } from './motion';
 
 export function ProfileCard({ complete, sections, onOpen, onContinue }: {
   complete: boolean;
@@ -32,7 +33,7 @@ export function ProfileCard({ complete, sections, onOpen, onContinue }: {
     <section className="card railcard" aria-label="Profile">
       <p className="card__title">Finish your profile</p>
       <p className="card__hint">
-        {done} of {sections.length} sections filled. The agent uses it to answer every form.
+        <AnimatedNumber id="profile-done" value={done} /> of {sections.length} sections filled. The agent uses it to answer every form.
       </p>
       <div className="progressbar" role="progressbar" aria-valuemin={0} aria-valuemax={sections.length} aria-valuenow={done}>
         <span style={{ width: `${(done / sections.length) * 100}%` }} />
@@ -55,19 +56,27 @@ export function ApplicationsSummaryCard({ items, onOpen }: { items: JobRow[]; on
       <dl className="tally">
         <div className="tally--sent">
           <dt>Sent</dt>
-          <dd className="mono">{sent}</dd>
+          <dd className="mono">
+            <AnimatedNumber id="apps-sent" value={sent} />
+          </dd>
         </div>
         <div className="tally--live">
           <dt>In progress</dt>
-          <dd className="mono">{live}</dd>
+          <dd className="mono">
+            <AnimatedNumber id="apps-live" value={live} />
+          </dd>
         </div>
         <div className="tally--stopped">
           <dt>Not sent</dt>
-          <dd className="mono">{notSent}</dd>
+          <dd className="mono">
+            <AnimatedNumber id="apps-notsent" value={notSent} />
+          </dd>
         </div>
         <div className="tally--bad">
           <dt>Refused or failed</dt>
-          <dd className="mono">{bad}</dd>
+          <dd className="mono">
+            <AnimatedNumber id="apps-bad" value={bad} />
+          </dd>
         </div>
       </dl>
       <button type="button" className="link-btn" onClick={onOpen}>

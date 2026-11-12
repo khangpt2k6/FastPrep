@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { DUR, EASE, SPRING } from '../../lib/motion';
 import type { AgentRow } from '../../lib/types';
 import { stateLabel } from '../../lib/format';
 import { IconCheck, IconCopy } from '../Icons';
@@ -8,6 +9,14 @@ export interface LogEntry {
   state: string;
   message: string;
 }
+
+/** Props for an earlier log line: it drops in at the top, older lines slide down. */
+export const logItem = {
+  initial: { opacity: 0, y: -8, filter: 'blur(3px)' },
+  animate: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: DUR.slow, ease: EASE } },
+  exit: { opacity: 0, transition: { duration: DUR.fast } },
+  transition: { layout: SPRING },
+};
 
 export const BUSY_STATES = ['starting', 'reading', 'searching', 'scoring', 'applying'];
 export const START_COMMAND = 'agent-automation';

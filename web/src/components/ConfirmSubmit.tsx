@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import type { JobRow } from '../lib/types';
 import { plural } from '../lib/format';
 import { Dialog } from './Dialog';
@@ -9,10 +10,14 @@ interface ConfirmSubmitProps {
 }
 
 /** Shown before a real (not dry run) apply, because it sends applications for real. */
-export function ConfirmSubmit({ jobs, onCancel, onConfirm }: ConfirmSubmitProps) {
+export function ConfirmSubmit({ jobs: current, onCancel, onConfirm }: ConfirmSubmitProps) {
+  // Keep the last list on screen while the dialog animates out.
+  const last = useRef(current);
+  if (current) last.current = current;
+  const jobs = last.current;
   const n = jobs?.length ?? 0;
   return (
-    <Dialog open={jobs !== null} onClose={onCancel} labelledBy="confirm-title" className="confirm">
+    <Dialog open={current !== null} onClose={onCancel} labelledBy="confirm-title" className="confirm">
       <h2 id="confirm-title" className="confirm__title">
         Submit {plural(n, 'real application')}?
       </h2>

@@ -1,9 +1,11 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { AnimatePresence } from 'motion/react';
 import type { JobRow, LoadError } from '../../lib/types';
 import { plural } from '../../lib/format';
 import { EmptyState, PillGroup, SkeletonCards } from '../common';
 import { IconAlert, IconBriefcase, IconRadar, IconSearch } from '../Icons';
 import { JobCard } from './JobCard';
+import { AnimatedNumber, StateFade } from '../motion';
 
 export type MinScore = 0 | 3 | 4;
 
@@ -52,7 +54,9 @@ export function JobsPage(props: JobsPageProps) {
   const selectable = visible.filter((j) => !queued.has(j.id)).map((j) => j.id);
 
   let body: ReactNode;
+  let state = 'list';
   if (error) {
+    state = 'error';
     body = (
       <EmptyState
         icon={<IconAlert size={22} />}
@@ -67,8 +71,10 @@ export function JobsPage(props: JobsPageProps) {
       </EmptyState>
     );
   } else if (loading) {
+    state = 'loading';
     body = <SkeletonCards count={5} />;
   } else if (candidates.length === 0) {
+    state = 'none';
     body = (
       <EmptyState
         icon={<IconBriefcase size={22} />}
@@ -85,6 +91,7 @@ export function JobsPage(props: JobsPageProps) {
       </EmptyState>
     );
   } else if (visible.length === 0) {
+    state = 'filtered';
     body = (
       <EmptyState
         icon={<IconSearch size={22} />}
@@ -101,16 +108,19 @@ export function JobsPage(props: JobsPageProps) {
   } else {
     body = (
       <ul className="cardlist">
-        {visible.map((job) => (
-          <JobCard
-            key={job.id}
-            job={job}
-            now={props.now}
-            selected={selected.has(job.id)}
-            queued={queued.has(job.id)}
-            onToggle={props.onToggle}
-          />
-        ))}
+        <AnimatePresence>
+          {visible.map((job, i) => (
+            <JobCard
+              key={job.id}
+              index={i}
+              job={job}
+              now={props.now}
+              selected={selected.has(job.id)}
+              queued={queued.has(job.id)}
+              onToggle={props.onToggle}
+            />
+          ))}
+        </AnimatePresence>
       </ul>
     );
   }
@@ -148,12 +158,19 @@ export function JobsPage(props: JobsPageProps) {
         </div>
         {!loading && !error && candidates.length > 0 ? (
           <p className="listmeta">
-            {visible.length === candidates.length
-              ? `${plural(candidates.length, 'job')} ready to apply, best match first`
-              : `Showing ${visible.length} of ${plural(candidates.length, 'job')}`}
+            {visible.length === candidates.length ? (
+              <>
+                <AnimatedNumber value={candidates.length} from={candidates.length} /> {candidates.length === 1 ? 'job' : 'jobs'} ready to
+                apply, best match first
+              </>
+            ) : (
+              <>
+                Showing <AnimatedNumber value={visible.length} from={visible.length} /> of {plural(candidates.length, 'job')}
+              </>
+            )}
           </p>
         ) : null}
-        {body}
+        <StateFade state={state}>{body}</StateFade>
         {props.actionBar}
       </div>
       <aside className="rail" aria-label="Agent and profile">

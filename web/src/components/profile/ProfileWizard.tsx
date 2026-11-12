@@ -1,5 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { ProfileRow } from '../../lib/types';
+import { stepVariants } from '../../lib/motion';
 import { cleanProfile, mergeProfile, validatePersonal, type Profile } from '../../lib/profile';
 import { errorText } from '../../lib/errors';
 import { clock } from '../../lib/format';
@@ -155,6 +157,14 @@ export function ProfileWizard(props: ProfileWizardProps) {
     onClose();
   }
 
+  // Which way the steps slide: forward from the right, back from the left.
+  const lastStep = useRef(step);
+  const direction = useRef(1);
+  if (lastStep.current !== step) {
+    direction.current = step > lastStep.current ? 1 : -1;
+    lastStep.current = step;
+  }
+
   const prefilled = row?.updated_by === 'agent' && !row.completed;
   const isReview = step === REVIEW_STEP;
   const current = STEPS[step];
@@ -195,20 +205,32 @@ export function ProfileWizard(props: ProfileWizardProps) {
         ) : null}
         {prefilled ? <p className="wbanner">Prefilled from your resume. Check each step.</p> : null}
 
-        <div className="wizard__step-head">
-          <h3 className="wizard__step-title" ref={headingRef} tabIndex={-1} data-autofocus>
-            {current.title}
-          </h3>
-          <p className="wizard__step-blurb">{current.blurb}</p>
-        </div>
+        <AnimatePresence mode="popLayout" initial={false} custom={direction.current}>
+          <motion.div
+            key={step}
+            className="wizard__stepfx"
+            custom={direction.current}
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+          >
+            <div className="wizard__step-head">
+              <h3 className="wizard__step-title" ref={headingRef} tabIndex={-1} data-autofocus>
+                {current.title}
+              </h3>
+              <p className="wizard__step-blurb">{current.blurb}</p>
+            </div>
 
-        {step === 0 ? <PersonalStep profile={form} update={update} errors={errors} /> : null}
-        {step === 1 ? <EducationStep profile={form} update={update} /> : null}
-        {step === 2 ? <ExperienceStep profile={form} update={update} /> : null}
-        {step === 3 ? <SkillsStep profile={form} update={update} /> : null}
-        {step === 4 ? <AuthorizationStep profile={form} update={update} /> : null}
-        {step === 5 ? <EeoStep profile={form} update={update} /> : null}
-        {isReview ? <ReviewStep profile={form} onEdit={editFromReview} /> : null}
+            {step === 0 ? <PersonalStep profile={form} update={update} errors={errors} /> : null}
+            {step === 1 ? <EducationStep profile={form} update={update} /> : null}
+            {step === 2 ? <ExperienceStep profile={form} update={update} /> : null}
+            {step === 3 ? <SkillsStep profile={form} update={update} /> : null}
+            {step === 4 ? <AuthorizationStep profile={form} update={update} /> : null}
+            {step === 5 ? <EeoStep profile={form} update={update} /> : null}
+            {isReview ? <ReviewStep profile={form} onEdit={editFromReview} /> : null}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <footer className="wizard__foot">

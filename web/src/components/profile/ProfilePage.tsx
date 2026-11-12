@@ -1,4 +1,7 @@
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { motion } from 'motion/react';
+import { SPRING } from '../../lib/motion';
+import { AnimatedNumber } from '../motion';
 import { bulletLines, profileProgress, type Profile } from '../../lib/profile';
 import { monthRange } from '../../lib/format';
 import type { ProfileRow } from '../../lib/types';
@@ -301,6 +304,7 @@ export function ProfilePage({ profile, row, email, onEdit }: ProfilePageProps) {
               onClick={() => setTab(t.key)}
               onKeyDown={(e) => onTabKey(e, i)}
             >
+              {tab === t.key ? <motion.span className="tab__bar" layoutId="profile-tab" transition={SPRING} aria-hidden="true" /> : null}
               {t.title}
             </button>
           ))}
@@ -330,7 +334,7 @@ export function ProfilePage({ profile, row, email, onEdit }: ProfilePageProps) {
                 {complete ? 'Profile complete' : 'Finish your profile'}
               </h2>
               <p className="card__hint">
-                {done} of {sections.length} sections filled
+                <AnimatedNumber id="profile-done" value={done} /> of {sections.length} sections filled
               </p>
             </div>
           </div>

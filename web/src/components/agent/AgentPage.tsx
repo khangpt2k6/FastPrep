@@ -1,6 +1,9 @@
+import { AnimatePresence, motion } from 'motion/react';
 import type { AgentRow, CommandRow, LiveStatus, LoadError } from '../../lib/types';
+import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
+import { AnimatedNumber, Swap } from '../motion';
 import { clock, plural, stateLabel, timeAgo } from '../../lib/format';
-import { Beacon, LogLine, StartHint, agentTone, type LogEntry } from './live';
+import { Beacon, LogLine, StartHint, agentTone, logItem, type LogEntry } from './live';
 
 const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters' };
 
@@ -36,9 +39,13 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
         <div className="hero__status">
           <Beacon tone={tone} size="lg" />
           <div>
-            <p className="hero__online">{loading ? 'Checking' : online ? 'Online' : 'Offline'}</p>
+            <p className="hero__online">
+              <Swap id={loading ? 'checking' : online ? 'on' : 'off'}>{loading ? 'Checking' : online ? 'Online' : 'Offline'}</Swap>
+            </p>
             <p className="hero__meta">
-              <span className={`statepill statepill--${tone}`}>{stateLabel(state)}</span>
+              <span className={`statepill statepill--${tone}`}>
+                <Swap id={state}>{stateLabel(state)}</Swap>
+              </span>
               {agent?.last_seen ? <span className="mono">seen {timeAgo(agent.last_seen, now)}</span> : null}
             </p>
           </div>
@@ -58,13 +65,15 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
               <LogLine agent={agent} online={online} tone={tone} />
               {earlier.length > 0 ? (
                 <ol className="logtail logtail--wide" aria-label="Earlier log lines">
-                  {earlier.map((e) => (
-                    <li key={`${e.at}-${e.message}`}>
-                      <time className="mono">{clock(e.at)}</time>
-                      <span className="logtail__state mono">{e.state}</span>
-                      <span className="logtail__msg">{e.message}</span>
-                    </li>
-                  ))}
+                  <AnimatePresence initial={false}>
+                    {earlier.map((e) => (
+                      <motion.li key={`${e.at}-${e.message}`} layout="position" {...logItem}>
+                        <time className="mono">{clock(e.at)}</time>
+                        <span className="logtail__state mono">{e.state}</span>
+                        <span className="logtail__msg">{e.message}</span>
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
                 </ol>
               ) : null}
             </>
@@ -83,15 +92,21 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
       <dl className="stats">
         <div className="card stat">
           <dt>Jobs found</dt>
-          <dd className="stat__num mono">{(agent?.jobs_found ?? 0).toLocaleString()}</dd>
+          <dd className="stat__num mono">
+            <AnimatedNumber id="agent-found" value={agent?.jobs_found ?? 0} />
+          </dd>
         </div>
         <div className="card stat">
           <dt>Jobs scored</dt>
-          <dd className="stat__num mono">{(agent?.jobs_scored ?? 0).toLocaleString()}</dd>
+          <dd className="stat__num mono">
+            <AnimatedNumber id="agent-scored" value={agent?.jobs_scored ?? 0} />
+          </dd>
         </div>
         <div className="card stat">
           <dt>Applications sent</dt>
-          <dd className="stat__num mono">{sent.toLocaleString()}</dd>
+          <dd className="stat__num mono">
+            <AnimatedNumber id="apps-sent" value={sent} />
+          </dd>
         </div>
         <div className="card stat">
           <dt>Resume</dt>
@@ -105,7 +120,9 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
         </div>
         <div className="card stat">
           <dt>Live updates</dt>
-          <dd className={`stat__text live-${live}`}>{live === 'live' ? 'Connected' : live === 'down' ? 'Reconnecting' : 'Connecting'}</dd>
+          <dd className={`stat__text live-${live}`}>
+            <Swap id={live}>{live === 'live' ? 'Connected' : live === 'down' ? 'Reconnecting' : 'Connecting'}</Swap>
+          </dd>
         </div>
       </dl>
 
@@ -120,20 +137,32 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
           <p className="empty-line">Nothing yet. Commands appear here when you apply or ask for more jobs.</p>
         ) : (
           <ul className="cmdlist">
-            {recent.map((c) => (
-              <li className="cmd" key={c.id}>
+            <AnimatePresence initial={false}>
+            {recent.map((c, i) => (
+              <motion.li
+                className="cmd"
+                key={c.id}
+                layout={i < LAYOUT_CAP ? 'position' : false}
+                variants={riseItem}
+                custom={0}
+                initial="hidden"
+                animate="shown"
+                exit="gone"
+                transition={{ layout: SPRING }}
+              >
                 <span className={`cmd__kind cmd__kind--${c.kind}`}>{COMMAND_KIND[c.kind] ?? c.kind}</span>
                 <span className="cmd__what">
                   {c.kind === 'apply' ? plural(c.job_ids.length, 'job') : c.kind === 'cover_letter' ? plural(c.job_ids.length, 'letter') : 'Find more jobs'}
                   {c.kind === 'apply' && c.dry_run ? <span className="tag tag--dry">Dry run</span> : null}
                 </span>
                 <span className={`pill pill--cmd-${c.status}`}>
-                  {c.status === 'pending' && !online ? 'Waiting for agent' : COMMAND_STATUS[c.status]}
+                  <Swap id={`${c.status}-${online}`}>{c.status === 'pending' && !online ? 'Waiting for agent' : COMMAND_STATUS[c.status]}</Swap>
                 </span>
                 <time className="cmd__time mono">{timeAgo(c.created_at, now)}</time>
                 {c.status === 'failed' && c.error ? <p className="cmd__error">{c.error}</p> : null}
-              </li>
+              </motion.li>
             ))}
+            </AnimatePresence>
           </ul>
         )}
       </section>

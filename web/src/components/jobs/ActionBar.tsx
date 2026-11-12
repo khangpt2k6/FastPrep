@@ -1,3 +1,7 @@
+import { useRef } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { DUR, EASE, SPRING_SOFT } from '../../lib/motion';
+import { AnimatedNumber } from '../motion';
 import { IconLetter, IconPlay, IconRadar } from '../Icons';
 
 interface ActionBarProps {
@@ -15,12 +19,34 @@ interface ActionBarProps {
 }
 
 /** Slides up from the bottom once something is selected. */
-export function ActionBar({ count, dryRun, online, applying, searching, onApply, onSearch, onLetters, writing, onClear }: ActionBarProps) {
-  if (count === 0) return null;
+export function ActionBar(props: ActionBarProps) {
+  // Keep the last non-zero count so the bar does not read "0 selected" while it slides away.
+  const last = useRef(props.count);
+  if (props.count > 0) last.current = props.count;
   return (
-    <div className="actionbar" role="region" aria-label="Selected jobs">
+    <AnimatePresence>
+      {props.count > 0 ? (
+        <motion.div
+          key="actionbar"
+          className="actionbar"
+          role="region"
+          aria-label="Selected jobs"
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1, transition: SPRING_SOFT }}
+          exit={{ opacity: 0, y: 18, scale: 0.98, transition: { duration: DUR.fast, ease: EASE } }}
+        >
+          <Bar {...props} count={last.current} />
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+function Bar({ count, dryRun, online, applying, searching, onApply, onSearch, onLetters, writing, onClear }: ActionBarProps) {
+  return (
+    <>
       <div className="actionbar__count">
-        <span className="actionbar__num mono">{count}</span>
+        <AnimatedNumber className="actionbar__num mono" value={count} from={count} duration={0.35} />
         <span>selected</span>
         <button type="button" className="link-btn link-btn--muted" onClick={onClear}>
           Clear
@@ -44,9 +70,9 @@ export function ActionBar({ count, dryRun, online, applying, searching, onApply,
         </button>
         <button type="button" className={`btn ${dryRun ? 'btn--primary' : 'btn--live'}`} onClick={onApply} disabled={!online || applying}>
           {applying ? <span className="spinner" aria-hidden="true" /> : <IconPlay size={14} />}
-          Apply to <span className="mono">{count}</span> {count === 1 ? 'job' : 'jobs'}
+          Apply to <AnimatedNumber className="mono" value={count} from={count} duration={0.35} /> {count === 1 ? 'job' : 'jobs'}
         </button>
       </div>
-    </div>
+    </>
   );
 }

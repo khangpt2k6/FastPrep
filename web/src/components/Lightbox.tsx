@@ -1,11 +1,16 @@
+import { useRef } from 'react';
 import type { JobRow } from '../lib/types';
 import { Dialog } from './Dialog';
 import { IconLink, IconX } from './Icons';
 import { StatusChip } from './StatusChip';
 
-export function Lightbox({ shot, onClose }: { shot: { job: JobRow; url: string } | null; onClose: () => void }) {
+export function Lightbox({ shot: current, onClose }: { shot: { job: JobRow; url: string } | null; onClose: () => void }) {
+  // Keep showing the last shot while the dialog animates out.
+  const last = useRef(current);
+  if (current) last.current = current;
+  const shot = last.current;
   return (
-    <Dialog open={shot !== null} onClose={onClose} labelledBy="lightbox-title" className="lightbox">
+    <Dialog open={current !== null} onClose={onClose} labelledBy="lightbox-title" className="lightbox">
       {shot ? (
         <>
           <header className="lightbox__head">

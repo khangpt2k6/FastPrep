@@ -34,6 +34,7 @@ import { PageHeader } from './shell/PageHeader';
 import { Sidebar } from './shell/Sidebar';
 import { AgentPill, DryRunSwitch } from './shell/StatusControls';
 import { Toasts, useToasts, type ToastTone } from './Toasts';
+import { PageTransition } from './motion';
 
 interface DashboardProps {
   userId: string;
@@ -492,7 +493,9 @@ export function Dashboard({ userId, email }: DashboardProps) {
           }
         />
         <main className="shell__content" id="main">
-          <ErrorBoundary resetKey={page}>{content}</ErrorBoundary>
+          <PageTransition pageKey={page}>
+            <ErrorBoundary resetKey={page}>{content}</ErrorBoundary>
+          </PageTransition>
         </main>
       </div>
 

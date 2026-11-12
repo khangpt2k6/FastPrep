@@ -254,7 +254,7 @@ function LetterItem({ letter, job, templateName, now, online, toast, onChanged }
         </span>
       </button>
       {open ? (
-        <div className="cl-letter__body">
+        <div className="cl-letter__body cl-letter__body--in">
           <textarea className="input textarea cl-letter__text" rows={14} value={text} onChange={(e) => setText(e.target.value)} />
           {letter.problems ? <p className="cl-letter__warn">The agent could not fix: {letter.problems}</p> : null}
           <div className="cl-actions">

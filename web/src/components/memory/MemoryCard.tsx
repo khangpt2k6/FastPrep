@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
+import { motion } from 'motion/react';
+import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
 import type { MemoryRow } from '../../lib/types';
 import { timeAgo } from '../../lib/format';
 import { useOverflow } from '../../hooks/useOverflow';
@@ -11,9 +13,11 @@ interface MemoryCardProps {
   onSave: (answer: string) => Promise<boolean>;
   onPin: () => void;
   onDelete: () => void;
+  /** Position in the list, for the entrance stagger. */
+  index?: number;
 }
 
-export function MemoryCard({ row, now, onSave, onPin, onDelete }: MemoryCardProps) {
+export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function MemoryCard({ row, now, onSave, onPin, onDelete, index = 0 }, ref) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(row.answer);
   const [open, setOpen] = useState(false);
@@ -35,7 +39,17 @@ export function MemoryCard({ row, now, onSave, onPin, onDelete }: MemoryCardProp
   }
 
   return (
-    <li className={`card memcard ${row.pinned ? 'is-pinned' : ''}`}>
+    <motion.li
+      ref={ref}
+      className={`card memcard ${row.pinned ? 'is-pinned' : ''}`}
+      layout={index < LAYOUT_CAP ? 'position' : false}
+      variants={riseItem}
+      custom={index}
+      initial="hidden"
+      animate="shown"
+      exit="gone"
+      transition={{ layout: SPRING }}
+    >
       <div className="memcard__head">
         <p className="memcard__q">{row.question}</p>
         {row.pinned ? (
@@ -122,6 +136,6 @@ export function MemoryCard({ row, now, onSave, onPin, onDelete }: MemoryCardProp
           </div>
         ) : null}
       </div>
-    </li>
+    </motion.li>
   );
-}
+});

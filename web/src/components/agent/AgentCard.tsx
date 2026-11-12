@@ -1,7 +1,9 @@
+import { AnimatePresence, motion } from 'motion/react';
 import type { AgentRow } from '../../lib/types';
+import { AnimatedNumber, Swap } from '../motion';
 import { clock, stateLabel, timeAgo } from '../../lib/format';
 import { IconArrowRight } from '../Icons';
-import { Beacon, LogLine, StartHint, agentTone, type LogEntry } from './live';
+import { Beacon, LogLine, StartHint, agentTone, logItem, type LogEntry } from './live';
 
 interface AgentCardProps {
   agent: AgentRow | null;
@@ -24,9 +26,13 @@ export function AgentCard({ agent, online, loading, now, tail, onOpen }: AgentCa
       <header className="agentcard__head">
         <Beacon tone={tone} />
         <div className="agentcard__who">
-          <p className="agentcard__status">{loading ? 'Checking' : online ? 'Agent online' : 'Agent offline'}</p>
+          <p className="agentcard__status">
+            <Swap id={loading ? 'checking' : online ? 'on' : 'off'}>{loading ? 'Checking' : online ? 'Agent online' : 'Agent offline'}</Swap>
+          </p>
           <p className="agentcard__seen">
-            {online ? stateLabel(state) : agent?.last_seen ? `Last seen ${timeAgo(agent.last_seen, now)}` : 'Never connected'}
+            <Swap id={online ? `s-${state}` : 'seen'}>
+              {online ? stateLabel(state) : agent?.last_seen ? `Last seen ${timeAgo(agent.last_seen, now)}` : 'Never connected'}
+            </Swap>
           </p>
         </div>
       </header>
@@ -36,12 +42,14 @@ export function AgentCard({ agent, online, loading, now, tail, onOpen }: AgentCa
           <LogLine agent={agent} online={online} tone={tone} />
           {earlier.length > 0 ? (
             <ol className="logtail" aria-label="Earlier log lines">
-              {earlier.map((e) => (
-                <li key={`${e.at}-${e.message}`}>
-                  <time className="mono">{clock(e.at)}</time>
-                  <span className="logtail__msg">{e.message}</span>
-                </li>
-              ))}
+              <AnimatePresence initial={false}>
+                {earlier.map((e) => (
+                  <motion.li key={`${e.at}-${e.message}`} layout="position" {...logItem}>
+                    <time className="mono">{clock(e.at)}</time>
+                    <span className="logtail__msg">{e.message}</span>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
             </ol>
           ) : null}
         </div>
@@ -52,11 +60,15 @@ export function AgentCard({ agent, online, loading, now, tail, onOpen }: AgentCa
       <dl className="minis">
         <div>
           <dt>Found</dt>
-          <dd className="mono">{(agent?.jobs_found ?? 0).toLocaleString()}</dd>
+          <dd className="mono">
+            <AnimatedNumber id="agent-found" value={agent?.jobs_found ?? 0} />
+          </dd>
         </div>
         <div>
           <dt>Scored</dt>
-          <dd className="mono">{(agent?.jobs_scored ?? 0).toLocaleString()}</dd>
+          <dd className="mono">
+            <AnimatedNumber id="agent-scored" value={agent?.jobs_scored ?? 0} />
+          </dd>
         </div>
       </dl>
       <p className="agentcard__meta">
@@ -80,7 +92,9 @@ export function LiveStrip({ agent, online, onOpen }: { agent: AgentRow | null; o
       <Beacon tone={tone} size="sm" />
       {online ? (
         <>
-          <span className="livestrip__state">{stateLabel(state)}</span>
+          <span className="livestrip__state">
+            <Swap id={state}>{stateLabel(state)}</Swap>
+          </span>
           <div className="livestrip__line">
             <LogLine agent={agent} online={online} tone={tone} />
           </div>

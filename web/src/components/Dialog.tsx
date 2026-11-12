@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { backdropVariants, panelVariants } from '../lib/motion';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface DialogProps {
@@ -21,18 +23,34 @@ export function Dialog({ open, onClose, labelledBy, className = '', children }: 
     return () => document.body.classList.remove('has-dialog');
   }, [open]);
 
-  if (!open) return null;
   return createPortal(
-    <div
-      className="overlay"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={labelledBy} className={`dialog ${className}`} tabIndex={-1}>
-        {children}
-      </div>
-    </div>,
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          key="overlay"
+          className="overlay"
+          variants={backdropVariants}
+          initial="hidden"
+          animate="shown"
+          exit="gone"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) onClose();
+          }}
+        >
+          <motion.div
+            ref={ref}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={labelledBy}
+            className={`dialog ${className}`}
+            tabIndex={-1}
+            variants={panelVariants}
+          >
+            {children}
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>,
     document.body,
   );
 }

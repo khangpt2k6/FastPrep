@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { swapVariants } from '../../lib/motion';
 import { IconLogout, Logo } from '../Icons';
 
 interface PageHeaderProps {
@@ -16,8 +18,24 @@ export function PageHeader({ title, subtitle, right, notify, onSignOut }: PageHe
       <span className="pagehead__mark" aria-hidden="true">
         <Logo size={32} />
       </span>
-      <h1 className="pagehead__title">{title}</h1>
-      <p className="pagehead__sub">{subtitle}</p>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.h1 key={title} className="pagehead__title" variants={swapVariants} initial="hidden" animate="shown" exit="gone">
+          {title}
+        </motion.h1>
+      </AnimatePresence>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.p
+          key={title}
+          className="pagehead__sub"
+          variants={swapVariants}
+          initial="hidden"
+          animate="shown"
+          exit="gone"
+          transition={{ delay: 0.05 }}
+        >
+          {subtitle}
+        </motion.p>
+      </AnimatePresence>
       <div className="pagehead__right">{right}</div>
       <div className="pagehead__phone">
         {notify}

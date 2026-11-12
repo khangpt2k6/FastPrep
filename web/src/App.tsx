@@ -1,10 +1,21 @@
+import { lazy, Suspense } from 'react';
 import { configError } from './lib/supabase';
 import { useSession } from './hooks/useSession';
 import { AuthScreen } from './components/AuthScreen';
 import { Dashboard } from './components/Dashboard';
 import { Notice } from './components/Notice';
 
+// Dev-only motion preview with mock data at #/__preview. Dropped from production builds.
+const Preview = import.meta.env.DEV ? lazy(() => import('./components/motion/Preview')) : null;
+
 export default function App() {
+  if (Preview && window.location.hash.startsWith('#/__preview')) {
+    return (
+      <Suspense fallback={null}>
+        <Preview />
+      </Suspense>
+    );
+  }
   if (configError) {
     return (
       <Notice title="Supabase is not configured">

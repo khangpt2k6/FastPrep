@@ -1,4 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { LAYOUT_CAP, SPRING, cardHover, riseItem } from '../../lib/motion';
+import { StateFade, useJustSettled } from '../motion';
 import type { JobRow, LoadError } from '../../lib/types';
 import { companyName, reasonWords, timeAgo } from '../../lib/format';
 import { useOverflow } from '../../hooks/useOverflow';
@@ -80,6 +83,29 @@ function Note({ job }: { job: JobRow }) {
   );
 }
 
+const SETTLED = ['submitted', 'unconfirmed', 'blocked', 'refused', 'failed'];
+
+/** One application. When the agent finishes it, the card settles with a mint glow. */
+const AppCard = ({ job, index, children }: { job: JobRow; index: number; children: ReactNode }) => {
+  const settled = useJustSettled(job.status, 'applying', SETTLED);
+  const good = job.status === 'submitted' || job.status === 'unconfirmed' || (job.status === 'blocked' && job.reason === 'dry_run');
+  return (
+    <motion.li
+      className={`card appcard ${job.status === 'applying' ? 'is-live' : ''} ${settled ? (good ? 'is-settled' : 'is-settled is-settled--warn') : ''}`}
+      layout={index < LAYOUT_CAP ? 'position' : false}
+      variants={riseItem}
+      custom={index}
+      initial="hidden"
+      animate="shown"
+      exit="gone"
+      whileHover={cardHover}
+      transition={{ layout: SPRING }}
+    >
+      {children}
+    </motion.li>
+  );
+};
+
 export function ApplicationsPage({
   items, loading, error, onRetry, now, onOpenShot, onOpenAnswers, answerCounts, strip, rail, dryRun, online, queued, onApplyAgain,
 }: ApplicationsPageProps) {
@@ -94,7 +120,9 @@ export function ApplicationsPage({
   const shown = group === 'all' ? items : items.filter((j) => groupOf(j) === group);
 
   let body: ReactNode;
+  let state = 'list';
   if (error) {
+    state = 'error';
     body = (
       <EmptyState
         icon={<IconAlert size={22} />}
@@ -109,22 +137,26 @@ export function ApplicationsPage({
       </EmptyState>
     );
   } else if (loading) {
+    state = 'loading';
     body = <SkeletonCards count={3} />;
   } else if (items.length === 0) {
+    state = 'none';
     body = (
       <EmptyState icon={<IconSend size={22} />} title="No applications yet">
         Tick a few jobs on the Jobs page and press Apply. Each one shows up here while the agent works through it.
       </EmptyState>
     );
   } else if (shown.length === 0) {
+    state = 'filtered';
     body = <p className="empty-line">Nothing in this group right now.</p>;
   } else {
     body = (
       <ul className="cardlist">
-        {shown.map((job) => {
+        <AnimatePresence>
+        {shown.map((job, index) => {
           const answers = answerCounts.get(job.id) ?? 0;
           return (
-            <li className={`card appcard ${job.status === 'applying' ? 'is-live' : ''}`} key={job.id}>
+            <AppCard job={job} index={index} key={job.id}>
               <div className="appcard__top">
                 <Avatar name={companyName(job.company)} size={42} />
                 <div className="appcard__who">
@@ -179,9 +211,10 @@ export function ApplicationsPage({
                 </div>
                 <Thumb job={job} onOpen={(url) => onOpenShot(job, url)} />
               </div>
-            </li>
+            </AppCard>
           );
         })}
+        </AnimatePresence>
       </ul>
     );
   }
@@ -206,7 +239,7 @@ export function ApplicationsPage({
             />
           </div>
         ) : null}
-        {body}
+        <StateFade state={state}>{body}</StateFade>
       </div>
       <aside className="rail" aria-label="Agent">
         {rail}

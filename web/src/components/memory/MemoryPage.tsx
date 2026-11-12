@@ -5,6 +5,7 @@ import { plural } from '../../lib/format';
 import { deleteAnswer, editAnswer, setPinned, teachAnswer } from '../../hooks/useAutomationData';
 import type { LiveTable } from '../../hooks/useLiveTable';
 import { Dialog } from '../Dialog';
+import { AnimatePresence } from 'motion/react';
 import { EmptyState, PillGroup, SkeletonCards } from '../common';
 import { IconAlert, IconMemory, IconPlus, IconSearch, IconX } from '../Icons';
 import { SetupCard } from '../SetupCard';
@@ -188,9 +189,11 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
   } else {
     body = (
       <ul className="cardlist">
-        {shown.map((row) => (
+        <AnimatePresence>
+        {shown.map((row, i) => (
           <MemoryCard
             key={row.id}
+            index={i}
             row={row}
             now={now}
             onSave={(answer) => run(() => editAnswer(row.id, answer), 'Could not save the answer')}
@@ -198,6 +201,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
             onDelete={() => setDoomed(row)}
           />
         ))}
+        </AnimatePresence>
       </ul>
     );
   }
