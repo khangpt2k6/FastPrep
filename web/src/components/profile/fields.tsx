@@ -280,6 +280,11 @@ export function TagInput({ label, values, onChange, placeholder, suggestions = [
   );
 }
 
+/** A month input can only show YYYY-MM. Anything else (a bare year read from a resume) stays visible as text to fix. */
+function monthType(value: string): 'month' | 'text' {
+  return value === '' || /^\d{4}-\d{2}$/.test(value) ? 'month' : 'text';
+}
+
 /** Start and end months, with "Present" for an end that has not happened yet. */
 export function MonthRange({ start, end, onChange, presentLabel }: {
   start: string;
@@ -298,7 +303,7 @@ export function MonthRange({ start, end, onChange, presentLabel }: {
         <input
           id={`${id}-s`}
           className="input"
-          type="month"
+          type={monthType(start)}
           placeholder="YYYY-MM"
           value={start}
           onChange={(e) => onChange(e.target.value, end)}
@@ -311,7 +316,7 @@ export function MonthRange({ start, end, onChange, presentLabel }: {
         <input
           id={`${id}-e`}
           className="input"
-          type={present ? 'text' : 'month'}
+          type={present ? 'text' : monthType(end)}
           placeholder="YYYY-MM"
           value={present ? PRESENT : end}
           disabled={present}

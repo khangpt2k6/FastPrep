@@ -128,7 +128,9 @@ PREFILL_SCHEMA: dict[str, Any] = {
 
 PREFILL_SYSTEM = """\
 Read the CV and fill in what it states, nothing more. An empty string for anything it does not state.
-Dates as YYYY-MM when the month is known, else YYYY; an ongoing role or degree ends "Present".
+Dates as YYYY-MM. A month name with a year gives that month: "Expected May 2028" is 2028-05, "Summer 2025" is 2025-06; only a
+year gives YYYY. An ongoing role ends "Present"; a degree still in progress ends at its expected graduation date when the CV
+gives one, else "Present".
 Links as full URLs. Description: the role's bullet points, one per line, as written. Skills: one per item."""
 
 
