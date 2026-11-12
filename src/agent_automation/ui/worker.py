@@ -83,7 +83,7 @@ class Supabase:
             json={"email": self.email, "password": self.password},
         )
         if reply.status_code != 200:
-            raise ConfigError(f"Supabase sign-in failed for {self.email}: make the account on the dashboard first, then check AGENT_PASSWORD")
+            raise ConfigError(f"Supabase sign-in failed for {self.email}: add that user in Supabase (Authentication > Users), then check AGENT_PASSWORD")
         self._take(reply.json())
 
     def _take(self, data: dict[str, Any]) -> None:

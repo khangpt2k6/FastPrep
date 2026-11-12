@@ -34,8 +34,9 @@ Needs Python 3.11+, Node 20+ and a Supabase project.
    OPENAI_API_KEY=sk-...
    VITE_SUPABASE_URL=https://<project>.supabase.co
    VITE_SUPABASE_ANON_KEY=sb_publishable_...
-   AGENT_EMAIL=you@example.com      # your dashboard login
+   AGENT_EMAIL=you@example.com      # the one Supabase user the agent and the dashboard both use
    AGENT_PASSWORD=...
+   ACCESS_KEY=...                   # any long random string: the private link to the deployed dashboard
    ```
 
 3. Install the agent:
@@ -51,7 +52,7 @@ Needs Python 3.11+, Node 20+ and a Supabase project.
    .venv\Scripts\agent-automation resumes\your-resume.pdf
    ```
 
-5. Open the dashboard, sign in with the same account, finish the profile popup, pick jobs and apply.
+5. Open the dashboard (`npm run dev` in `web/`, or the deployed page through its private link), finish the profile popup, pick jobs and apply. There is no sign-in: the page logs in as `AGENT_EMAIL` by itself.
 
 The first run downloads the job database (about 250 MB) and, at the first application, Firefox (about 430 MB).
 
