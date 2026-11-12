@@ -262,3 +262,12 @@ def test_the_newest_server_still_has_what_the_app_calls(tmp_path: Path) -> None:
             assert started.instructions
 
     asyncio.run(check())
+
+
+def test_a_dry_run_sends_nothing_whatever_the_model_clicks_or_presses(site: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # The model clicks the send button and presses Enter in the form: in a dry run the page's guard holds both back.
+    monkeypatch.setenv("AGENT_DRY_RUN", "1")
+    outcome = run(site, tmp_path)
+    assert Site.posts == [], "a dry run sent the form"
+    assert outcome.status == "blocked" and outcome.reason == "dry_run", outcome.summary
+    assert Path(outcome.proof.screenshot).read_bytes().startswith(b"\x89PNG")

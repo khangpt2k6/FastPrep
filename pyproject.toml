@@ -20,16 +20,15 @@ requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE", "NOTICE"]
 dynamic = ["version"]
-# invisible-playwright-mcp is never pinned: an install takes its newest release.
 dependencies = [
     "click>=8.1",
     "cryptography>=42",
     "duckdb>=1.1",
     "fpdf2>=2.7",
     "httpx>=0.27",
-    "invisible-playwright-mcp",
     "mcp>=1.9",
     "openai>=1.40",
+    "playwright>=1.48",
     "pypdf>=4",
     "pyyaml>=6",
     "rich>=13",
@@ -61,7 +60,7 @@ packages = ["src/agent_automation"]
 testpaths = ["tests"]
 pythonpath = ["tests"]
 markers = [
-    "browser: runs the real invisible-playwright-mcp and its Firefox",
+    "browser: runs the real Chrome through tools/chrome.py",
     "letters: lets the session write cover letters, which every other test has off",
 ]
 

@@ -2,10 +2,10 @@
 
 An AI agent that finds jobs that fit your resume and applies to them in a real browser.
 
-You pick the jobs on a web dashboard. A local agent on your computer opens Firefox, fills each company's application form with your resume and profile, and reports back with a screenshot of what the page said.
+You pick the jobs on a web dashboard. A local agent on your computer opens Google Chrome, fills each company's application form with your resume and profile, and reports back with a screenshot of what the page said.
 
 ```
-web dashboard (Vercel)  --commands-->  Supabase  <--jobs, status, screenshots--  agent-automation (your PC)  -->  Firefox
+web dashboard (Vercel)  --commands-->  Supabase  <--jobs, status, screenshots--  agent-automation (your PC)  -->  Chrome
 ```
 
 ## How it works
@@ -14,7 +14,7 @@ web dashboard (Vercel)  --commands-->  Supabase  <--jobs, status, screenshots-- 
 2. **Searches** a database of about 6 million recent postings from public sources, on your computer.
 3. **Scores** each posting against your resume, 1 to 5 (OpenAI `gpt-5.4-mini` by default, which judges seniority, timing and place strictly).
 4. **You pick** jobs on the dashboard and press Apply. Dry run (fill, do not submit) is on by default.
-5. **Applies**: the model drives Firefox through [invisible-playwright-mcp](https://pypi.org/project/invisible-playwright-mcp/), reading screenshots and calling browser tools (`gpt-5.4-mini` by default).
+5. **Applies**: the model drives Chrome, in a window you can watch, through the agent's own Playwright server ([tools/chrome.py](src/agent_automation/tools/chrome.py)): it reads the page and calls browser tools to click, type, pick and upload (`gpt-5.4-mini` by default). After the send it reads the page ("Thank you for applying") to mark the application Sent.
 6. **Reports** each result live on the dashboard with a screenshot.
 
 ## Skills
@@ -53,7 +53,7 @@ Needs Python 3.11+, Node 20+ and a Supabase project.
 
 5. Open the dashboard (`npm run dev` in `web/`, or the deployed page), finish the profile popup, pick jobs and apply. There is no sign-in: the page logs in as `AGENT_EMAIL` by itself.
 
-The first run downloads the job database (about 250 MB) and, at the first application, Firefox (about 430 MB).
+The first run downloads the job database (about 250 MB). Applications use the Google Chrome already on your computer.
 
 More: [web dashboard](docs/web.md), [configuration](docs/configuration.md), [supported sites](docs/sites.md), [data sources](docs/data-sources.md).
 

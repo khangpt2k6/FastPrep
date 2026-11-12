@@ -15,7 +15,7 @@ pip install -e ".[dev]"
 agent-automation-tui --help
 ```
 
-The install pulls in `invisible-playwright-mcp` at its newest release from PyPI. It is not pinned, so run `pytest -m browser` after an update to see that a new release still works with Agent Automation.
+The browser is Google Chrome, driven through Playwright by `src/agent_automation/tools/chrome.py`, an MCP server with the tools the agent calls. Chrome must be installed; run `pytest -m browser` after a Playwright update.
 
 Running `agent-automation-tui` for real needs an OrcaRouter key and makes model calls. The tests need neither: they use scripted fakes (`tests/fakes.py`) and make no network calls to a model.
 
@@ -28,7 +28,7 @@ pytest -m "not browser"     # unit tests: no browser, no model
 pytest -m browser           # the real browser on a local form
 ```
 
-The browser tests run the real `invisible-playwright-mcp` and its Firefox against a form served from `127.0.0.1`, not a live site. On Linux without a display, run them under `xvfb-run -a`.
+The browser tests run the real Chrome through `tools/chrome.py` against forms served from `127.0.0.1`, not a live site. Set `AGENT_BROWSER_HEADLESS=1` to run them with no window.
 
 ## Lint
 

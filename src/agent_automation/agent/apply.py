@@ -1,4 +1,4 @@
-"""Filling a job's application form with the model, through invisible-playwright-mcp.
+"""Filling a job's application form with the model, in Google Chrome through tools/chrome.py.
 
 The model fills every field from the CV and the answers file, working out what they imply, and names the send control. The
 person's selection and one Enter is the yes, and Agent Automation clicks that control and keeps what the page said.
@@ -32,6 +32,7 @@ from openai import AsyncOpenAI
 from agent_automation.agent.llm import SPEND, chat, not_answering, structured
 from agent_automation.memory.config import DRY_RUN_ENV, KEY_ENV, dry_run
 from agent_automation.memory.store import Proof, safe_name
+from agent_automation.tools.chrome import UPLOAD_DIRS_ENV
 from agent_automation.tools.database import Job
 
 OPEN_DEADLINE_S = 900.0
@@ -851,17 +852,17 @@ async def _open_browser(session: Browser, profile: Path) -> None:
         await asyncio.sleep(OPEN_RETRY_S)
 
 
+def _secret(name: str) -> bool:
+    """A variable the browser's process must not have: nothing it does needs a key, a password or a token."""
+    return name in (KEY_ENV, "OPENAI_API_KEY") or name.endswith(("_KEY", "_PASSWORD", "_SECRET", "_TOKEN"))
+
+
 def server_parameters(upload_dir: Path, home: Path) -> StdioServerParameters:
-    # The browser is given the environment without the model's key: nothing it does needs that key.
-    environment = {
-        **{name: value for name, value in os.environ.items() if name != KEY_ENV},
-        "INVISIBLE_MCP_HOST_MANAGED": "1",
-        "INVISIBLE_MCP_UPLOAD_DIRS": str(upload_dir),
-        "INVISIBLE_MCP_HOME": str(home),
-        # The person sees the window: what is done in their name happens in front of them.
-        "STEALTHFOX_HEADLESS": "0",
-    }
-    return StdioServerParameters(command=sys.executable, args=["-m", "invisible_playwright_mcp"], env=environment)
+    """Google Chrome, driven by tools/chrome.py over MCP, in a window the person sees: what is done in their name happens in
+    front of them. It may upload only from `upload_dir`, the CV's folder. Its log goes to `home`, as _server writes it."""
+    environment = {name: value for name, value in os.environ.items() if not _secret(name)}
+    environment[UPLOAD_DIRS_ENV] = str(upload_dir)
+    return StdioServerParameters(command=sys.executable, args=["-m", "agent_automation.tools.chrome"], env=environment)
 
 
 @asynccontextmanager
