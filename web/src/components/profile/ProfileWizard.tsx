@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { ProfileRow } from '../../lib/types';
 import { stepVariants } from '../../lib/motion';
-import { cleanProfile, mergeProfile, validatePersonal, type Profile } from '../../lib/profile';
+import { cleanProfile, mergeProfile, profileProgress, validatePersonal, type Profile } from '../../lib/profile';
 import { errorText } from '../../lib/errors';
 import { clock } from '../../lib/format';
 import { saveProfileRow } from '../../hooks/useAutomationData';
@@ -42,6 +42,12 @@ interface ProfileWizardProps {
 type SaveState = { state: 'idle' } | { state: 'saving' } | { state: 'saved'; at: number } | { state: 'error'; message: string };
 
 const fingerprint = (p: Profile) => JSON.stringify(cleanProfile(p));
+
+/** A draft of a finished profile stays finished while every section is still done: one edit and a close must not send
+ * the whole profile back to "incomplete", which reopens the wizard on every load. */
+function stillComplete(row: ProfileRow | null, draft: Profile): boolean {
+  return row?.completed === true && profileProgress(draft).every((section) => section.done);
+}
 
 /** The stored profile, with the account email filled in when the profile has none yet. */
 function loadForm(row: ProfileRow | null, email: string): Profile {
@@ -98,7 +104,7 @@ export function ProfileWizard(props: ProfileWizardProps) {
     const clean = cleanProfile(form);
     setSave({ state: 'saving' });
     try {
-      await saveProfileRow(clean, completed);
+      await saveProfileRow(clean, completed || stillComplete(row, clean));
       baseline.current = JSON.stringify(clean);
       setSave({ state: 'saved', at: Date.now() });
       onPersisted();
