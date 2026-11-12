@@ -66,3 +66,13 @@ def test_finish_form_written_answers_are_read_safely():
     assert written_answers({"written_answers": [{"question": " Why us? ", "answer": " Mission. "}, {"question": "", "answer": "x"}, "bad"]}) == (("Why us?", "Mission."),)
     assert written_answers({}) == ()
     assert written_answers({"written_answers": "nope"}) == ()
+
+
+def test_veteran_and_disability_answers_say_what_the_lists_offer():
+    from agent_automation.memory.web_profile import empty_profile, profile_answers
+
+    data = empty_profile()
+    data["eeo"] |= {"veteran": "No", "disability": "Prefer not to say"}
+    answers = profile_answers(data)
+    assert answers["veteran_status"] == "No, I am not a protected veteran"
+    assert answers["disability_status"].startswith("Prefer not to say")

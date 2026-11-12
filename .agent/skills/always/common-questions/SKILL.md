@@ -11,4 +11,5 @@ Questions most forms ask, and what to answer when the answers give nothing more 
 - Work authorization and sponsorship: `authorized_to_work_in_us`, `requires_visa_sponsorship`, `visa_type`, exactly as the answers say. Never guess these: a required one the answers leave out stops the form as missing information.
 - "How did you hear about us": the answers' `how_did_you_hear`, else the option closest to a company careers page or a job board.
 - Graduation date and GPA: from the education in the answers; a degree in progress graduates at its end date.
+- Before finish_form, read back what each list and typeahead holds (location, country, veteran and disability status, work authorization): an answer that is not what the answers say is fixed first, and a form is never reported ready with one.
 - Years of experience: count from the CV's dates up to today, each month once even where roles overlap, and never round up. Internships and part-time roles during school are what a student has: count them at their real length (a year and a half is 1, or "1.5" where decimals are allowed), and pick the lowest band that holds that number.

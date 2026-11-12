@@ -9,7 +9,7 @@ The page shows the job and, below it, the form. There is no need to click "Apply
 
 Questions a company adds have ids such as `#question_39108683002`: find each by its label. A required label ends with a `*`. Many fields look like text but are lists (`role="combobox"`, showing "Select..."), such as `#country` and `#candidate-location`. Each has a "Toggle flyout" button beside it.
 
-Gender, ethnicity, veteran and disability questions are lists too (`#gender`, `#hispanic_ethnicity`, `#veteran_status`).
+Gender, ethnicity, veteran and disability questions are lists too (`#gender`, `#hispanic_ethnicity`, `#veteran_status`, `#disability_status`). They offer sentences, not Yes or No: `#veteran_status` has "I am not a protected veteran", "I identify as one or more of the classifications of protected veteran" and "I don't wish to answer"; `#disability_status` has "Yes, I have a disability...", "No, I do not have a disability..." and "I do not want to answer". Take the one that says what the answers say, and decline only with the "don't wish to answer" option. Type a few words that occur only in that option ("not a protected", "do not want"), read the rows, and click the row that says it. If no row matches what you typed, clear the field and type fewer words: never press Enter or click with no matching row, since the list then keeps its first option, and on `#veteran_status` that claims a veteran status the candidate does not have. Read the field back.
 
 Education can repeat: "Add another" adds a row (`#school--0`, `#degree--0`, `#discipline--0`). Its months are lists (`#start-month--0`) and its years are number fields (`#start-year--0`).
 

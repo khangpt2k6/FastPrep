@@ -47,6 +47,25 @@ def _span(entry: dict[str, Any]) -> str:
     return f"{start} to {end}" if start and end else start or end
 
 
+# A bare "No" to "Protected veteran" was typed into a Greenhouse list that has no "No", and the list kept its first option,
+# "I identify as ... a protected veteran": the opposite. The answers say it in the words such lists use.
+VETERAN_WORDS = {
+    "no": "No, I am not a protected veteran",
+    "yes": "Yes, I identify as one or more of the classifications of protected veteran",
+    "prefer not to say": "Prefer not to say (I don't wish to answer)",
+}
+DISABILITY_WORDS = {
+    "no": "No, I do not have a disability and have not had one in the past",
+    "yes": "Yes, I have a disability (or previously had one)",
+    "prefer not to say": "Prefer not to say (I do not want to answer)",
+}
+
+
+def _said(value: Any, words: dict[str, str]) -> str:
+    text = _text(value)
+    return words.get(text.lower(), text)
+
+
 def profile_answers(data: dict[str, Any]) -> dict[str, str]:
     """name -> value for every field the person filled in; empty ones are left out."""
     personal, prefs = _section(data, "personal"), _section(data, "preferences")
@@ -97,8 +116,8 @@ def profile_answers(data: dict[str, Any]) -> dict[str, str]:
         "authorized_to_work_in_us": _text(auth.get("authorized_us")), "requires_visa_sponsorship": _text(auth.get("needs_sponsorship")),
         "work_authorization_basis": _text(auth.get("authorization_basis")), "visa_type": _text(auth.get("visa_type")),
         "gender": _text(eeo.get("gender")), "pronouns": _text(eeo.get("pronouns")), "race_ethnicity": _text(eeo.get("race")),
-        "hispanic_or_latino": _text(eeo.get("hispanic_latino")), "veteran_status": _text(eeo.get("veteran")),
-        "disability_status": _text(eeo.get("disability")), "lgbtq": _text(eeo.get("lgbtq")), "sexual_orientation": _text(eeo.get("sexual_orientation")),
+        "hispanic_or_latino": _text(eeo.get("hispanic_latino")), "veteran_status": _said(eeo.get("veteran"), VETERAN_WORDS),
+        "disability_status": _said(eeo.get("disability"), DISABILITY_WORDS), "lgbtq": _text(eeo.get("lgbtq")), "sexual_orientation": _text(eeo.get("sexual_orientation")),
         "how_did_you_hear": _text(extra.get("how_heard")), "additional_notes": _text(extra.get("notes")),
     }
     for pair in _entries(extra, "custom"):
