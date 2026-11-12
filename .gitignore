@@ -27,3 +27,4 @@ resumes/
 # supabase cli scratch
 supabase/.temp/
 .playwright-mcp/
+*.tsbuildinfo

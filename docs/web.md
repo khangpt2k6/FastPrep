@@ -10,13 +10,13 @@ web page (Vercel)  --commands-->  Supabase  <--jobs, status, screenshots--  agen
 
 1. Create a Supabase project and run `supabase/schema.sql` in its SQL editor. Add one user under Authentication > Users (auto-confirmed): its email and password are `AGENT_EMAIL` and `AGENT_PASSWORD`.
 2. Copy `.env.example` to `.env` in the repo root and fill it in.
-3. To deploy the page on Vercel, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `AGENT_EMAIL`, `AGENT_PASSWORD` and `ACCESS_KEY` in the Vercel project, then run `vercel deploy --prod` in `web/`.
+3. To deploy the page on Vercel, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `AGENT_EMAIL` and `AGENT_PASSWORD` in the Vercel project, then run `vercel deploy --prod` in `web/`.
 4. Install the agent: `python -m venv .venv`, then `.venv\Scripts\pip install -e .`
 5. Optional, but needed for sites that email a code: run `agent-automation-tui your-resume.pdf` once and sign in to your mailbox when it asks.
 
-## No sign-in, one private link
+## No sign-in
 
-One person uses this dashboard, so it has no sign-in screen: the page logs in as `AGENT_EMAIL` by itself, the same Supabase user the agent writes with. That login is built into the page's script, so the deployed page is closed to everyone else: `web/middleware.ts` serves it only to a browser that came once through `https://<your-app>.vercel.app/?key=<ACCESS_KEY>`, which leaves a cookie for 400 days. Without it the page answers "Private". A Vercel build with no `ACCESS_KEY` fails on purpose. The local dev server (`npm run dev`) needs no link.
+One person uses this dashboard, so it has no sign-in screen: the page logs in as `AGENT_EMAIL` by itself, the same Supabase user the agent writes with. That login is built into the page's script, so anyone who opens the deployed address sees the dashboard and can use it, profile included. The page asks search engines not to index it.
 
 ## Run
 
@@ -29,7 +29,7 @@ The agent downloads the job database (about 250 MB the first time), scores about
 
 ## Using the dashboard
 
-1. **Open** the page (the private link the first time on a new browser). The orb in the top bar is the agent: it breathes while it waits, spins while it works and goes grey when the agent on your computer is off. Each job shows its company's logo: the agent names the employer behind every posting (a Workday tenant such as `cisco/wd5/cisco_careers` is Cisco, cisco.com) and the page draws the logo from that domain.
+1. **Open** the page. The orb in the top bar is the agent: it breathes while it waits, spins while it works and goes grey when the agent on your computer is off. Each job shows its company's logo: the agent names the employer behind every posting (a Workday tenant such as `cisco/wd5/cisco_careers` is Cisco, cisco.com) and the page draws the logo from that domain.
 2. **Profile** opens as a popup the first time: check what the agent prefilled from your resume and add work authorization and the voluntary questions. The countries you want to work in, and whether you will relocate, decide where the search looks; changing them makes the agent search and score again.
 3. **Preferences**: tone, length, what to emphasize or avoid, and a sample answer in your voice. They shape every open question the agent answers ("Why do you want to work here?").
 4. **Jobs**: tick jobs and press Apply. Dry run (the switch at the top, on by default) fills each form and stops before sending.
