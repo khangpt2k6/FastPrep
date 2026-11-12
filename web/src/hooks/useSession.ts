@@ -1,21 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Session } from '@supabase/supabase-js';
-import { signInAsOwner, supabase } from '../lib/supabase';
+import { isAuthApiError, type Session } from '@supabase/supabase-js';
+import { signIn as signInWith, supabase } from '../lib/supabase';
 
 export interface OwnerSession {
+  /** Null until the person signs in; null again after a sign-out. */
   session: Session | null;
-  /** False until the stored session is checked or a fresh sign-in ends. */
+  /** False until the stored session is checked. */
   ready: boolean;
-  /** Why signing in failed, such as a wrong AGENT_PASSWORD; null otherwise. */
+  /** Why the stored session could not be checked (no network, server down); null otherwise. */
   error: string | null;
+  /** Said on the sign-in screen when a stored session was refused by the server. */
+  note: string | null;
+  /** Signs in with what the person typed; answers with why it failed, or null. */
+  signIn: (email: string, password: string) => Promise<string | null>;
   retry: () => void;
 }
 
-/** The owner's session: a stored one when the server still takes it, else a fresh sign-in with the agent's login. */
+/** The person's session. A stored one is used only when the server still takes it; with none, the page shows the
+ *  sign-in screen. The page never signs in by itself. */
 export function useSession(): OwnerSession {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -26,28 +33,23 @@ export function useSession(): OwnerSession {
       try {
         const { data } = await supabase.auth.getSession();
         if (!alive) return;
-        // A stored session can be one the server no longer accepts (expired for good, another project, a reset):
-        // check it once, and sign in again instead of showing a dashboard whose every query fails.
         if (data.session) {
-          const { error: stale } = await supabase.auth.getUser();
+          // A stored session can be one the server no longer accepts (expired for good, password changed, another
+          // project): check it once instead of showing a dashboard whose every query fails.
+          const { error: refused } = await supabase.auth.getUser();
           if (!alive) return;
-          if (!stale) {
+          if (!refused) {
             setSession(data.session);
-            setReady(true);
-            return;
+          } else if (isAuthApiError(refused)) {
+            await supabase.auth.signOut({ scope: 'local' });
+            if (!alive) return;
+            setSession(null);
+            setNote('Your session ended. Sign in again.');
+          } else {
+            // Not a refusal: the server could not be reached. The session is kept for the retry.
+            setError(refused.message);
           }
-          await supabase.auth.signOut({ scope: 'local' });
         }
-        const failed = await signInAsOwner();
-        if (!alive) return;
-        if (failed) {
-          setError(failed);
-          setReady(true);
-          return;
-        }
-        const { data: fresh } = await supabase.auth.getSession();
-        if (!alive) return;
-        setSession(fresh.session);
         setReady(true);
       } catch (thrown) {
         if (!alive) return;
@@ -55,8 +57,13 @@ export function useSession(): OwnerSession {
         setReady(true);
       }
     })();
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
-      if (next) setSession(next);
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      // A sign-out here or in another tab clears the dashboard at once; a refreshed token replaces the old one.
+      if (event === 'SIGNED_OUT') setSession(null);
+      else if (next) {
+        setSession(next);
+        setNote(null);
+      }
     });
     return () => {
       alive = false;
@@ -64,6 +71,7 @@ export function useSession(): OwnerSession {
     };
   }, [attempt]);
 
+  const signIn = useCallback((email: string, password: string) => signInWith(email, password), []);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
-  return { session, ready, error, retry };
+  return { session, ready, error, note, signIn, retry };
 }

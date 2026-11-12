@@ -8,7 +8,3 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-
-/** The agent's login from AGENT_EMAIL and AGENT_PASSWORD, put in at build time (vite.config.ts). */
-declare const __AGENT_EMAIL__: string;
-declare const __AGENT_PASSWORD__: string;

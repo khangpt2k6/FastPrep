@@ -51,7 +51,7 @@ Needs Python 3.11+, Node 20+ and a Supabase project.
    .venv\Scripts\agent-automation resumes\your-resume.pdf
    ```
 
-5. Open the dashboard (`npm run dev` in `web/`, or the deployed page), finish the profile popup, pick jobs and apply. There is no sign-in: the page logs in as `AGENT_EMAIL` by itself.
+5. Open the dashboard (`npm run dev` in `web/`, or the deployed page), sign in with `AGENT_EMAIL` and `AGENT_PASSWORD`, finish the profile popup, pick jobs and apply. The page holds no login of its own: nothing is shown before you sign in.
 
 The first run downloads the job database (about 250 MB). Applications use the Google Chrome already on your computer.
 
