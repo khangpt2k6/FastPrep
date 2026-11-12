@@ -12,7 +12,7 @@ web dashboard (Vercel)  --commands-->  Supabase  <--jobs, status, screenshots-- 
 
 1. **Reads your resume** and turns it into a search: titles, skills and places.
 2. **Searches** a database of about 6 million recent postings from public sources, on your computer.
-3. **Scores** each posting against your resume, 1 to 5 (OpenAI `gpt-5.4-nano` by default).
+3. **Scores** each posting against your resume, 1 to 5 (OpenAI `gpt-5.4-mini` by default, which judges seniority, timing and place strictly).
 4. **You pick** jobs on the dashboard and press Apply. Dry run (fill, do not submit) is on by default.
 5. **Applies**: the model drives Firefox through [invisible-playwright-mcp](https://pypi.org/project/invisible-playwright-mcp/), reading screenshots and calling browser tools (`gpt-5.4-mini` by default).
 6. **Reports** each result live on the dashboard with a screenshot.
