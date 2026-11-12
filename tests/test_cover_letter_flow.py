@@ -227,3 +227,33 @@ def test_a_job_whose_id_is_a_whole_url_still_gets_its_letter_in_a_short_path(tmp
     folder = letter.pdf.parent.name
     assert len(folder) <= 43 and folder.startswith("https-cisco-wd5-myworkdayjobs-co")
     assert letter_key(long_id) != letter_key(long_id + "x")
+
+
+def test_a_kept_transcript_goes_with_the_application_and_none_says_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    session = session_at(tmp_path)
+    session._client = ScriptedModel()  # type: ignore[assignment]
+    seen = captured(monkeypatch)
+    asyncio.run(session.apply(session.store.get(JOB.id), lambda line: None, cover=None))
+    assert "transcript" not in seen and session.transcript() is None
+
+    session = session_at(tmp_path / "two")
+    session._client = ScriptedModel()  # type: ignore[assignment]
+    session.keep_transcript("Fall 2026.PDF", b"%PDF-1.4 old")
+    kept = session.keep_transcript("grades.png", b"png")
+    assert kept == tmp_path / "two" / "data" / "cvs" / "documents" / "transcript.png" and [p.name for p in kept.parent.iterdir()] == ["transcript.png"]
+    seen = captured(monkeypatch)
+    asyncio.run(session.apply(session.store.get(JOB.id), lambda line: None, cover=None))
+    assert seen["transcript"] == kept
+    session.drop_transcript()
+    assert session.transcript() is None
+
+
+def test_the_brief_names_the_transcript_only_when_there_is_one(tmp_path: Path) -> None:
+    pdf = tmp_path / "transcript.pdf"
+    for transcript in (pdf, None):
+        model = ScriptedModel([tool_call("finish_form", status="blocked", summary="stop", submit_selector="", blocked_by="other")])
+        asyncio.run(run_on_page(ScriptedBrowser(), [], model, "m", JOB, "cv", "answers", Path("cv.pdf"), tmp_path / "s.png", transcript=transcript))  # type: ignore[arg-type]
+        brief = model.requests[0]["messages"][1]["content"]
+        assert (f"only where the form asks for a transcript: {pdf}" in brief) is (transcript is not None)
+        assert ("transcript" in brief) is (transcript is not None)
+        assert "A field that asks for a transcript" in model.requests[0]["messages"][0]["content"]

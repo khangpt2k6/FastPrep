@@ -12,6 +12,7 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict, replace
 from pathlib import Path
+from typing import Any
 
 from openai import AsyncOpenAI
 
@@ -53,6 +54,8 @@ WIDE = 200
 Log = Callable[[str], None]
 # What the jobs in the store were found and scored with, as a hash: see searched_with.
 SEARCHED_FILE = "searched-with"
+# Under the CV's folder, the only one the browser may upload from: the transcript, as transcript.<kind of file>.
+TRANSCRIPT_DIR = "documents"
 
 
 def searched_with(config: Config) -> str:
@@ -272,6 +275,24 @@ class Session:
             raise ConfigError("your CV file is not kept: load your resume again")
         return kept[0]
 
+    def transcript(self) -> Path | None:
+        """The person's transcript, kept beside the CV where the browser may upload it; None when they gave none."""
+        kept = sorted((self.config.data_dir / "cvs" / TRANSCRIPT_DIR).glob("transcript.*"))
+        return kept[0] if kept else None
+
+    def keep_transcript(self, name: str, data: bytes) -> Path:
+        """Keep `data` as the transcript, under the kind of file `name` says it is; the one kept before gives way."""
+        folder = self.config.data_dir / "cvs" / TRANSCRIPT_DIR
+        folder.mkdir(parents=True, exist_ok=True)
+        self.drop_transcript()
+        kept = folder / f"transcript{Path(name).suffix.lower() or '.pdf'}"
+        kept.write_bytes(data)
+        return kept
+
+    def drop_transcript(self) -> None:
+        for old in (self.config.data_dir / "cvs" / TRANSCRIPT_DIR).glob("transcript.*"):
+            old.unlink()
+
     async def send(
         self, items: list[Stored], log: Log, begin: Callable[[int, int, Stored], None], done: Callable[[Stored, Outcome], None],
         note: Callable[[str], None] | None = None,
@@ -357,7 +378,9 @@ class Session:
             cv_file = self._own_cv()
             letter = await self._letter_for(item, cover, log)
             # The letter goes only when there is one, so a run with letters off calls the form filler as it always did.
-            sent_with = {"cover": (letter.text, letter.pdf)} if letter is not None and letter.pdf is not None else {}
+            sent_with: dict[str, Any] = {"cover": (letter.text, letter.pdf)} if letter is not None and letter.pdf is not None else {}
+            if (transcript := self.transcript()) is not None:
+                sent_with["transcript"] = transcript
             outcome = await apply_to_job(
                 self.client, self.config.model, job, cv, answers, cv_file, self.config.data_dir, self.config.browser_profile, guidance, account,
                 **sent_with,

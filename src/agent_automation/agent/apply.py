@@ -303,6 +303,8 @@ You fill in one job application form in a browser, for the candidate, from the C
   cover letter. Only when the form has no such file field, its text goes as it is into a text field that asks for a cover
   letter or a message to the hiring team. Never both, and never a letter of your own. With none given, an optional cover
   letter field stays empty.
+- A field that asks for a transcript (academic record, grades) gets the transcript file when one is given to you, and no
+  other field does. With none given, an optional one stays empty; the CV is never sent in its place.
 - Do not send the application yourself. When every required field is filled, call finish_form with status ready and the
   CSS selector of the submit control. Status ready needs that selector: with no selector for it, report blocked.
 - An action that leaves the page as it was will not work the second time: never repeat it, do something else. A key that
@@ -743,6 +745,7 @@ async def run_on_page(
     page_rules: str = "",
     account: tuple[str, str] | None = None,
     cover: tuple[str, Path] | None = None,
+    transcript: Path | None = None,
 ) -> Outcome:
     brief = (
         f"The form: {job.apply_url}\nThe job: {job.title} at {job.company}\nThe CV file to upload: {cv_file}\n"
@@ -754,6 +757,8 @@ async def run_on_page(
             "The same letter as text, only for a form with no file field for a cover letter. When the form took the file, "
             f"type it nowhere, not even in an optional box for a message:\n{cover[0].strip()}"
         )
+    if transcript is not None:
+        brief += f"\n\nThe transcript file to upload, only where the form asks for a transcript: {transcript}"
     trial = dry_run()
     tracing = trial or bool(os.environ.get(TRACE_ENV, "").strip())
     if tracing:
@@ -895,9 +900,11 @@ async def apply_to_job(
     guidance: str = "",
     account: tuple[str, str] | None = None,
     cover: tuple[str, Path] | None = None,
+    transcript: Path | None = None,
 ) -> Outcome:
     """Open the browser on the person's profile, fill the job's form and send it: the person's selection and Enter came before.
-    `cover` is the cover letter's text and its file, which must be under the CV's folder for the browser to upload it."""
+    `cover` is the cover letter's text and its file, and `transcript` the transcript's file: both must be under the CV's
+    folder for the browser to upload them."""
     if (missing := missing_for_the_browser()) is not None:
         return Outcome("blocked", missing[1], reason=missing[0])
     shot = data_dir / "proofs" / f"{safe_name(job.id)}.png"
@@ -913,7 +920,7 @@ async def apply_to_job(
             navigated = await session.call_tool("browser_navigate", {"url": job.apply_url})
             if navigated.isError:
                 return Outcome("blocked", f"the form did not load: {tool_text(navigated)}", reason=FORM_NOT_LOADED)
-            return await run_on_page(session, tools, client, model, job, cv_text, answers, cv_file, shot, guidance, page_rules, account, cover)
+            return await run_on_page(session, tools, client, model, job, cv_text, answers, cv_file, shot, guidance, page_rules, account, cover, transcript)
         finally:
             await session.call_tool("browser_close", {})
 
