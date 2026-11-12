@@ -43,6 +43,32 @@ RATE_WAIT_MAX = 120.0
 # Where the application tells the screen what it waits for: set by the one that runs it, so that what the model is sent
 # and the signature of apply_to_job stay as they are.
 NOTE: ContextVar[Callable[[str], None] | None] = ContextVar("note", default=None)
+
+# What browser_type answers when a text is too long to type within one answer, and what browser_status says while it goes on.
+STILL_TYPING = "still typing into"
+TYPING_GOES_ON = "still going on in the background"
+TYPING_POLL_S = 3.0
+# A long answer at a person's pace: about 900 characters, the longest a "Detailed" preference asks for, take some 5 minutes.
+TYPING_WAIT_S = 600.0
+
+
+async def _until_typed(session: Any) -> str:
+    """Waits while the browser goes on typing a long text, saying so on the screen; then what browser_status says of how
+    it ended. A typing that outlasts TYPING_WAIT_S is left to the model, with that said."""
+    note = NOTE.get()
+    started = time.monotonic()
+    while time.monotonic() - started < TYPING_WAIT_S:
+        if note:
+            note(f"typing a long answer at a person's pace ({int(time.monotonic() - started)}s)")
+        await asyncio.sleep(TYPING_POLL_S)
+        status = tool_text(await session.call_tool("browser_status", {}))
+        if TYPING_GOES_ON not in status:
+            if note:
+                note("")
+            return f"The typing has finished; the browser takes actions again. browser_status said: {status}"
+    if note:
+        note("")
+    return "The typing is still going on after a long wait: read the field, and go on when browser_status says it has ended."
 # The mailbox may be reached this many times in one form: a code that is not there by then is not coming, and looking on costs
 # steps. A visit is an arrival from somewhere else; inside the mailbox the model moves about freely, since finding one message
 # takes several pages.
@@ -489,8 +515,13 @@ async def fill_form(session: Browser, tools: list[dict[str, Any]], client: Async
                 return _blocked(MAIL_NOT_SIGNED_IN, MAILBOX_SIGNED_OUT, watch.turns)
             pictures = _images(result)
             seen += pictures
-            messages.append({"role": "tool", "tool_call_id": call.id, "content": tool_text(result) or "Done: what it shows comes next."})
-            watch.saw(name, arguments, tool_text(result), "".join(part["image_url"]["url"] for part in pictures))
+            said = tool_text(result)
+            if name == "browser_type" and STILL_TYPING in said:
+                # A long answer goes on typing at a person's pace for minutes, and every action meanwhile is refused: the
+                # code waits for it here, so the model neither stops the form nor counts refusals as going round in circles.
+                said += "\n" + await _until_typed(session)
+            messages.append({"role": "tool", "tool_call_id": call.id, "content": said or "Done: what it shows comes next."})
+            watch.saw(name, arguments, said, "".join(part["image_url"]["url"] for part in pictures))
         why, warning = await watch.after(client, model)
         if why:
             return _blocked(why, STUCK, watch.turns)

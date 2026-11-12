@@ -840,3 +840,23 @@ def test_on_windows_nothing_is_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(apply_module, "PLATFORM", "win32")
     monkeypatch.delenv("DISPLAY", raising=False)
     assert apply_module.missing_for_the_browser() is None
+
+
+def test_a_long_answer_still_typing_is_waited_for_before_the_model_goes_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from agent_automation import apply
+
+    calls: list[str] = []
+    answers = iter([" typing: still going on in the background, into #why.", " typing: still going on in the background, into #why.", " page: form."])
+
+    class Session:
+        async def call_tool(self, name: str, arguments: dict | None = None) -> object:
+            calls.append(name)
+            return SimpleNamespace(content=[SimpleNamespace(text=next(answers))])
+
+    monkeypatch.setattr(apply, "TYPING_POLL_S", 0.0)
+    said = asyncio.run(apply._until_typed(Session()))
+    assert calls == ["browser_status", "browser_status", "browser_status"]
+    assert said.startswith("The typing has finished") and "page: form." in said
