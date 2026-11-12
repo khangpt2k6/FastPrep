@@ -772,7 +772,9 @@ async def run_on_page(
             return Outcome("unconfirmed", summary, proof, made_account=report.made_account, reason=SENT_IN_DRY_RUN, steps=report.steps, written=report.written)
     if report.status != "ready" or not report.submit_selector:
         reason = "other" if report.blocked_by in ("", "none") else report.blocked_by
-        return Outcome("blocked", report.summary, made_account=report.made_account, reason=reason, steps=report.steps, written=report.written)
+        # A trial already took the page's picture: it goes with the result, so the page shows where the form stopped.
+        stopped = Proof("", url, "", "", "", screenshot) if trial else Proof()
+        return Outcome("blocked", report.summary, stopped, made_account=report.made_account, reason=reason, steps=report.steps, written=report.written)
     if trial:
         # A trial of the flow: the form is filled and the send control named, and nothing leaves for the employer.
         url, screenshot = await _where(session, shot)
