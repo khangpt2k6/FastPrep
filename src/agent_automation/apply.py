@@ -52,6 +52,62 @@ TYPING_POLL_S = 3.0
 TYPING_WAIT_S = 600.0
 
 
+# A dry run must never send, whatever the model does: the rules tell it not to click the send control, and on a real Lever
+# form it clicked it anyway (2026-11-12). So in a dry run every action on the page goes behind a guard in the page itself,
+# which holds back a click, a key or a form submit that would send, and counts what it held.
+ACTING_TOOLS = frozenset({"browser_click", "browser_click_at", "browser_press_key", "browser_type", "browser_evaluate", "browser_select_option"})
+SENT_IN_DRY_RUN = "sent_in_dry_run"
+# The addresses a form moves to once it is sent.
+SENT_ADDRESS = re.compile(r"/(thanks|thank-you|thankyou|confirmation|confirmed|submitted|application-submitted|success)(\b|/|$)", re.IGNORECASE)
+DRY_RUN_HELD = (
+    "Dry run: that would have sent the application, so it was held back and nothing was sent. Do not try to send it. "
+    "If every required field is filled, call finish_form with status ready and the send control's selector."
+)
+DRY_RUN_GUARD = r"""(() => {
+  const w = window;
+  const install = (win) => {
+    if (win.__aaDryRun) return;
+    win.__aaDryRun = { held: 0 };
+    const words = (el) => [el.innerText, el.value, el.getAttribute('aria-label'), el.getAttribute('data-automation-id'), el.getAttribute('data-qa'), el.id, el.name]
+      .filter(Boolean).join(' ');
+    const isSend = (node) => {
+      const el = node && node.closest ? node.closest('button, input[type=submit], input[type=button], [role=button], a') : null;
+      if (!el) return false;
+      const text = words(el);
+      if (/\bsubmit\b|\bsend\s+(my\s+|your\s+|the\s+)?application\b/i.test(text)) return true;
+      return el.type === 'submit' && /\bapply\b/i.test(text);
+    };
+    const held = () => { win.__aaDryRun.held += 1; w.__aaDryRun && w !== win && (w.__aaDryRun.held += 1); };
+    const hold = (event) => { if (isSend(event.target)) { event.preventDefault(); event.stopImmediatePropagation(); held(); } };
+    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'touchstart', 'touchend']) win.addEventListener(type, hold, true);
+    win.addEventListener('keydown', (event) => {
+      if ((event.key === 'Enter' || event.key === ' ') && isSend(event.target)) { event.preventDefault(); event.stopImmediatePropagation(); held(); }
+    }, true);
+    const sends = (form) => Array.from(form.querySelectorAll('button, input[type=submit], [role=button]')).some(isSend);
+    win.addEventListener('submit', (event) => {
+      if (!event.submitter || isSend(event.submitter) || sends(event.target)) { event.preventDefault(); event.stopImmediatePropagation(); held(); }
+    }, true);
+    const native = win.HTMLFormElement.prototype;
+    const submit = native.submit, requestSubmit = native.requestSubmit;
+    native.submit = function () { if (sends(this)) { held(); return; } return submit.call(this); };
+    native.requestSubmit = function (submitter) { if (!submitter || isSend(submitter) || sends(this)) { held(); return; } return requestSubmit.call(this, submitter); };
+  };
+  install(w);
+  for (const frame of Array.from(document.querySelectorAll('iframe'))) { try { if (frame.contentWindow) install(frame.contentWindow); } catch (error) { /* another origin */ } }
+  return w.__aaDryRun.held;
+})()"""
+
+
+async def _guard(session: Any) -> int | None:
+    """Puts the dry-run guard in the page, where it is not yet, and says how many sends it has held back; None when the
+    page cannot be read."""
+    try:
+        held = json.loads(tool_text(await session.call_tool("browser_evaluate", {"expression": DRY_RUN_GUARD})))
+    except Exception:  # noqa: BLE001  A page between two addresses: the next action puts the guard in again.
+        return None
+    return held if isinstance(held, int) else None
+
+
 async def _until_typed(session: Any) -> str:
     """Waits while the browser goes on typing a long text, saying so on the screen; then what browser_status says of how
     it ended. A typing that outlasts TYPING_WAIT_S is left to the model, with that said."""
@@ -478,6 +534,8 @@ async def fill_form(session: Browser, tools: list[dict[str, Any]], client: Async
     a form takes the steps it needs, and the watch ends a run that goes nowhere."""
     messages: list[Any] = [{"role": "system", "content": instructions(guidance, page_rules)}, {"role": "user", "content": brief}]
     watch = _Watch()
+    trial = dry_run()
+    held = 0
     while True:
         response, request_id = await patiently(lambda: chat(client, model=model, messages=messages, tools=[*tools, FINISH_TOOL]))
         SPEND.note(model, getattr(response, "usage", None), request_id)
@@ -509,13 +567,30 @@ async def fill_form(session: Browser, tools: list[dict[str, Any]], client: Async
             # The plugins say two visits to the mailbox; the code holds the model to it, whatever it reasons.
             if name == "browser_navigate" and watch.one_visit_too_many(str(arguments.get("url", ""))):
                 return _blocked(NO_CODE, NO_CODE_REASON, watch.turns)
+            held_back = False
+            if trial and name in ACTING_TOOLS:
+                held = await _guard(session) or held
             result = await session.call_tool(name, arguments)
+            if trial and name in ACTING_TOOLS:
+                address = await _address_now(session)
+                if SENT_ADDRESS.search(urlsplit(address).path):
+                    # The guard did not hold this one: say so, and stop, so the record says it was sent.
+                    return Report(
+                        "ready", f"The page moved to {address} during a dry run: the form looks sent although nothing should have been.",
+                        "", SENT_IN_DRY_RUN, False, watch.turns,
+                    )
+                now_held = await _guard(session)
+                if now_held is not None and now_held > held:
+                    held = now_held
+                    held_back = True
             if name == "browser_navigate" and watch.in_mailbox and not _is_mailbox(await _address_now(session)):
                 # The mailbox sent the browser to its sign-in page: that is the person's to do, once.
                 return _blocked(MAIL_NOT_SIGNED_IN, MAILBOX_SIGNED_OUT, watch.turns)
             pictures = _images(result)
             seen += pictures
             said = tool_text(result)
+            if held_back:
+                said += "\n" + DRY_RUN_HELD
             if name == "browser_type" and STILL_TYPING in said:
                 # A long answer goes on typing at a person's pace for minutes, and every action meanwhile is refused: the
                 # code waits for it here, so the model neither stops the form nor counts refusals as going round in circles.
@@ -674,6 +749,13 @@ async def run_on_page(
     report = await fill_form(session, tools, client, model, brief, guidance, page_rules)
     if tracing:
         traced.note(f"== finish_form: {json.dumps(asdict(report), ensure_ascii=False)[:500]}")
+    if trial:
+        url, screenshot = await _where(session, shot)
+        if report.blocked_by == SENT_IN_DRY_RUN or SENT_ADDRESS.search(urlsplit(url).path):
+            # Recorded as what it is: a form the page says was sent. Never "filled, not sent", which would invite sending it twice.
+            proof = Proof(datetime.now(UTC).isoformat(timespec="seconds"), url, "", "", "", screenshot)
+            summary = f"Sent during a dry run, against the rules: the page is at {url}. Check it before applying here again.\n{report.summary}"
+            return Outcome("unconfirmed", summary, proof, made_account=report.made_account, reason=SENT_IN_DRY_RUN, steps=report.steps, written=report.written)
     if report.status != "ready" or not report.submit_selector:
         reason = "other" if report.blocked_by in ("", "none") else report.blocked_by
         return Outcome("blocked", report.summary, made_account=report.made_account, reason=reason, steps=report.steps, written=report.written)

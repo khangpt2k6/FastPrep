@@ -860,3 +860,48 @@ def test_a_long_answer_still_typing_is_waited_for_before_the_model_goes_on(monke
     said = asyncio.run(apply._until_typed(Session()))
     assert calls == ["browser_status", "browser_status", "browser_status"]
     assert said.startswith("The typing has finished") and "page: form." in said
+
+
+class SendsOnClick(ScriptedBrowser):
+    """A Lever-like page: a click on its send control moves it to /thanks, as a real one did in a dry run."""
+
+    def __init__(self, held: list[int] | None = None) -> None:
+        super().__init__(page={"url": "https://jobs.lever.co/acme/1/apply", "text": "form"})
+        self.held = held
+
+    async def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> Any:
+        arguments = arguments or {}
+        if name == "browser_evaluate" and "__aaDryRun" in arguments.get("expression", ""):
+            self.calls.append((name, {"expression": "guard"}))
+            count = self.held.pop(0) if self.held else 0
+            return SimpleNamespace(isError=False, content=[SimpleNamespace(text=json.dumps(count))])
+        if name == "browser_click" and arguments.get("selector") == "#btn-submit" and self.held is None:
+            self.page = {"url": "https://jobs.lever.co/acme/1/thanks", "text": "Application submitted!"}
+        return await super().call_tool(name, arguments)
+
+
+def test_a_dry_run_that_the_page_says_was_sent_ends_at_once_as_sent(monkeypatch: pytest.MonkeyPatch) -> None:
+    from agent_automation.apply import SENT_IN_DRY_RUN
+
+    monkeypatch.setenv("AGENT_DRY_RUN", "1")
+    browser = SendsOnClick()
+    model = ScriptedModel([tool_call("browser_click", selector="#btn-submit")])
+    report = asyncio.run(fill_form(browser, [], model, "m", "brief"))  # type: ignore[arg-type]
+    assert report.blocked_by == SENT_IN_DRY_RUN
+    names = [name for name, _ in browser.calls]
+    assert names.index("browser_evaluate") < names.index("browser_click")  # the guard went in before the click
+
+
+def test_a_send_the_guard_holds_back_is_told_to_the_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    from agent_automation.apply import DRY_RUN_HELD
+
+    monkeypatch.setenv("AGENT_DRY_RUN", "1")
+    browser = SendsOnClick(held=[0, 1])
+    model = ScriptedModel(
+        [tool_call("browser_click", selector="#btn-submit")],
+        [tool_call("finish_form", status="blocked", summary="held", submit_selector="")],
+    )
+    asyncio.run(fill_form(browser, [], model, "m", "brief"))  # type: ignore[arg-type]
+    told = [m["content"] for m in model.requests[-1]["messages"] if isinstance(m, dict) and m.get("role") == "tool"]
+    assert any(DRY_RUN_HELD in text for text in told)
+    assert browser.page["url"].endswith("/apply")
