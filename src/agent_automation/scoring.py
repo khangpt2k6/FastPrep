@@ -131,11 +131,13 @@ VERDICTS_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "id": {"type": "string"},
                     "title": {"type": "string", "description": "The posting's title, copied exactly."},
+                    "real_opening": {"type": "boolean"},
+                    "location_fits": {"type": "boolean"},
                     "seniority_fits": {"type": "boolean"},
                     "timing_fits": {"type": "boolean"},
                     "certainty": {"type": "number"},
                 },
-                "required": ["id", "title", "seniority_fits", "timing_fits", "certainty"],
+                "required": ["id", "title", "real_opening", "location_fits", "seniority_fits", "timing_fits", "certainty"],
                 "additionalProperties": False,
             },
         }
@@ -144,13 +146,19 @@ VERDICTS_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
-# Caps on a verdict whose level or timing the model said does not fit, so one judgement cannot be talked over by the other.
+# Caps on a verdict whose place, level or timing the model said does not fit, so one judgement cannot be talked over by another.
+NOT_A_JOB_CAP = 0.0
+LOCATION_CAP = 0.1
 SENIORITY_CAP = 0.15
 TIMING_CAP = 0.3
 
 OPENAI_SCORING_RULES = (
     "You screen job postings for a candidate, as a careful recruiter would. Judge each posting on its own, and answer every "
     "posting id exactly once, copying its title exactly.\n\n"
+    "- real_opening: false for a test, sample or placeholder posting (such as a title marked [TEST]).\n"
+    "- location_fits: whether the posting is based where the statement below says, or is remote and open to people there. "
+    "Judge from the location and the posting's own words and language, not from a country code: a German city, or a title "
+    "with (m/w/d), is in Germany.\n"
     "- seniority_fits: false when the posting wants more seniority than the CV shows: senior, staff, principal, lead, manager, "
     "director, a level II or higher, or years of professional experience the CV does not have. Internships and part-time "
     "roles held during school do not count as years of professional experience.\n"
@@ -189,6 +197,10 @@ async def _ask_openai(client: AsyncOpenAI, model: str, cv: str, jobs: list[Job],
             certainty = float(answer["certainty"])
         except (KeyError, TypeError, ValueError):
             continue
+        if answer.get("real_opening") is False:
+            certainty = min(certainty, NOT_A_JOB_CAP)
+        if answer.get("location_fits") is False:
+            certainty = min(certainty, LOCATION_CAP)
         if answer.get("seniority_fits") is False:
             certainty = min(certainty, SENIORITY_CAP)
         if answer.get("timing_fits") is False:

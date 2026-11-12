@@ -217,3 +217,27 @@ def test_a_candidate_who_will_relocate_is_asked_about_the_whole_country() -> Non
     assert "based anywhere in United States, where they will relocate" in moving
     assert "near Tampa" not in moving
     assert "based in or near Tampa, United States" in question("Backend internships.", "Tampa, United States")
+
+
+def test_openai_verdicts_are_capped_by_their_yes_no_answers_and_dropped_when_the_title_is_another(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+
+    from agent_automation import scoring
+
+    jobs = [Job(f"j{n}", "Firm", f"Engineer {n}", "Rome", "u", "a", "Build things.") for n in range(4)]
+    reply = {"answers": [
+        {"id": "p00", "title": jobs[0].title, "real_opening": True, "location_fits": True, "seniority_fits": True, "timing_fits": True, "certainty": 0.9},
+        {"id": "p01", "title": jobs[1].title, "real_opening": True, "location_fits": False, "seniority_fits": True, "timing_fits": True, "certainty": 0.9},
+        {"id": "p02", "title": jobs[2].title, "real_opening": True, "location_fits": True, "seniority_fits": False, "timing_fits": True, "certainty": 0.9},
+        {"id": "p03", "title": "Some other posting", "real_opening": True, "location_fits": True, "seniority_fits": True, "timing_fits": True, "certainty": 0.9},
+    ]}
+
+    async def fake(*args: object, **kwargs: object) -> dict:
+        return reply
+
+    monkeypatch.setattr(scoring, "structured", fake)
+    answers = asyncio.run(scoring._ask_openai(None, "m", "cv", jobs, "asked"))["answers"]  # type: ignore[arg-type]
+    assert answers["p00_fit"]["noul"] == 0.9
+    assert answers["p01_fit"]["noul"] == scoring.LOCATION_CAP
+    assert answers["p02_fit"]["noul"] == scoring.SENIORITY_CAP
+    assert "p03_fit" not in answers
