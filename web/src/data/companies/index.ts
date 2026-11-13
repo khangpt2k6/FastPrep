@@ -10,6 +10,9 @@ import research from './research.json'
 export const CATEGORIES = ['Big Tech', 'AI', 'Quant', 'Fintech', 'Finance', 'Data & Infra', 'Enterprise', 'Consumer', 'Health', 'Hardware & Defense'] as const
 export type CompanyCategory = (typeof CATEGORIES)[number]
 
+export const TIERS = ['Fortune 500', 'Unicorn', 'Startup'] as const
+export type CompanyTier = (typeof TIERS)[number]
+
 export interface Posting {
   found: boolean
   cycle?: string
@@ -23,6 +26,8 @@ export interface Company {
   slug: string
   domain: string
   category: CompanyCategory
+  /** Fortune 500, Unicorn or Startup where certain; null otherwise. */
+  tier: CompanyTier | null
   logo: string | null
   need: string[]
   stack: string[]
@@ -39,6 +44,7 @@ interface Row {
   domain: string
   /** Set on entries added from the job database; older entries take theirs from CATEGORY. */
   category?: CompanyCategory
+  tier?: CompanyTier
   intern: Posting
   new_grad: Posting
   need: string[]
@@ -88,9 +94,12 @@ export const companies: Company[] = (research as Row[])
     slug: slugOf(row.company),
     domain: row.domain,
     category: row.category ?? CATEGORY[row.company] ?? 'Big Tech',
+    tier: row.tier ?? null,
     logo: LOGO[row.company]
       ? `/logos/company/${LOGO[row.company]}`
-      : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(row.domain)}&sz=128`,
+      : row.domain
+        ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(row.domain)}&sz=128`
+        : null,
     need: row.need,
     stack: row.core_stack.filter((tech) => !row.need.includes(tech)),
     niche: row.niche,
