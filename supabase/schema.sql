@@ -401,3 +401,5 @@ alter table public.automation_resumes add column if not exists label text not nu
 -- Whether the inbox found the receipt of the application: without one, applied_at is the first mail seen, not the day it
 -- went out, and the page says so.
 alter table public.automation_inbox add column if not exists applied_known boolean not null default true;
+-- The employer's own domain, from the sender addresses of its mails (carriers left out), for the logo; '' when unknown.
+alter table public.automation_inbox add column if not exists domain text not null default '';

@@ -3,13 +3,13 @@ import { motion } from 'motion/react';
 import { SPRING } from '../../lib/motion';
 import { bulletLines, profileProgress, type Profile } from '../../lib/profile';
 import { monthRange } from '../../lib/format';
-import type { ProfileRow, ResumeRow } from '../../lib/types';
+import type { ProfileRow } from '../../lib/types';
 import { Callout } from '../common';
 import { Group } from '../settings';
 import { IconAlert, IconGithub, IconGlobe, IconLinkedin, IconMail, IconMapPin, IconPencil, IconPhone, IconPlus, IconSpark } from '../Icons';
 import { DocumentsCard } from './DocumentsCard';
 import { LinkedInCard } from './LinkedInCard';
-import { ResumeCard } from './ResumeCard';
+import { ResumeLibrary, type ResumeLibraryProps } from './ResumeLibrary';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
@@ -28,15 +28,8 @@ interface ProfilePageProps {
   profile: Profile;
   row: ProfileRow | null;
   onEdit: (step: number) => void;
-  /** The resume card: the active resume, one the agent is still reading, and the table's state. */
-  resume: {
-    active: ResumeRow | null;
-    pending: ResumeRow | null;
-    loading: boolean;
-    missing: boolean;
-    /** The resume the agent has loaded on the computer, when the table has none. */
-    agentName: string;
-  };
+  /** The Resumes card: every resume and what can be done with them. */
+  resume: Omit<ResumeLibraryProps, 'now' | 'onSetup'>;
   now: number;
   /** Go to Set up to upload a new resume. */
   onReplace: () => void;
@@ -292,7 +285,7 @@ export function ProfilePage({ profile, row, onEdit, resume, now, onReplace }: Pr
         </Callout>
       ) : null}
 
-      <ResumeCard {...resume} now={now} onReplace={onReplace} />
+      <ResumeLibrary {...resume} now={now} onSetup={onReplace} />
       <DocumentsCard now={now} />
       <LinkedInCard />
 

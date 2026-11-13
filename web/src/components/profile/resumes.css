@@ -1,0 +1,308 @@
+/* The Resumes card on the Profile page: the default first, the others under it, each with what the agent read. */
+
+.rlib {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.rlib__item {
+  position: relative;
+  padding: 0 8px;
+}
+
+.rlib__item + .rlib__item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: var(--line);
+}
+
+.rlib__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 12px;
+  border-radius: 12px;
+}
+
+.rlib__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--ink-2);
+}
+
+.rlib__item.is-default .rlib__icon {
+  background: var(--ember-50);
+  color: var(--ember-700);
+  box-shadow: inset 0 0 0 1px var(--ember-100);
+}
+
+.rlib__item.is-failed .rlib__icon {
+  background: var(--rose-50);
+  color: var(--rose-700);
+}
+
+.rlib__icon.is-busy {
+  animation: dot-pulse 1.6s ease-in-out infinite;
+}
+
+.rlib__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rlib__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+.rlib__labelwrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* The label reads as a title until it is hovered or focused, then it shows it is a field. */
+.rlib__label {
+  min-width: 0;
+  max-width: 100%;
+  height: 28px;
+  margin-left: -7px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.rlib__label::placeholder {
+  color: var(--ink-3);
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.rlib__label:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--card);
+}
+
+.rlib__label:focus {
+  outline: none;
+  border-color: var(--ember-500);
+  background: var(--card);
+  box-shadow: var(--focus);
+}
+
+.rlib__label:disabled {
+  cursor: not-allowed;
+}
+
+.rlib__label:disabled::placeholder {
+  color: var(--ink-4);
+}
+
+.rlib__saving {
+  width: 12px;
+  height: 12px;
+  color: var(--ink-3);
+}
+
+.rlib__saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--pine-700);
+  font-size: 12px;
+  font-weight: 600;
+  animation: fade-up 200ms var(--ease) both;
+}
+
+.rlib__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.rlib__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.rlib__meta > :not(:last-child)::after {
+  content: '\00b7';
+  margin: 0 7px;
+  color: var(--ink-4);
+}
+
+.rlib__state {
+  color: var(--ink-2);
+}
+
+.rlib__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.rlib__more {
+  width: 32px;
+}
+
+.rlib__error {
+  margin: -6px 20px 12px 78px;
+  color: var(--rose-700);
+  font-size: 13px;
+}
+
+.rlib__readout {
+  margin: 0 12px 14px 70px;
+}
+
+.rlib__nothing {
+  padding: 2px 0 8px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+/* The upload dialog */
+.rupload {
+  width: min(500px, 100%);
+}
+
+.rpick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: 14px;
+  background: var(--frost);
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.rpick.is-over {
+  border-color: var(--ember-500);
+  background: var(--ember-50);
+}
+
+.rpick.has-file {
+  border-style: solid;
+  border-color: var(--line);
+  background: var(--card);
+}
+
+.rpick__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 11px;
+  background: var(--ember-50);
+  color: var(--ember-700);
+}
+
+.rpick__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rpick__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rpick__hint {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.rupload__default {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.rupload__default .check__box {
+  margin-top: 2px;
+}
+
+.rupload__default > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-weight: 600;
+}
+
+.rupload__hint,
+.rupload__note {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+@media (max-width: 719px) {
+  .rlib__row {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 12px 8px;
+  }
+
+  .rlib__info {
+    flex-basis: calc(100% - 56px);
+  }
+
+  .rlib__actions {
+    width: 100%;
+    padding-left: 56px;
+  }
+
+  .rlib__more {
+    margin-left: auto;
+  }
+
+  .rlib__error {
+    margin: -4px 8px 12px 64px;
+  }
+
+  .rlib__readout {
+    margin: 0 4px 12px;
+  }
+}

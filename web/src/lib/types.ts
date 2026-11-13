@@ -49,6 +49,8 @@ export type ResumeStatus = 'uploaded' | 'reading' | 'active' | 'failed' | 'old';
 export interface ResumeRow {
   id: number;
   name: string;
+  /** A name for it on the page, such as "ML". Undefined until the database has the column. */
+  label?: string;
   path: string;
   size: number;
   status: ResumeStatus | string;

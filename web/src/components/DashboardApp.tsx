@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { errorText } from '../lib/errors';
 import { APPLICATION_STATUSES, WORKING_STATES, companyName, displayName, isOnline, plural, statusInfo, stopReason } from '../lib/format';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
-import { applyResume, activeResume, byNewest, isPending, writeResume, type ResumeProfile } from '../lib/resume';
+import { applyResume, activeResume, isPending, writeResume, type ResumeProfile } from '../lib/resume';
 import { atCompany, filterJobs, sortJobs } from '../lib/jobs';
 import { confetti } from '../lib/confetti';
 import { playChime, showBrowserNotification } from '../lib/notify';
@@ -20,7 +20,7 @@ import {
   useMemory,
   useProfileRow,
 } from '../hooks/useAutomationData';
-import { deleteResume, saveResumeData, uploadResume, useResumeActivated, useResumes } from '../hooks/useResumes';
+import { deleteResume, makeResumeDefault, saveResumeData, setResumeLabel, uploadResume, useResumeActivated, useResumes } from '../hooks/useResumes';
 import { useFinishedApplications } from '../hooks/useFinishedApplications';
 import { useNewMemories } from '../hooks/useNewMemories';
 import { useNotifyPrefs } from '../hooks/useNotifyPrefs';
@@ -219,7 +219,6 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   // Set up: a resume the agent made active, then a finished profile.
   const resumesMissing = resumesT.error?.kind === 'missing-table';
   const active = useMemo(() => activeResume(resumesT.rows), [resumesT.rows]);
-  const pending = useMemo(() => byNewest(resumesT.rows).find(isPending) ?? null, [resumesT.rows]);
   const hasResume = Boolean(active) || Boolean(agent?.resume_name);
   const setupDone = hasResume && profileComplete;
   const setupMark: SetupMark = {
@@ -608,7 +607,34 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           profile={profile}
           row={profileRow}
           onEdit={(step) => openWizard(step)}
-          resume={{ active, pending, loading: resumesT.loading, missing: resumesMissing, agentName: agent?.resume_name ?? '' }}
+          resume={{
+            rows: resumesT.rows,
+            loading: resumesT.loading,
+            missing: resumesMissing,
+            agentName: agent?.resume_name ?? '',
+            jobsFound: agent?.jobs_found ?? 0,
+            online,
+            toast: push,
+            actions: {
+              upload: async (file, options) => {
+                await uploadResume(userId, file, options);
+                resumesT.reload();
+                commandsT.reload();
+              },
+              makeDefault: async (row) => {
+                await makeResumeDefault(row.id);
+                commandsT.reload();
+              },
+              remove: async (row) => {
+                await deleteResume(row);
+                resumesT.reload();
+              },
+              setLabel: async (row, label) => {
+                await setResumeLabel(row.id, label);
+                resumesT.reload();
+              },
+            },
+          }}
           now={now}
           onReplace={() => navigate('setup')}
         />

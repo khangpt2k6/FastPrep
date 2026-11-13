@@ -292,9 +292,18 @@ const RESUME_DATA = {
   profile: { personal: PROFILE_DATA.personal, education: PROFILE_DATA.education, experience: PROFILE_DATA.experience, skills: PROFILE_DATA.skills },
 };
 
+/** A second resume, read for machine learning roles. */
+const ML_DATA = {
+  search: { titles: ['Machine Learning Intern', 'AI Engineer Intern', 'Applied Scientist Intern'], cities: ['San Francisco, CA', 'Seattle, WA'], countries: ['United States'], goals: 'ML internships, ideally on ranking or speech.' },
+  profile: { ...RESUME_DATA.profile, skills: ['Python', 'PyTorch', 'NumPy', 'SQL', 'Docker', 'Hugging Face', 'scikit-learn'] },
+};
+
+const RESUME_LINES = ['Alex Rivera', 'alex.rivera@usf.edu | Tampa, FL', '', 'Education', 'University of South Florida, B.S. Computer Science, 2027', '', 'Experience', 'Tampa Bay Robotics Lab, Software Intern', 'Built a telemetry dashboard used by 40 people', '', 'Skills', 'Python, TypeScript, React, SQL, Go, Docker'];
+
 const resumeRow = (id: number, status: string, mins: number, rest: Partial<ResumeRow> = {}): ResumeRow => ({
   id,
   name: 'resume_2026.pdf',
+  label: '',
   path: '',
   size: 186_000,
   status,
@@ -435,7 +444,19 @@ export default function Preview() {
   const [shot, setShot] = useState<{ job: JobRow; url: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
-  const [resumes, setResumes] = useState<ResumeRow[]>(() => [resumeRow(3, 'active', 4300), resumeRow(1, 'old', 30000, { name: 'resume_old.pdf' }), resumeRow(2, 'failed', 20000, { name: 'scan.pdf', error: 'The PDF is a scanned image with no text in it.' })]);
+  const [resumes, setResumes] = useState<ResumeRow[]>(() => [
+    resumeRow(3, 'active', 4300, { label: 'Backend' }),
+    resumeRow(6, 'reading', 2, { name: 'resume_data_2026.pdf', label: 'Data', size: 171_000 }),
+    resumeRow(5, 'old', 9000, { name: 'resume_ml.pdf', label: 'ML', size: 203_000, data: ML_DATA }),
+    resumeRow(1, 'old', 30000, { name: 'resume_old.pdf' }),
+    resumeRow(2, 'failed', 20000, { name: 'scan.pdf', error: 'The PDF is a scanned image with no text in it.' }),
+  ]);
+  // A small PDF for Open, made once.
+  useEffect(() => {
+    const url = mockPdfUrl(RESUME_LINES);
+    setResumes((list) => list.map((r) => (r.path ? r : { ...r, path: url })));
+    return () => URL.revokeObjectURL(url);
+  }, []);
   const [setupKey, setSetupKey] = useState(0);
   const [setupStart, setSetupStart] = useState<SetupStart | undefined>(undefined);
   const [letters, setLetters] = useState<CoverLetterRow[]>([]);
@@ -495,7 +516,6 @@ export default function Preview() {
   const profile = useMemo(() => mergeProfile(PROFILE_ROW.data), []);
   const profileComplete = PROFILE_ROW.completed && profileProgress(profile).every((s) => s.done);
   const active = activeResume(resumes);
-  const pending = resumes.find((r) => r.status === 'uploaded' || r.status === 'reading') ?? null;
   const hasResume = Boolean(active);
   const setupMark = { done: hasResume && profileComplete, progress: ((hasResume ? 1 : 0) + (profileComplete ? 1 : 0)) / 2, label: '1 of 2 done' };
   const resumesTable = { rows: resumes, loading, error: oldDb ? { kind: 'missing-table' as const, message: 'missing' } : null };
@@ -893,7 +913,40 @@ export default function Preview() {
           profile={profile}
           row={PROFILE_ROW}
           onEdit={(step) => setWizard((w) => ({ open: true, key: w.key + 1, step }))}
-          resume={{ active, pending, loading: false, missing: oldDb, agentName: agent.resume_name }}
+          resume={{
+            rows: oldDb ? [] : resumes,
+            loading: false,
+            missing: oldDb,
+            agentName: agent.resume_name,
+            jobsFound: agent.jobs_found,
+            online,
+            toast: push,
+            actions: {
+              upload: async (file, { label, activate }) => {
+                await new Promise((resolve) => window.setTimeout(resolve, 900));
+                const id = Date.now();
+                setResumes((list) => [resumeRow(id, 'uploaded', 0, { name: file.name, size: file.size, label }), ...list]);
+                window.setTimeout(() => setResume(id, { status: 'reading' }), 1500);
+                window.setTimeout(
+                  () =>
+                    setResumes((list) =>
+                      list.map((r) =>
+                        r.id === id ? { ...r, status: activate ? 'active' : 'old', data: RESUME_DATA, updated_at: iso(0) } : activate && r.status === 'active' ? { ...r, status: 'old' } : r,
+                      ),
+                    ),
+                  4200,
+                );
+              },
+              makeDefault: async (row) => {
+                window.setTimeout(() => setResumes((list) => list.map((r) => (r.id === row.id ? { ...r, status: 'active' } : r.status === 'active' ? { ...r, status: 'old' } : r))), 2400);
+              },
+              remove: async (row) => setResumes((list) => list.filter((r) => r.id !== row.id)),
+              setLabel: async (row, label) => {
+                await new Promise((resolve) => window.setTimeout(resolve, 300));
+                setResume(row.id, { label });
+              },
+            },
+          }}
           now={now}
           onReplace={() => setPage('setup')}
         />

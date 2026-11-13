@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { initialOf, logoDomain, monogramColors } from '../lib/format';
+import { domainForName } from '../data/companyDomains';
 
 type Look = 'loading' | 'fill' | 'small' | 'mono';
 
@@ -18,7 +19,8 @@ interface CompanyLogoProps {
  * or when the image fails, it is a pastel monogram.
  */
 export function CompanyLogo({ name, domain, size = 32, className = '' }: CompanyLogoProps) {
-  const host = logoDomain(domain);
+  // The agent's domain first; else the hand-kept map by name, for rows that only know a name (inbox, calendar).
+  const host = logoDomain(domain) || logoDomain(domainForName(name));
   // Keyed by host, so a row that gets a new domain starts over without an effect.
   const [seen, setSeen] = useState<{ host: string; look: Look }>({ host: '', look: 'mono' });
   const look: Look = !host ? 'mono' : seen.host === host ? seen.look : 'loading';
