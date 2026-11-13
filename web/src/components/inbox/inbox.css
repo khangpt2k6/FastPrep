@@ -1,180 +1,606 @@
-/* The Inbox page. Tokens, .card, .tag, .segmented and .emptystate come from styles.css. */
+/* The Inbox, read like Gmail: the list on the left, the opened application's thread on the right. Tokens, .card,
+   .tag, .segmented and .emptystate come from styles.css. */
 
-.inbox__bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
+.inbox {
   gap: 12px;
 }
 
-.inbox__synced {
-  display: inline-flex;
+.inbox > .segmented {
+  align-self: flex-start;
+}
+
+.inbox__bar {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  height: 26px;
-  padding: 0 9px;
-  border-radius: var(--r-tag);
+  gap: 8px;
+}
+
+.inbox__search {
+  display: flex;
+  flex: 1 1 220px;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+  max-width: 360px;
+  height: 36px;
+  padding: 0 6px 0 12px;
+  border-radius: var(--r-control);
   background: var(--card);
-  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-3);
+  transition: box-shadow 160ms var(--ease);
+}
+
+.inbox__search:focus-within {
+  box-shadow: var(--focus);
+}
+
+.inbox__search input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.inbox__search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.inbox__starred.is-on {
+  background: var(--ember-50);
+  color: var(--ember-600);
+}
+
+.inbox__synced {
+  margin-left: auto;
   color: var(--ink-3);
   font-family: var(--mono);
   font-size: 11.5px;
+  white-space: nowrap;
 }
 
-.inbox__list {
-  list-style: none;
+/* The two panes */
+.mail {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.mail__list {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+  padding: 4px;
+  overflow: hidden;
+}
+
+.mail__rows {
+  flex: 1;
+  min-height: 0;
   margin: 0;
   padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
 }
 
-/* One application: logo, company and role over the mail subject, then status, time and who sent it. */
-.inboxrow {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 128px 116px 64px;
-  grid-template-areas:
-    'logo company status when by'
-    'logo role status when by'
-    'logo sub status when by';
+.mail__none {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 16px;
+  color: var(--ink-3);
+}
+
+.mail__keys {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 12px;
-  min-height: 64px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  animation: fade-up 260ms var(--ease-out) both;
-  transition: background-color 140ms ease;
+  gap: 4px;
+  padding: 8px 12px 6px;
+  color: var(--ink-3);
+  font-size: 11.5px;
 }
 
-.inboxrow {
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: var(--fill);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.mail__pane {
+  min-width: 0;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+/* A row: unread dot, logo, company and date, role, subject and the start of the newest mail, status. */
+.mrow {
   position: relative;
+  animation: fade-up 280ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 22ms);
 }
 
-.inboxrow + .inboxrow::before {
-  content: '';
+.mrow__sel {
   position: absolute;
-  top: 0;
-  left: 60px;
-  right: 12px;
-  height: 1px;
-  background: var(--line);
+  inset: 0;
+  border-radius: 12px;
+  background: var(--ember-50);
+  box-shadow: inset 3px 0 0 var(--ember-500);
 }
 
-.inboxrow:hover::before,
-.inboxrow:hover + .inboxrow::before {
-  opacity: 0;
+.mrow__hit {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 36px 11px 8px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  transition: background-color 160ms var(--ease);
 }
 
-.inboxrow:hover {
+.mrow:not(.is-selected) .mrow__hit:hover {
   background: var(--frost);
 }
 
-.inboxrow__logo {
-  grid-area: logo;
-  align-self: start;
-  margin-top: 2px;
+.mrow__hit:focus-visible {
+  outline-offset: -2px;
 }
 
-.inboxrow__company {
-  grid-area: company;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 600;
-  color: var(--ink);
+.mrow__dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  margin-top: 13px;
+  border-radius: 50%;
+  background: transparent;
 }
 
-.inboxrow__role,
-.inboxrow__sub {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.mrow.is-unread .mrow__dot {
+  background: var(--ember-500);
 }
 
-.inboxrow__role {
-  grid-area: role;
-  color: var(--ink-2);
-  font-size: 13.5px;
+.mrow__logo {
+  margin-top: 1px;
 }
 
-.inboxrow__sub {
-  grid-area: sub;
-  color: var(--ink-3);
-  font-size: 12.5px;
-}
-
-.inboxrow__status {
-  grid-area: status;
-  justify-self: start;
-}
-
-/* When it went out (the date the person looks for) over when the last mail came. */
-.inboxrow__when {
-  grid-area: when;
-  justify-self: end;
+.mrow__body {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  align-items: flex-end;
   gap: 2px;
-  font-family: var(--mono);
-  white-space: nowrap;
+  min-width: 0;
 }
 
-.inboxrow__applied {
-  color: var(--ink-2);
-  font-size: 12px;
+.mrow__top {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mrow__company {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
   font-weight: 500;
 }
 
-.inboxrow__last {
+.mrow.is-unread .mrow__company,
+.mrow.is-unread .mrow__subject {
+  font-weight: 700;
+}
+
+.mrow__count {
+  flex: none;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.mrow__date {
+  flex: none;
+  margin-left: auto;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.mrow.is-unread .mrow__date {
+  color: var(--ember-700);
+  font-weight: 600;
+}
+
+.mrow__role {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.mrow__line {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.mrow__subject {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.mrow__snippet::before {
+  content: '  ';
+  white-space: pre;
+}
+
+.mrow__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mrow__by {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--ink-3);
   font-size: 11.5px;
 }
 
-.inboxrow__by {
-  grid-area: by;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
-  color: var(--ink-3);
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-.inboxrow__by.is-agent {
+.mrow__by.is-agent {
   color: var(--ember-700);
 }
 
-/* Phones: the company and the time share the first line, the role and subject get the full width, the status last. */
-@media (max-width: 720px) {
-  .inboxrow {
-    grid-template-columns: 36px minmax(0, 1fr) auto;
-    grid-template-areas:
-      'logo company when'
-      'logo role role'
-      'logo sub sub'
-      'logo status by';
-    row-gap: 3px;
-    align-items: start;
+.mrow__star {
+  position: absolute;
+  top: 34px;
+  right: 8px;
+  color: var(--ink-4);
+}
+
+.mrow__star.is-on {
+  color: var(--ember-600);
+}
+
+/* The reading pane */
+.mail__panefx {
+  height: 100%;
+}
+
+.mpane {
+  display: flex;
+  flex-direction: column;
+}
+
+.mpane--empty {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 420px;
+  padding: 32px;
+  text-align: center;
+}
+
+.mpane__hint {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.mpane__keys {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.mpane__head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px 22px 18px;
+  background: linear-gradient(180deg, var(--frost), transparent);
+}
+
+.mpane__back {
+  display: none;
+}
+
+.mpane__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.mpane__company {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.mpane__role {
+  margin-top: 2px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.mpane__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 0;
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.mpane__meta > :not(:last-child)::after {
+  content: '\00b7';
+  margin: 0 8px;
+  color: var(--ink-4);
+}
+
+.mpane__meta > .tag::after {
+  content: none;
+}
+
+.mpane__meta > .tag {
+  margin-right: 10px;
+}
+
+.mpane__by {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mpane__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.mthread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 18px 20px;
+  list-style: none;
+}
+
+.mmsg {
+  border-radius: 14px;
+  background: var(--frost);
+  transition: background-color 200ms var(--ease);
+  animation: fade-up 300ms var(--ease) both;
+}
+
+.mmsg.is-open {
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.mmsg__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+
+.mmsg__avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--granite-2);
+  color: #fff;
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mmsg__who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mmsg__name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mmsg__addr {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.mmsg__first {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.mmsg__time {
+  flex: none;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.mmsg__body {
+  overflow: hidden;
+}
+
+.mmsg__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 16px 60px;
+}
+
+.mmsg__subject {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mmsg__snippet {
+  max-width: 72ch;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.mmsg__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mthread__skel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 18px 20px;
+}
+
+.mthread__skel .skeleton {
+  height: 72px;
+  border-radius: 14px;
+}
+
+.mthread__none {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 22px 24px;
+}
+
+/* Tablets and phones: the list fills the page; an opened application slides over it with a way back. */
+@media (max-width: 1023px) {
+  .mail {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .inboxrow__when {
-    padding-top: 2px;
+  .mail__list {
+    position: static;
+    max-height: none;
   }
 
-  .inboxrow__sub {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+  .mail__rows {
+    overflow: visible;
   }
 
-  .inboxrow__status {
-    margin-top: 6px;
+  .mail__pane {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    min-height: 0;
+    overflow-y: auto;
+    border-radius: 0;
+    background: var(--card);
+    transform: translateX(104%);
+    visibility: hidden;
+    transition: transform 320ms var(--ease), visibility 0s linear 320ms;
   }
 
-  .inboxrow__by {
-    margin-top: 8px;
+  .mail.is-reading .mail__pane {
+    transform: none;
+    visibility: visible;
+    transition: transform 320ms var(--ease), visibility 0s;
+  }
+
+  .mpane__back {
+    display: inline-grid;
+    margin: 4px -4px 0 -6px;
+  }
+
+  .mpane__head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 14px 14px 14px;
+    background: rgb(255 255 255 / 0.86);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  .mpane__actions .gmaillink {
+    display: none;
+  }
+
+  .mthread {
+    padding: 4px 10px 32px;
+  }
+
+  .mmsg__inner {
+    padding: 0 14px 14px;
+  }
+
+  .mail__keys {
+    display: none;
+  }
+
+  .inbox__synced {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 719px) {
+  .inbox__search {
+    flex-basis: 100%;
+    max-width: none;
   }
 }

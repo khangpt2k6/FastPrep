@@ -4,7 +4,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNo
 import type { AgentRow, AgentSettings, CommandRow, JobRow, MemoryRow, PreferencesRow, ProfileRow, ResumeRow } from '../../lib/types';
 import type { CoverLetterRow, CoverSettings, CoverTemplate } from '../../lib/coverLetter';
 import { STARTER_BODY } from '../../lib/coverLetter';
-import type { InboxRow } from '../../lib/inbox';
+import type { InboxMessage, InboxRow } from '../../lib/inbox';
 import { nextInterviewLine, type CalendarCommand, type CalendarRow } from '../../lib/calendar';
 import { companyLookup } from '../../lib/overview';
 import type { NotifyPrefs } from '../../hooks/useNotifyPrefs';
@@ -220,12 +220,57 @@ const MEMORY: MemoryRow[] = [
   { id: 4, question: 'How did you hear about this role?', answer: 'Company website.', source: 'learned', pinned: false, company: 'verkada', job_title: 'Software Engineer, Backend', job_id: 'a4', created_at: iso(140), updated_at: iso(140) },
 ];
 
+/** A mail for the preview's reading pane. */
+const mail = (mins: number, fromName: string, fromAddress: string, subject: string, snippet: string, status: string, link = true): InboxMessage => ({
+  at: iso(mins),
+  from_name: fromName,
+  from_address: fromAddress,
+  subject,
+  snippet,
+  status,
+  gmail_url: link ? `https://mail.google.com/mail/u/0/#all/${Math.abs(mins * 7919).toString(16)}` : '',
+});
+
 const INBOX: InboxRow[] = [
-  { user_id: 'u', id: 'i1', company: 'Stripe', role: 'Software Engineering Intern', status: 'interview', applied_at: iso(9000), updated_at: iso(120), subject: 'Next steps: technical interview', mails: 4, by_agent: true, synced_at: iso(14) },
-  { user_id: 'u', id: 'i2', company: 'Snap', role: 'Software Engineer Intern, Infrastructure', status: 'assessment', applied_at: iso(4000), updated_at: iso(600), subject: 'Your HackerRank assessment for Snap', mails: 2, by_agent: true, synced_at: iso(14) },
-  { user_id: 'u', id: 'i3', company: 'Datadog', role: 'Software Engineer Intern', status: 'applied', applied_at: iso(2000), updated_at: iso(2000), subject: 'Thanks for applying to Datadog', mails: 1, by_agent: false, synced_at: iso(14) },
-  { user_id: 'u', id: 'i4', company: 'Robinhood', role: 'Data Science Intern', status: 'rejected', applied_at: iso(20000), updated_at: iso(7000), subject: 'Update on your application', mails: 2, by_agent: true, synced_at: iso(14) },
-  { user_id: 'u', id: 'i5', company: 'Cloudflare', role: 'Systems Engineer Intern', status: 'offer', applied_at: iso(30000), updated_at: iso(50), subject: 'Offer letter: Systems Engineer Intern', mails: 6, by_agent: true, synced_at: iso(14) },
+  {
+    user_id: 'u', id: 'i5', company: 'Cloudflare', role: 'Systems Engineer Intern', status: 'offer', applied_at: iso(30000), updated_at: iso(50), subject: 'Offer letter: Systems Engineer Intern', mails: 4, by_agent: true, synced_at: iso(14), domain: 'cloudflare.com', applied_known: true,
+    messages: [
+      mail(50, 'Priya Nair', 'pnair@cloudflare.com', 'Offer letter: Systems Engineer Intern', 'Hi Alex,\n\nI am thrilled to share your offer for the Systems Engineer Intern role on the Edge team in Austin, summer 2027.\n\nThe letter is attached. Please sign by Friday, Nov 20, and let me know if you have any questions about the start date or relocation.\n\nWelcome aboard,\nPriya', 'offer'),
+      mail(4300, 'Priya Nair', 'pnair@cloudflare.com', 'Final round: thank you', 'Thanks for your time with the team today. We will be in touch within a week.', 'interview'),
+      mail(12000, 'Cloudflare Recruiting', 'no-reply@cloudflare.com', 'Interview invitation: Systems Engineer Intern', 'We would like to invite you to a 45 minute technical interview. Pick a time with the link below.', 'interview'),
+      mail(30000, 'Cloudflare', 'no-reply@greenhouse.io', 'Thank you for applying to Cloudflare', 'We received your application for Systems Engineer Intern. Our team will review it and reach out if there is a fit.', 'applied', false),
+    ],
+  },
+  {
+    user_id: 'u', id: 'i1', company: 'Stripe', role: 'Software Engineering Intern', status: 'interview', applied_at: iso(9000), updated_at: iso(120), subject: 'Next steps: technical interview', mails: 3, by_agent: true, synced_at: iso(14), domain: 'stripe.com', applied_known: true,
+    messages: [
+      mail(120, 'Jordan Lee', 'jlee@stripe.com', 'Next steps: technical interview', 'Hi Alex,\n\nGreat news: the team would like to move you to a technical interview (45 minutes, one coding question, Google Meet).\n\nPlease pick a slot this week.\n\nBest,\nJordan', 'interview'),
+      mail(2900, 'Jordan Lee', 'jlee@stripe.com', 'Quick chat about the Payments internship', 'Would you have 20 minutes for a call about the role and the team?', 'interview'),
+      mail(9000, '', 'no-reply@stripe.com', 'Thanks for applying to Stripe', 'Your application for Software Engineering Intern is in.', 'applied', false),
+    ],
+  },
+  {
+    user_id: 'u', id: 'i2', company: 'Snap', role: 'Software Engineer Intern, Infrastructure', status: 'assessment', applied_at: iso(4000), updated_at: iso(600), subject: 'Your HackerRank assessment for Snap', mails: 2, by_agent: true, synced_at: iso(14), domain: 'snap.com', applied_known: false,
+    messages: [
+      mail(600, 'Snap University Recruiting', 'recruiting@snap.com', 'Your HackerRank assessment for Snap', 'Hello Alex,\n\nPlease complete the online assessment within 7 days. It has two problems and takes about 70 minutes.', 'assessment'),
+      mail(4000, 'HackerRank', 'support@hackerrank.com', 'Invitation to a coding test', 'You have been invited to take a test for Snap Inc.', 'assessment', false),
+    ],
+  },
+  {
+    user_id: 'u', id: 'i3', company: 'Datadog', role: 'Software Engineer Intern', status: 'applied', applied_at: iso(2000), updated_at: iso(2000), subject: 'Thanks for applying to Datadog', mails: 1, by_agent: false, synced_at: iso(14), domain: 'datadoghq.com', applied_known: true,
+    messages: [mail(2000, 'Datadog Careers', 'careers@datadoghq.com', 'Thanks for applying to Datadog', 'We have received your application and will review it soon.', 'applied')],
+  },
+  {
+    user_id: 'u', id: 'i4', company: 'Robinhood', role: 'Data Science Intern', status: 'rejected', applied_at: iso(20000), updated_at: iso(7000), subject: 'Update on your application', mails: 2, by_agent: true, synced_at: iso(14), domain: 'robinhood.com', applied_known: true,
+    messages: [
+      mail(7000, 'Robinhood Recruiting', 'recruiting@robinhood.com', 'Update on your application', 'Thank you for your interest. After careful review, we have decided not to move forward at this time.', 'rejected'),
+      mail(20000, 'Robinhood', 'no-reply@robinhood.com', 'Application received', 'Thanks for applying to the Data Science Intern role.', 'applied', false),
+    ],
+  },
+  {
+    user_id: 'u', id: 'i6', company: 'Verkada', role: 'Software Engineer Intern, Backend', status: 'withdrawn', applied_at: iso(26000), updated_at: iso(15000), subject: 'Your application has been withdrawn', mails: 1, by_agent: false, synced_at: iso(14), domain: 'verkada.com', applied_known: false,
+    messages: [mail(15000, '', 'no-reply@ashbyhq.com', 'Your application has been withdrawn', 'As requested, we have withdrawn your application.', 'withdrawn', false)],
+  },
 ];
 
 /** A local time a number of days from today, as ISO. */
@@ -844,7 +889,18 @@ export default function Preview() {
       );
       break;
     case 'inbox':
-      content = <InboxView table={table(INBOX, loading, oldDb ? { kind: 'missing-table', message: 'missing' } : null)} now={now} jobs={jobs} />;
+      content = (
+        <InboxView
+          table={table(
+            INBOX.map(({ messages, ...row }) => ({ ...row, latest: messages?.[0] ?? null })),
+            loading,
+            oldDb ? { kind: 'missing-table', message: 'missing' } : null,
+          )}
+          now={now}
+          jobs={jobs}
+          loadThread={(row) => new Promise((resolve) => window.setTimeout(() => resolve(INBOX.find((r) => r.id === row.id)?.messages ?? []), 450))}
+        />
+      );
       break;
     case 'agent':
       content = (

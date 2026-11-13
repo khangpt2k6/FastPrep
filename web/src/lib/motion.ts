@@ -1,24 +1,24 @@
 import type { Transition, Variants } from 'motion/react';
 
-/** Shared motion language: quiet and quick, 120 to 200 ms. Matches --ease in styles.css. */
-export const EASE = [0.2, 0.7, 0.3, 1] as const;
-export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+/** Shared motion language: soft and quick, 140 to 280 ms, one ease everywhere. EASE_OUT matches --ease in styles.css. */
+export const EASE = [0.4, 0, 0.2, 1] as const;
+export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 export const DUR = {
-  fast: 0.12,
-  base: 0.16,
-  slow: 0.2,
-  count: 0.6,
+  fast: 0.14,
+  base: 0.2,
+  slow: 0.28,
+  count: 0.8,
 } as const;
 
 /** A short, firm spring for indicators that slide (the active nav row, the active view tab). */
-export const SPRING: Transition = { type: 'spring', stiffness: 700, damping: 50, mass: 0.8 };
+export const SPRING: Transition = { type: 'spring', stiffness: 460, damping: 38, mass: 0.8 };
 /** Toasts and other small floating things. */
-export const SPRING_SOFT: Transition = { type: 'spring', stiffness: 520, damping: 42, mass: 0.9 };
+export const SPRING_SOFT: Transition = { type: 'spring', stiffness: 380, damping: 34, mass: 0.9 };
 
 /** Only the first few rows stagger; the rest appear at once so long lists stay fast. */
 export const STAGGER_CAP = 12;
-export const STAGGER_STEP = 0.02;
+export const STAGGER_STEP = 0.03;
 /** Layout animation is measured on every render, so only the top of a long list gets it. */
 export const LAYOUT_CAP = 24;
 
@@ -26,7 +26,7 @@ export const staggerDelay = (index: number) => (index < STAGGER_CAP ? index * ST
 
 /** A row fades in with a short rise. `custom` is the row index. */
 export const riseItem: Variants = {
-  hidden: { opacity: 0, y: 4 },
+  hidden: { opacity: 0, y: 8 },
   shown: (index: number = 0) => ({
     opacity: 1,
     y: 0,
@@ -37,7 +37,7 @@ export const riseItem: Variants = {
 
 /** A whole page: incoming fades up a few pixels, outgoing fades quickly. */
 export const pageVariants: Variants = {
-  hidden: { opacity: 0, y: 6 },
+  hidden: { opacity: 0, y: 8 },
   shown: { opacity: 1, y: 0, transition: { duration: DUR.slow, ease: EASE_OUT } },
   gone: { opacity: 0, transition: { duration: DUR.fast, ease: EASE } },
 };

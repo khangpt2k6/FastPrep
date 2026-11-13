@@ -314,7 +314,7 @@ export function OverviewPage(props: OverviewProps) {
                     const st = statusOf(r.status);
                     return (
                       <li key={r.id} className="replies__row">
-                        <CompanyLogo name={name} domain={hit?.domain} size={28} />
+                        <CompanyLogo name={name} domain={r.domain || hit?.domain} size={28} />
                         <span className="replies__text">
                           <span className="replies__name">{name}</span>
                           <span className="replies__role">{r.role}</span>

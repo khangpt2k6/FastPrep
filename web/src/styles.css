@@ -8283,3 +8283,305 @@ body:has(.savebar) .toasts {
     stroke-dashoffset: 0;
   }
 }
+
+/* Polish: soft tonal surfaces instead of hairlines and shadows, real glass on a few chosen layers, one motion
+   language. This layer comes last on purpose, so it reads as one decision. */
+
+:root {
+  /* The page sits a step under the cards, so a card needs no border to stand out. */
+  --page: #eff1f4;
+  --tone: rgb(21 24 28 / 0.045);
+  --tone-2: rgb(21 24 28 / 0.075);
+
+  /* Glass: translucent white over a blur, with a light top edge. Dark glass is the same on granite. */
+  --glass: rgb(255 255 255 / 0.62);
+  --glass-strong: rgb(255 255 255 / 0.8);
+  --glass-edge: inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 0 0 1px rgb(255 255 255 / 0.45);
+  --glass-drop: 0 14px 34px -18px rgb(21 24 28 / 0.28);
+  --glass-blur: blur(18px) saturate(1.6);
+  --glass-dark: rgb(48 53 59 / 0.42);
+  --glass-dark-edge: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 0 0 1px rgb(255 255 255 / 0.07);
+
+  /* Motion: three durations, one ease, one gentle spring. */
+  --dur-1: 140ms;
+  --dur-2: 220ms;
+  --dur-3: 360ms;
+  --spring: cubic-bezier(0.34, 1.35, 0.64, 1);
+}
+
+html,
+body {
+  background: var(--page);
+}
+
+/* Cards: white on the page, no hairline, no shadow. */
+.card,
+.panel {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* A card that can be picked lifts a little; the shadow fades in on its own layer, so nothing repaints. */
+.card--hover {
+  position: relative;
+  transition: transform var(--dur-2) var(--ease);
+}
+
+.card--hover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: 0 16px 32px -20px rgb(21 24 28 / 0.35);
+  opacity: 0;
+  transition: opacity var(--dur-2) var(--ease);
+  pointer-events: none;
+}
+
+.card--hover:hover {
+  transform: translateY(-2px);
+  box-shadow: none;
+}
+
+.card--hover:hover::after {
+  opacity: 1;
+}
+
+.cocard:hover {
+  box-shadow: 0 16px 32px -22px rgb(21 24 28 / 0.32);
+}
+
+/* Secondary controls are a soft tone instead of an outline. Text fields keep their edge: it says where to type. */
+.btn--secondary,
+.btn-icon,
+.pselect__btn {
+  border-color: transparent;
+  background: var(--tone);
+}
+
+.btn--secondary:hover:not(:disabled),
+.btn-icon:hover:not(:disabled),
+.pselect__btn:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--tone-2);
+}
+
+.chip--count,
+.cmdchip {
+  box-shadow: none;
+  background: var(--tone);
+}
+
+.callout {
+  border-color: transparent;
+}
+
+.callout--gray {
+  background: var(--card);
+}
+
+.kpi {
+  border-color: transparent;
+}
+
+.upcoming__item {
+  border-color: transparent;
+  background: var(--frost);
+}
+
+.searchfield,
+.searchpill {
+  border-color: transparent;
+  background: var(--card);
+}
+
+.searchfield:hover,
+.searchpill:hover {
+  border-color: var(--line);
+}
+
+/* The page under the Overview's briefing: a faint warm dawn for the glass to catch. */
+.overview {
+  position: relative;
+  isolation: isolate;
+}
+
+.overview::before {
+  content: '';
+  position: absolute;
+  top: -48px;
+  left: -40px;
+  right: -40px;
+  z-index: -1;
+  height: 420px;
+  background:
+    radial-gradient(34% 62% at 86% 34%, rgb(253 178 122 / 0.6), transparent 72%),
+    radial-gradient(30% 55% at 10% 8%, rgb(62 111 168 / 0.18), transparent 70%),
+    radial-gradient(28% 50% at 55% 78%, rgb(240 123 31 / 0.16), transparent 70%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* Glass, light: the briefing, the Jobs toolbar and filters, dialogs, menus, toasts and the phone bars. */
+.brief,
+.jtool,
+.dialog,
+.menu,
+.toast,
+.phonebar,
+.tabbar {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.brief {
+  border-color: transparent;
+  background: rgb(255 255 255 / 0.5);
+  box-shadow: var(--glass-edge), var(--glass-drop);
+}
+
+.brief::after {
+  opacity: 0.6;
+}
+
+.jtool {
+  border-bottom-color: rgb(21 24 28 / 0.06);
+  box-shadow: var(--glass-edge);
+}
+
+.jfilters {
+  border-color: transparent;
+}
+
+.dialog {
+  border-color: transparent;
+  background: var(--glass-strong);
+  box-shadow: var(--glass-edge), 0 30px 60px -24px rgb(21 24 28 / 0.4);
+}
+
+.overlay {
+  background: rgb(21 24 28 / 0.28);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.menu,
+.toast {
+  border-color: transparent;
+  background: var(--glass-strong);
+  box-shadow: var(--glass-edge), var(--glass-drop);
+}
+
+/* Dark glass on granite: the selection dock and the agent card, each over a soft ember glow. */
+.dock {
+  background: rgb(27 30 34 / 0.74);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: var(--glass-dark-edge), 0 22px 44px -18px rgb(21 24 28 / 0.6);
+}
+
+.dock.is-live {
+  box-shadow: inset 0 0 0 2px var(--rose-500), 0 22px 44px -18px rgb(21 24 28 / 0.6);
+}
+
+.side {
+  position: relative;
+  isolation: isolate;
+}
+
+.side::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  left: -20px;
+  z-index: -1;
+  width: 240px;
+  height: 200px;
+  background: radial-gradient(closest-side, rgb(240 123 31 / 0.22), transparent);
+  pointer-events: none;
+}
+
+.sagent {
+  background: var(--glass-dark);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: var(--glass-dark-edge);
+}
+
+.sagent.is-here {
+  box-shadow: var(--glass-dark-edge), inset 0 0 0 1px rgb(240 123 31 / 0.35);
+}
+
+/* Without a blur, glass falls back to plain surfaces that keep the text readable. */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .brief,
+  .jtool,
+  .dialog,
+  .menu,
+  .toast,
+  .phonebar,
+  .tabbar {
+    background: var(--card);
+  }
+
+  .dock {
+    background: var(--granite);
+  }
+
+  .sagent {
+    background: var(--granite-2);
+  }
+}
+
+/* Smoother motion: hovers and presses on one timing, entrances a touch longer and softer. */
+.btn,
+.icon-btn,
+.btn-icon,
+.snav,
+.sbtn,
+.segmented__btn,
+.choice__btn,
+.pselect__btn {
+  transition-duration: var(--dur-1);
+  transition-timing-function: var(--ease);
+}
+
+.btn:active:not(:disabled),
+.sbtn:active:not(:disabled),
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+.jrow,
+.agrow,
+.bestrow,
+.approw,
+.mrow__hit,
+.inboxrow {
+  transition: background-color var(--dur-2) var(--ease);
+}
+
+@media (max-width: 1023px) {
+  .phonebar,
+  .tabbar {
+    background: var(--glass-strong);
+    border-color: rgb(21 24 28 / 0.06);
+  }
+
+  .phonebar {
+    box-shadow: inset 0 -1px 0 rgb(21 24 28 / 0.05);
+  }
+
+  .tabbar {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 -10px 30px -20px rgb(21 24 28 / 0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card--hover:hover {
+    transform: none;
+  }
+}

@@ -5,6 +5,21 @@ export const INBOX_TABLE = 'automation_inbox';
 
 export type InboxStatus = 'applied' | 'assessment' | 'interview' | 'offer' | 'rejected' | 'withdrawn';
 
+/** One mail about an application, as the agent read it: who, when, the subject and the readable start of it. */
+export interface InboxMessage {
+  at: string;
+  /** Empty when the mail came from a third party with no name: show from_address then. */
+  from_name: string;
+  from_address: string;
+  subject: string;
+  /** Up to 600 characters, line breaks kept, the quoted reply left out. */
+  snippet: string;
+  /** What the mail meant for the application. */
+  status: InboxStatus | string;
+  /** A link to the mail in Gmail; '' when there is none. */
+  gmail_url?: string;
+}
+
 /** One application as the inbox sync on the person's computer read it from their mail. */
 export interface InboxRow {
   user_id: string;
@@ -14,12 +29,21 @@ export interface InboxRow {
   status: InboxStatus;
   applied_at: string;
   updated_at: string;
-  /** The subject of the last mail about it. No message text is kept. */
+  /** The subject of the last mail about it. */
   subject: string;
+  /** How many mails there are. */
   mails: number;
   /** True when the agent sent it; false when the person applied by hand. */
   by_agent: boolean;
   synced_at: string;
+  /** The employer's own site, read from its senders; '' when unknown. */
+  domain?: string;
+  /** False when no receipt was found, so the applied date is a guess from the first mail. */
+  applied_known?: boolean;
+  /** The newest mail, for the list's preview line (the list does not load every mail). */
+  latest?: InboxMessage | null;
+  /** Every mail, newest first, at most 12: loaded for the opened application only. */
+  messages?: InboxMessage[];
 }
 
 /** The order of the page: what needs the person first. */
@@ -47,4 +71,19 @@ export function sortInbox(rows: InboxRow[]): InboxRow[] {
 export function dayOf(iso: string): string {
   const then = Date.parse(iso);
   return Number.isFinite(then) ? new Date(then).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+}
+
+/** The newest mail of a row, from the list's preview column or the full thread when a live update brought it. */
+export function latestOf(row: InboxRow): InboxMessage | null {
+  if (row.latest && typeof row.latest === 'object') return row.latest;
+  return Array.isArray(row.messages) && row.messages.length ? row.messages[0] : null;
+}
+
+/** "Recruiting at Stripe" or the address when the mail has no name. */
+export const senderOf = (m: InboxMessage) => m.from_name?.trim() || m.from_address || 'Unknown sender';
+
+/** A row as one line of text for the search box: company, role, subject, the latest sender and address. */
+export function searchText(row: InboxRow): string {
+  const m = latestOf(row);
+  return `${row.company} ${row.role} ${row.subject} ${m ? `${m.from_name} ${m.from_address} ${m.subject}` : ''}`.toLowerCase();
 }
