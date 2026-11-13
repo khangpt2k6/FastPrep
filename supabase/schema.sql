@@ -406,6 +406,6 @@ alter table public.automation_inbox add column if not exists domain text not nul
 
 -- When the source posted each job, for the page's "posted within" filter.
 alter table public.automation_jobs add column if not exists posted_at timestamptz;
--- The application's mails, newest first (at most 12): {at, from_name, from_address, subject, snippet, status}, for the
--- Inbox page's reading pane. Pushed by ui/inbox_push.py from the inbox sync; no full bodies.
-alter table public.automation_inbox add column if not exists mails jsonb not null default '[]'::jsonb;
+-- The application's mails (messages; mails is their count), newest first, at most 12: {at, from_name, from_address,
+-- subject, snippet, status}, for the Inbox page's reading pane. Pushed by ui/inbox_push.py; no full bodies.
+alter table public.automation_inbox add column if not exists messages jsonb not null default '[]'::jsonb;
