@@ -44,6 +44,7 @@ def test_an_application_lists_its_mails_newest_first_and_no_more_than_a_dozen() 
     [found] = applications(events)
     assert found.mails == 15 and len(found.messages) == MESSAGES == 12
     assert found.messages[0] == Message(at(15), "Dana Reyes", "dana@northwind.com", "Mail 15", "Hello,\nmail 15", "interview")
+    assert found.messages[0].gmail_url == "", "an id that is not Gmail's number makes no link"
     assert [message.at for message in found.messages] == sorted((message.at for message in found.messages), reverse=True)
     # A mail read before previews were kept still shows the short start the rules kept.
     [old] = applications([Event("m1", "t1", at(1), "applied", "Northwind", "Intern", "dana@northwind.com", "Received", "short start")])
@@ -94,12 +95,19 @@ def test_the_mails_go_to_the_dashboard_as_plain_rows_once_the_table_can_hold_the
     [row] = rows_of(found, "user-1", "now")
     assert row["messages"] == [{
         "at": "2026-07-02T10:00:00+00:00", "from_name": "Dana Reyes", "from_address": "dana@northwind.com", "subject": "Interview",
-        "snippet": "Hello,\nSam", "status": "interview",
+        "snippet": "Hello,\nSam", "status": "interview", "gmail_url": "",
     }]
     before, after = Table(without=("messages",)), Table()
     asyncio.run(push(before, Path("."), reading=lambda workspace, days: (1, found)))
     asyncio.run(push(after, Path("."), reading=lambda workspace, days: (1, found)))
     assert "messages" not in next(iter(before.rows.values())) and next(iter(after.rows.values()))["messages"] == row["messages"]
+
+
+def test_each_mail_links_to_itself_in_gmail_in_the_right_account() -> None:
+    event = Event("1848217352870012345", "t1", "2026-07-02T10:00:00+00:00", "applied", "Northwind", "Intern", "dana@northwind.com", "Received", "short")
+    assert applications([event])[0].messages[0].gmail_url == "https://mail.google.com/mail/u/0/#all/19a62fe3e187a5b9"
+    [found] = applications([event], address="sam.lee@gmail.com")
+    assert found.messages[0].gmail_url == "https://mail.google.com/mail/?authuser=sam.lee%40gmail.com#all/19a62fe3e187a5b9"
 
 
 def test_a_line_that_only_marks_a_picture_is_not_shown() -> None:

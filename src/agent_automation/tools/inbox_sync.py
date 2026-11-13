@@ -71,7 +71,7 @@ def sync(workspace: Path, days: int = DEFAULT_DAYS, connecting: Connect = connec
         me = " ".join(answers.get(name, "") for name in ("first_name", "last_name", "full_name", "preferred_name"))
         events = [event for event in (classify(mail, me) for mail in mails) if event is not None]
         new = inbox.add([mail.uid for mail in mails], events, datetime.now(UTC).isoformat(timespec="seconds"))
-        return new, applications(inbox.events(), sent_by_agent(store))
+        return new, applications(inbox.events(), sent_by_agent(store), address)
     finally:
         inbox.close()
         store.close()
@@ -83,7 +83,7 @@ def known(workspace: Path) -> list[Application]:
     store = Store(config.store_file)
     inbox = InboxStore(config.data_dir / INBOX_FILE)
     try:
-        return applications(inbox.events(), sent_by_agent(store))
+        return applications(inbox.events(), sent_by_agent(store), address_of(store))
     finally:
         inbox.close()
         store.close()

@@ -18,6 +18,7 @@ from email import message_from_bytes, policy
 from email.message import EmailMessage
 from email.utils import getaddresses, parsedate_to_datetime
 from itertools import combinations
+from urllib.parse import quote
 
 HOST = "imap.gmail.com"
 PORT = 993
@@ -101,6 +102,8 @@ class Message:
     subject: str
     snippet: str
     status: str
+    # Where the whole mail opens in Gmail; empty when its id cannot make a link.
+    gmail_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -1022,10 +1025,19 @@ def _days_between(one: str, other: str) -> float:
         return 0.0 if one[:10] == other[:10] else 999.0
 
 
-def applications(events: Iterable[Event], sent_by_agent: Iterable[str] = ()) -> list[Application]:
+def gmail_link(mail_id: str, address: str = "") -> str:
+    """The page Gmail shows a message on, from Gmail's own number for it. With the mailbox's address the link opens in
+    that account even when the browser is signed in to several."""
+    if not mail_id.isdigit():
+        return ""
+    account = f"?authuser={quote(address)}" if address else "u/0/"
+    return f"https://mail.google.com/mail/{account}#all/{int(mail_id):x}"
+
+
+def applications(events: Iterable[Event], sent_by_agent: Iterable[str] = (), address: str = "") -> list[Application]:
     """One application per company and role, the newest news first. A message that names no role belongs to the company's
     application of that thread, or else to its latest one still open. `sent_by_agent` are the companies Agent Automation
-    applied to."""
+    applied to; `address` is the mailbox they were read from, for each mail's link."""
     agent = {company_key(name) for name in sent_by_agent if name}
     groups: list[_Group] = []
     for event in sorted(events, key=lambda item: item.at):
@@ -1064,7 +1076,10 @@ def applications(events: Iterable[Event], sent_by_agent: Iterable[str] = ()) -> 
             company=shown[group.company], role=named.role, status=deciding.kind, applied_at=(receipt or items[0]).at, updated_at=items[-1].at, subject=deciding.subject, mails=len(items),
             by_agent=group.company in agent, applied_known=receipt is not None, domain=_own_domain(item.sender for item in items),
             messages=tuple(
-                Message(item.at, item.sender_name, item.sender, item.subject, tidy_preview(item.preview) or item.snippet, item.kind)
+                Message(
+                    item.at, item.sender_name, item.sender, item.subject, tidy_preview(item.preview) or item.snippet, item.kind,
+                    gmail_link(item.mail_id, address),
+                )
                 for item in sorted(items, key=lambda item: item.at, reverse=True)[:MESSAGES]
             ),
         ))
