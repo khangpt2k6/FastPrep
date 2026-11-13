@@ -3,7 +3,7 @@ import { errorText } from '../lib/errors';
 import { APPLICATION_STATUSES, WORKING_STATES, companyName, displayName, isOnline, plural, statusInfo, stopReason } from '../lib/format';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
 import { applyResume, activeResume, isPending, writeResume, type ResumeProfile } from '../lib/resume';
-import { atCompany, filterJobs, sortJobs } from '../lib/jobs';
+import { atCompany, filterJobs, placeOf, sortJobs } from '../lib/jobs';
 import { confetti } from '../lib/confetti';
 import { playChime, showBrowserNotification } from '../lib/notify';
 import type { AgentSettings, JobRow, LiveStatus } from '../lib/types';
@@ -185,7 +185,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   // The states the jobs name, most jobs first, for the location filter.
   const jobStates = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const job of candidates) for (const code of statesOf(job.location)) counts.set(code, (counts.get(code) ?? 0) + 1);
+    for (const job of candidates) for (const code of statesOf(placeOf(job))) counts.set(code, (counts.get(code) ?? 0) + 1);
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([code]) => code);
   }, [candidates]);
   const visible = useMemo(

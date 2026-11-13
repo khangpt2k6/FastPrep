@@ -6,7 +6,7 @@ import type { Page } from '../../hooks/useRoute';
 import type { CoverLetterRow } from '../../lib/coverLetter';
 import { displayName, firstLocation, plural, timeAgo } from '../../lib/format';
 import { statusOf, type InboxRow } from '../../lib/inbox';
-import { workMode } from '../../lib/jobs';
+import { placeOf, workMode } from '../../lib/jobs';
 import {
   briefing,
   buildHeatmap,
@@ -353,7 +353,7 @@ export function OverviewPage(props: OverviewProps) {
             <ul className="bestlist">
               {best.map((job, i) => {
                 const name = displayName(job);
-                const place = firstLocation(job.location).first;
+                const place = firstLocation(placeOf(job)).first;
                 const mode = workMode(job);
                 const on = selected.has(job.id);
                 return (

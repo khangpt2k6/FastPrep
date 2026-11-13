@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import type { JobRow } from '../../lib/types';
 import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
 import { displayName, firstLocation, isNewJob, timeAgo } from '../../lib/format';
-import { foundAt, workMode } from '../../lib/jobs';
+import { foundAt, placeOf, workMode } from '../../lib/jobs';
 import { CompanyLogo } from '../CompanyLogo';
 import { CheckBox, NewTag, Tag } from '../common';
 import { IconLink, IconStar, IconX } from '../Icons';
@@ -29,7 +29,7 @@ interface JobCardProps {
  */
 export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard({ job, selected, queued, onUnqueue, saved, onToggle, onSave, now, index = 0 }, ref) {
   const name = displayName(job);
-  const place = firstLocation(job.location);
+  const place = firstLocation(placeOf(job));
   const fresh = isNewJob(job, now);
   // A place that already says Remote needs no Remote hint after it.
   const mode = workMode(job) === 'Remote' && /^remote$/i.test(place.first.trim()) ? '' : workMode(job);

@@ -1,5 +1,5 @@
 // Filters for the Jobs page, company keys (shared with Companies), sorting and the match meter's words.
-import { milesFrom, statesOf } from './geo';
+import { milesBetween, milesFrom, statesOf } from './geo';
 import { displayName, isNewJob, logoDomain } from './format';
 import type { JobRow } from './types';
 
@@ -77,6 +77,15 @@ export interface JobFilters {
   home?: [number, number] | null;
 }
 
+/** Where a job is, as shown: the agent's clean places ("Camden, NJ"), else the posting's own text. */
+export const placeOf = (job: Pick<JobRow, 'place' | 'location'>) => job.place || job.location;
+
+/** Miles from home to the job's nearest place: the agent's points first, else the city table; null when unknown. */
+export function jobMiles(home: [number, number], job: Pick<JobRow, 'points' | 'location'>): number | null {
+  if (job.points?.length) return Math.min(...job.points.map((point) => milesBetween(home, point)));
+  return milesFrom(home, job.location);
+}
+
 export function filterJobs(jobs: JobRow[], f: JobFilters): JobRow[] {
   const q = f.query.trim().toLowerCase();
   return jobs.filter((job) => {
@@ -88,13 +97,13 @@ export function filterJobs(jobs: JobRow[], f: JobFilters): JobRow[] {
     if (f.kind && f.kind !== 'any' && jobKind(job.title) !== f.kind) return false;
     const mode = workMode(job);
     if (f.mode && f.mode !== 'any' && mode !== f.mode) return false;
-    if (f.state && !statesOf(job.location).includes(f.state)) return false;
+    if (f.state && !statesOf(placeOf(job)).includes(f.state)) return false;
     if (f.miles && f.home && mode !== 'Remote') {
-      const miles = milesFrom(f.home, job.location);
+      const miles = jobMiles(f.home, job);
       if (miles === null || miles > f.miles) return false;
     }
     if (!q) return true;
-    return `${job.title} ${job.company} ${displayName(job)} ${job.location}`.toLowerCase().includes(q);
+    return `${job.title} ${job.company} ${displayName(job)} ${job.location} ${job.place ?? ''}`.toLowerCase().includes(q);
   });
 }
 

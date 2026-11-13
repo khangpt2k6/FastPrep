@@ -94,6 +94,10 @@ export interface JobRow {
   found_at?: string | null;
   /** When the source posted it; rows from before the agent kept it lack it. */
   posted_at?: string | null;
+  /** Its US places as the agent read them, "Remote; Camden, NJ"; empty or missing when it placed none. */
+  place?: string;
+  /** Those places as [latitude, longitude], for the distance filter. */
+  points?: [number, number][] | null;
 }
 
 export type CommandStatus = 'pending' | 'running' | 'done' | 'failed';
