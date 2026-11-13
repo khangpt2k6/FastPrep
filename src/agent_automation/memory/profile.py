@@ -194,8 +194,9 @@ def _weight_ok(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
 
 
-async def install_resume(client: AsyncOpenAI, config: Config, path: Path, store: Store) -> dict[str, Any]:
-    """Read the resume and write what the search needs. What the person already answered stays."""
+async def install_resume(client: AsyncOpenAI, config: Config, path: Path, store: Store, keep_goals: bool = False) -> dict[str, Any]:
+    """Read the resume and write what the search needs; the profile written. What the person already answered stays, and
+    with `keep_goals` so do goals already in the settings, which the person may have written by hand."""
     cv = read_resume(path)
     profile = await structured(client, config.quick_model, PROFILE_SYSTEM, cv, "search_profile", PROFILE_SCHEMA)
     profile["plan"] = clean_plan(profile["plan"])
@@ -221,6 +222,8 @@ async def install_resume(client: AsyncOpenAI, config: Config, path: Path, store:
         "countries": [code.strip().upper() for code in profile["countries"]],
         "plan": profile["plan"],
     }
+    if keep_goals and str(settings.get("goals") or "").strip():
+        profile["goals"] = str(settings["goals"])
     settings.update({"goals": profile["goals"], "filters": filters})
     settings_path.write_text(yaml.safe_dump(settings, allow_unicode=True, sort_keys=False), encoding="utf-8")
 

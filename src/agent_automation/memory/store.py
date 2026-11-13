@@ -136,6 +136,8 @@ class Stored:
     status: str
     score: float | None
     note: str | None
+    # When a search first brought the job here, as _now writes it: the web page's New badge. Empty when not known.
+    first_seen: str = ""
 
 
 def _now() -> str:
@@ -276,7 +278,7 @@ class Store:
 
     @classmethod
     def _stored(cls, row: sqlite3.Row) -> Stored:
-        return Stored(cls._job(row), row["status"], row["score"], row["note"])
+        return Stored(cls._job(row), row["status"], row["score"], row["note"], row["first_seen"] or "")
 
     def sent(self) -> list[Sent]:
         """Every job tried, the newest first."""
@@ -303,6 +305,10 @@ class Store:
         marks = ",".join("?" * len(SENT_WORDS))
         self._db.execute(f"DELETE FROM jobs WHERE status NOT IN ({marks})", tuple(SENT_WORDS))
         self._db.commit()
+
+    def found_since(self, since: str) -> int:
+        """How many jobs a search first brought here at `since` or after, a time written as _now writes it."""
+        return int(self._db.execute("SELECT COUNT(*) FROM jobs WHERE first_seen >= ?", (since,)).fetchone()[0])
 
     def all(self) -> list[Stored]:
         """What the person sees, the best first: the scored by the score and the title's fit together, then the rest by the title's fit."""

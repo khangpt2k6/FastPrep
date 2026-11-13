@@ -168,9 +168,11 @@ class Session:
     def needs_resume(self) -> bool:
         return not self.config.cv.is_file() or not self.config.filters.include
 
-    async def load_resume(self, path: Path) -> None:
-        await install_resume(self.client, self.config, path, self.store)
+    async def load_resume(self, path: Path, keep_goals: bool = False) -> dict[str, Any]:
+        """The resume read and made the one in use; the search profile it wrote (see install_resume)."""
+        profile = await install_resume(self.client, self.config, path, self.store, keep_goals)
         self.config = load_config(self.workspace)
+        return profile
 
     def change_setting(self, name: str, value: str) -> None:
         save_setting(self.config, name, value)
@@ -223,12 +225,12 @@ class Session:
         self.telemetry.search(found=len(jobs), new=new)
         return new
 
-    async def read(self, log: Log) -> int:
-        """Jev reads the next WIDE postings the search ranked best and scores each one by how sure it is that the job is in
-        line with the candidate. A posting Jev gave no answer for is set aside, not asked again and again. A request that got
-        no answer at all leaves its postings as they were and raises NotAnswering once the others are kept. Returns how many
-        were scored."""
-        batch = self.store.with_status("new")[:WIDE]
+    async def read(self, log: Log, most: int = WIDE) -> int:
+        """Jev reads the next WIDE postings the search ranked best (`most` when that is fewer) and scores each one by how sure
+        it is that the job is in line with the candidate. A posting Jev gave no answer for is set aside, not asked again and
+        again. A request that got no answer at all leaves its postings as they were and raises NotAnswering once the others
+        are kept. Returns how many were scored."""
+        batch = self.store.with_status("new")[: max(0, min(WIDE, most))]
         if not batch:
             return 0
         started = time.monotonic()

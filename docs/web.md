@@ -27,6 +27,28 @@ One person uses this dashboard, so it has no sign-in screen: the page logs in as
 
 The agent downloads the job database (about 250 MB the first time), scores about 300 jobs against your resume and pushes them to the dashboard. It also prefills your profile from the resume.
 
+## Run it in the background
+
+The keeper runs the agent with no window, starts it again when it stops, and can start it when you log in to Windows.
+
+```powershell
+.venv\Scripts\python -m agent_automation.ui.keeper install     # start at login, and two desktop shortcuts
+.venv\Scripts\python -m agent_automation.ui.keeper start       # start it now, in the background
+.venv\Scripts\python -m agent_automation.ui.keeper status      # is it running, and the end of its log
+.venv\Scripts\python -m agent_automation.ui.keeper stop        # stop it
+.venv\Scripts\python -m agent_automation.ui.keeper uninstall   # no more start at login, shortcuts removed
+```
+
+`install` is for Windows. It adds `AgentAutomation` to the programs that start when you log in, and puts two shortcuts on your desktop: **Bật Agent** starts the agent and **Tắt Agent** stops it. The log is `~/.agent-automation/data/agent.log`, moved to `agent.log.1` once it passes 5 MB. Only one agent runs for your account at a time: a second one says so and exits. When you stop it, the agent marks itself offline on the page and exits; one that is still running after 20 seconds is ended.
+
+On the **Agent** page, **Pause** keeps the agent running but has it take no new command and fetch nothing. An application already under way finishes, and the batch it belongs to stops there: the command says how many jobs were done, and the rest can be selected and applied again. Turn Pause off and the agent picks up the commands that waited.
+
+**Auto-fetch**, also on the Agent page, brings the newest postings every few hours (3 by default) and scores the best new jobs (40 at most by default), so a list left open for days stays fresh. The page shows when it last checked, how many new jobs that found and when it checks next, and new jobs carry a New tag for a day. **Find more** still scores more of the jobs already found.
+
+On **Set up**, upload a resume as a PDF or Word file. The agent reads it, makes it the resume every application sends and searches again. The goals you wrote in `automation.yaml` and the countries in your profile stay as they are. The page then shows what it read: the titles and places it searches for, and a profile draft you can use.
+
+These need the latest `supabase/schema.sql`. With an older schema the agent runs as it did before and says once in its log what it leaves out.
+
 ## Using the dashboard
 
 1. **Open** the page. The orb in the top bar is the agent: it breathes while it waits, spins while it works and goes grey when the agent on your computer is off. Each job shows its company's logo: the agent names the employer behind every posting (a Workday tenant such as `cisco/wd5/cisco_careers` is Cisco, cisco.com) and the page draws the logo from that domain.
