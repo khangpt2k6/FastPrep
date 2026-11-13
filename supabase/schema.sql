@@ -199,8 +199,9 @@ begin
   begin alter publication supabase_realtime add table public.automation_cover_letters; exception when duplicate_object then null; end;
 end $$;
 
--- A command can also ask for cover letters alone, to read them before applying, or read a resume uploaded on the page
--- (kind 'resume', payload {"resume_id": n}).
+-- A command can also ask for cover letters alone, to read them before applying, read a resume uploaded on the page
+-- (kind 'resume', payload {"resume_id": n}), or add what a LinkedIn profile saved as a PDF says to the profile
+-- (kind 'linkedin', payload {"path": the file under <user id>/linkedin/, "name": its name}).
 alter table public.automation_commands add column if not exists payload jsonb not null default '{}'::jsonb;
 do $$
 declare
@@ -213,7 +214,7 @@ begin
     execute format('alter table public.automation_commands drop constraint %I', found.conname);
   end loop;
 end $$;
-alter table public.automation_commands add constraint automation_commands_kind_check check (kind in ('apply', 'search', 'cover_letter', 'resume'));
+alter table public.automation_commands add constraint automation_commands_kind_check check (kind in ('apply', 'search', 'cover_letter', 'resume', 'linkedin'));
 
 -- The agent's switches, set on the Agent page. paused: the agent keeps running but takes no command and fetches nothing
 -- until resumed. auto_fetch: every fetch_hours it brings the newest postings and scores at most fetch_limit new jobs.

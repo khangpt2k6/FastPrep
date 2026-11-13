@@ -38,7 +38,7 @@ from agent_automation.hooks.runner import run_hooks
 from agent_automation.memory.config import DRY_RUN_ENV, Config, ConfigError, default_home, load_config, load_dotenv
 from agent_automation.memory.profile import read_resume, set_search_places
 from agent_automation.memory.store import SENT_WORDS, SUBMITTED, Stored, safe_name
-from agent_automation.memory.web_profile import mirror_to_home, prefill, profile_answers, writing_text
+from agent_automation.memory.web_profile import add_from_linkedin, mirror_to_home, prefill, profile_answers, writing_text
 from agent_automation.memory.web_rules import answer_rules_text, builtin_rules, mirror_rules
 from agent_automation.ui.inbox_push import keep_current
 from agent_automation.ui.keeper import LOCK_FILE, STOP_FILE, keeper_running, release, take_lock
@@ -721,7 +721,7 @@ class Agent:
             return
         rows = await self.db.select(
             "automation_commands",
-            {"status": "eq.pending", "kind": "in.(apply,search,cover_letter,resume)", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
+            {"status": "eq.pending", "kind": "in.(apply,search,cover_letter,resume,linkedin)", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
         )
         if rows and not self.settings.paused:
             await self.handle(rows[0])
@@ -741,6 +741,8 @@ class Agent:
                 await self.apply_all(command["job_ids"], bool(command["dry_run"]))
             elif command["kind"] == "resume":
                 await self.read_upload(command.get("payload") or {})
+            elif command["kind"] == "linkedin":
+                await self.read_linkedin(command.get("payload") or {})
             await self.db.update("automation_commands", {"id": f"eq.{command['id']}"}, {"status": "done"})
         except Paused as stop:
             click.echo(str(stop))
@@ -899,6 +901,33 @@ class Agent:
             if outcome.reason == "no_credit":
                 break
         self.say("ready", f"Done with {len(job_ids)} application(s){mode}.")
+
+    # A LinkedIn profile, saved as a PDF and uploaded on the page.
+
+    async def read_linkedin(self, payload: dict[str, Any]) -> None:
+        """The person's LinkedIn profile ("Save to PDF"), read and added to their profile: what they wrote stays, only what
+        is missing comes in. It is never the resume: no form is sent it, and the search stays as it is. Who saved the
+        profile last stays too, so one the person has not reviewed yet still waits for them."""
+        path = str(payload.get("path") or "")
+        if not path.startswith(f"{self.db.user_id}/"):
+            raise ConfigError("the command names no LinkedIn file")
+        session = self.session
+        self.say("reading", "Reading your LinkedIn profile")
+        # Outside the CV's folder: the browser may upload nothing from here.
+        folder = session.config.data_dir / "imports"
+        folder.mkdir(parents=True, exist_ok=True)
+        file = folder / f"linkedin{Path(path).suffix.lower() or '.pdf'}"
+        file.write_bytes(await self.db.download(path))
+        read = await prefill(session.client, session.config.quick_model, await asyncio.to_thread(read_resume, file))
+        merged, said = add_from_linkedin(await self.web_profile(), read)
+        mine = {"user_id": f"eq.{self.db.user_id}"}
+        if not await self.db.update("automation_profile", mine, {"data": merged, "updated_at": _now()}):
+            await self.db.upsert(
+                "automation_profile", [{"user_id": self.db.user_id, "data": merged, "completed": False, "updated_by": "agent", "updated_at": _now()}], "user_id",
+            )
+        click.echo(f"LinkedIn profile read: {said}.")
+        await self.sync_profile()
+        self.idle(f"LinkedIn profile read: {said}.")
 
     # The transcript on the page.
 

@@ -90,3 +90,37 @@ def test_veteran_and_disability_answers_say_what_the_lists_offer():
     answers = profile_answers(data)
     assert answers["veteran_status"] == "No, I am not a protected veteran"
     assert answers["disability_status"].startswith("Prefer not to say")
+
+
+def test_linkedin_adds_only_what_the_profile_does_not_have():
+    from agent_automation.memory.web_profile import add_from_linkedin
+
+    current = empty_profile()
+    current["personal"] |= {"first_name": "Jane", "email": "jane@example.com"}
+    current["education"] = [{"school": "State University", "degree": "B.S.", "field": "CS", "gpa": "3.9", "start": "2024-08", "end": "2028-05"}]
+    current["experience"] = [{"company": "Acme", "title": "Intern", "location": "", "start": "2025-05", "end": "2025-08", "description": "- mine"}]
+    current["skills"] = ["Python"]
+    current["background"] = {"criminal_conviction": "No"}
+    read = {
+        "personal": {"first_name": "Janet", "last_name": "Doe", "email": "", "linkedin": "https://www.linkedin.com/in/janedoe", "nickname": "x"},
+        "education": [{"school": "state university", "degree": "BS"}, {"school": "Coursera", "degree": "Certificate"}, {"school": ""}],
+        "experience": [
+            {"company": "ACME", "title": "intern", "description": "- theirs"},
+            {"company": "Acme", "title": "Teaching Assistant"},
+            {"company": "Acme", "title": "Teaching Assistant"},
+        ],
+        "skills": ["python", "Go", " ", "Go"],
+    }
+    merged, said = add_from_linkedin(current, read)
+    assert merged["personal"]["first_name"] == "Jane" and merged["personal"]["last_name"] == "Doe"
+    assert merged["personal"]["linkedin"] == "https://www.linkedin.com/in/janedoe" and "nickname" not in merged["personal"]
+    assert [e["school"] for e in merged["education"]] == ["State University", "Coursera"]
+    assert [(e["company"], e["title"]) for e in merged["experience"]] == [("Acme", "Intern"), ("Acme", "Teaching Assistant")]
+    assert merged["experience"][0]["description"] == "- mine" and merged["skills"] == ["Python", "Go"]
+    assert merged["background"] == {"criminal_conviction": "No"} and merged["eeo"] == current["eeo"]
+    assert said == "added 1 role, 1 school, 1 skill, 2 contact fields"
+
+    again, said = add_from_linkedin(merged, read)
+    assert again == merged and said == "nothing new, your profile already has it"
+    filled, said = add_from_linkedin({}, {"personal": "nope", "skills": None, "experience": [{"company": "Acme", "title": "Intern"}]})
+    assert filled["experience"] == [{"company": "Acme", "title": "Intern"}] and said == "added 1 role"

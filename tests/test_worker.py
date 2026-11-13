@@ -708,3 +708,42 @@ def test_without_the_documents_table_the_transcript_kept_here_stays(session: Ses
     agent = agent_for(session, Remote("automation_documents"))
     asyncio.run(agent.sync_transcript())
     assert session.transcript() == kept and not agent.support.documents
+
+
+def test_a_linkedin_profile_from_the_page_adds_to_the_profile_and_is_never_the_resume(session: Session) -> None:
+    path = "u1/linkedin/1731400000000-Profile.txt"
+    profile = {"personal": {"first_name": "Ada", "city": "Tampa"}, "skills": ["Go"], "authorization": {"countries": ["United States"]}}
+    db = Remote(
+        automation_profile=[{"user_id": "u1", "data": profile, "completed": True, "updated_by": "web", "updated_at": "2026-11-01T00:00:00+00:00"}],
+        automation_commands=[{"id": 9, "user_id": "u1", "kind": "linkedin", "status": "pending", "payload": {"path": path, "name": "Profile.pdf"}, "job_ids": [], "dry_run": True}],
+    )
+    db.files[path] = (NEW_CV.encode(), "text/plain")
+    model = Schemas(profile=PREFILLED)
+    session._client = model  # type: ignore[assignment]
+    agent = agent_for(session, db)
+    before = session.config.cv.read_text(encoding="utf-8")
+
+    asyncio.run(agent.next_command())
+    assert db.tables["automation_commands"][0]["status"] == "done"
+    row = db.tables["automation_profile"][0]
+    data = row["data"]
+    # What was there stays; the rest comes in. The person's review still stands.
+    assert data["personal"]["first_name"] == "Ada" and data["personal"]["city"] == "Tampa" and data["personal"]["last_name"] == "Rossi"
+    assert data["skills"] == ["Go", "Python"] and [e["company"] for e in data["experience"]] == ["Acme"]
+    assert row["completed"] is True and row["updated_by"] == "web" and row["updated_at"] != "2026-11-01T00:00:00+00:00"
+    assert agent.state == "ready" and agent.message.startswith("LinkedIn profile read: added 1 role, 1 skill")
+    # The answers follow at once, and the resume and its search are untouched.
+    assert session.store.answers()["last_name"] == "Rossi"
+    assert session.config.cv.read_text(encoding="utf-8") == before and session.resume_name() == "Ada Rossi CV.pdf"
+    assert not list((session.config.data_dir / "cvs").rglob("linkedin*")) and model.asked == ["profile"]
+
+
+def test_a_linkedin_command_for_a_file_outside_the_persons_folder_is_refused(session: Session) -> None:
+    db = Remote(
+        automation_commands=[{"id": 9, "user_id": "u1", "kind": "linkedin", "status": "pending", "payload": {"path": "u2/linkedin/x.pdf"}, "job_ids": [], "dry_run": True}],
+    )
+    db.files["u2/linkedin/x.pdf"] = (b"%PDF", "application/pdf")
+    agent = agent_for(session, db)
+    asyncio.run(agent.next_command())
+    command = db.tables["automation_commands"][0]
+    assert command["status"] == "failed" and command["error"] == "the command names no LinkedIn file" and "automation_profile" not in db.tables

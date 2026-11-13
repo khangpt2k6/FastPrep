@@ -175,6 +175,54 @@ async def prefill(client: AsyncOpenAI, model: str, cv: str) -> dict[str, Any]:
     return data
 
 
+def _plural(count: int, one: str, many: str) -> str:
+    return f"{count} {one if count == 1 else many}"
+
+
+def add_from_linkedin(current: dict[str, Any], read: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    """A profile read from the person's LinkedIn page, added to the one they have, and what came in, in words. What they
+    wrote stays as it is: only an empty contact field is filled, and only a school, a role or a skill not listed yet is
+    added, after the ones that are."""
+    merged = {**empty_profile(), **current}
+    personal = {**empty_profile()["personal"], **_section(current, "personal")}
+    filled = 0
+    for name, value in _section(read, "personal").items():
+        if name in personal and not _text(personal[name]) and _text(value):
+            personal[name] = _text(value)
+            filled += 1
+    merged["personal"] = personal
+
+    def added(section: str, key: Any) -> int:
+        kept = _entries(current, section)
+        have = {key(entry) for entry in kept}
+        before = len(kept)
+        for entry in _entries(read, section):
+            if any(key(entry)) and key(entry) not in have:
+                have.add(key(entry))
+                kept.append(entry)
+        merged[section] = kept
+        return len(kept) - before
+
+    schools = added("education", lambda entry: (same_question(_text(entry.get("school"))),))
+    roles = added("experience", lambda entry: (same_question(_text(entry.get("company"))), same_question(_text(entry.get("title")))))
+    skills = [str(skill).strip() for skill in current.get("skills") or [] if str(skill).strip()] if isinstance(current.get("skills"), list) else []
+    known = {skill.lower() for skill in skills}
+    before = len(skills)
+    for skill in read.get("skills") or []:
+        if (name := str(skill).strip()) and name.lower() not in known:
+            known.add(name.lower())
+            skills.append(name)
+    merged["skills"] = skills
+
+    parts = [
+        _plural(count, one, many)
+        for count, one, many in (
+            (roles, "role", "roles"), (schools, "school", "schools"), (len(skills) - before, "skill", "skills"), (filled, "contact field", "contact fields"),
+        ) if count
+    ]
+    return merged, "added " + ", ".join(parts) if parts else "nothing new, your profile already has it"
+
+
 LENGTHS = {"Short": "one or two sentences", "Medium": "three to five sentences", "Detailed": "up to 150 words"}
 # How many kept answers go into one application's brief, after one per question is kept.
 MEMORY_IN_BRIEF = 40
