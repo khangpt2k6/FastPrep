@@ -5,7 +5,7 @@ import { CATEGORIES, companies, type Company, type CompanyCategory } from '../..
 import { displayName, logoDomain } from '../../lib/format';
 import { normName } from '../../lib/jobs';
 import type { JobRow } from '../../lib/types';
-import { EmptyState } from '../common';
+import { EmptyState, PillGroup } from '../common';
 import { IconSearch, IconX } from '../Icons';
 import { PageHeader } from '../shell/PageHeader';
 import { CompanyCard } from './CompanyCard';
@@ -83,17 +83,12 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
         }
       />
 
-      <div className="copills" role="group" aria-label="Kind of company">
-        {([null, ...CATEGORIES] as (CompanyCategory | null)[]).map((value) => {
-          const on = category === value;
-          return (
-            <button key={value ?? 'all'} type="button" aria-pressed={on} className={`copill press ${on ? 'is-on' : ''}`} onClick={() => setParams({ type: value })}>
-              {value ?? 'All'}
-              <span className="copill__count num">{value ? PER_CATEGORY.get(value) : companies.length}</span>
-            </button>
-          );
-        })}
-      </div>
+      <PillGroup<string>
+        label="Kind of company"
+        value={category ?? 'all'}
+        onChange={(value) => setParams({ type: value === 'all' ? null : value })}
+        options={[{ value: 'all', label: 'All', count: companies.length }, ...CATEGORIES.map((c) => ({ value: c, label: c, count: PER_CATEGORY.get(c) ?? 0 }))]}
+      />
 
       <div className="asked" role="group" aria-label="Most asked">
         <span className="asked__label">Most asked</span>

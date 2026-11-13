@@ -72,11 +72,6 @@
   --brand-dark: var(--ember-700);
   --brand-soft: var(--ember-50);
   --brand-ring: var(--ember-300);
-  --lavender: var(--ember-50);
-  --aurora-1: var(--ember-300);
-  --aurora-2: var(--ember-500);
-  --aurora-3: var(--ember-600);
-  --aurora-4: var(--ember-700);
   --amber: var(--ember-500);
   --ink-soft: var(--ink-2);
   --muted: var(--ink-3);
@@ -410,7 +405,8 @@ code,
   height: 20px;
   padding: 0 6px;
   border-radius: 6px;
-  background: rgb(255 255 255 / 0.2);
+  background: var(--ember-50);
+  color: var(--ember-800);
   font-family: var(--mono);
   font-size: 11.5px;
   font-weight: 600;
@@ -1314,7 +1310,7 @@ input:disabled + .switch {
   border: 0;
   border-radius: 8px;
   background: none;
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -1563,6 +1559,11 @@ input:disabled + .switch {
 
 .sbtn--ember:hover:not(:disabled) {
   background: var(--ember-300);
+}
+
+.sagent--off .sbtn--ember {
+  background: var(--granite-3);
+  color: var(--granite-text);
 }
 
 .sbtn--ember .shimmer--inverse {
@@ -2194,10 +2195,12 @@ input:disabled + .switch {
   min-width: 0;
 }
 
-/* Settings-like pages read narrower; their left edge stays where every other page starts. */
-.column--narrow .pagefx > * {
-  width: 100%;
-  max-width: 880px;
+/* Every page shares the column. Long lines of text keep a readable measure inside their cards. */
+.srow__desc,
+.pagehead__sub,
+.memcard__a,
+.groupnote {
+  max-width: 78ch;
 }
 
 /* Page header: a display title, one gray line, actions on the right. Nothing above it. */
@@ -4734,7 +4737,7 @@ button.thumb:hover {
 
 .cl-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
   gap: 12px;
 }
 
@@ -5269,11 +5272,11 @@ button.thumb:hover {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 4px;
+  margin-bottom: 12px;
 }
 
 .setup__hello .wolf {
-  margin: -10px -4px -10px -8px;
+  margin: -10px -4px -10px 0;
 }
 
 .setup__title {
@@ -6480,7 +6483,7 @@ button.thumb:hover {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(11 11 18 / 0.42);
+  background: rgb(21 24 28 / 0.42);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
@@ -7283,8 +7286,20 @@ button.thumb:hover {
   background: var(--frost);
 }
 
+.splash__map path {
+  stroke-opacity: 0.11;
+}
+
 .splash__map {
   z-index: -1;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: min(820px, 100vw);
+  height: min(520px, 100vh);
+  translate: -50% -50%;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent);
 }
 
 .splash__card {
@@ -7452,8 +7467,35 @@ body:has(.savebar) .toasts {
   }
 
   .phonebar__agent {
-    display: grid;
-    border-radius: 50%;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    border-radius: 12px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .phonebar__who {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .phonebar__name {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .phonebar__line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-3);
+    font-size: 12px;
   }
 
   .phonebar .wring {
@@ -7462,18 +7504,6 @@ body:has(.savebar) .toasts {
 
   .phonebar .wring__alert {
     box-shadow: 0 0 0 2px var(--frost);
-  }
-
-  .phonebar__title {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-family: var(--display);
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
   }
 
   .notify--bar .icon-btn {

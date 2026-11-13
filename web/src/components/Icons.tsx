@@ -437,6 +437,29 @@ export const IconLogout = (p: IconProps) => (
   </Svg>
 );
 
+/** A page of a calendar. */
+export const IconCalendar = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="5.5" width="16" height="14.5" rx="2.5" />
+    <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+  </Svg>
+);
+
+/** A video camera: join a meeting. */
+export const IconVideo = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3.5" y="6.5" width="12" height="11" rx="2.5" />
+    <path d="M15.5 10.5l5-3v9l-5-3" />
+  </Svg>
+);
+
+/** A plain G, for events read from Google Calendar. */
+export const IconGoogle = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M19.5 12.2h-7M19.4 12.2a7.5 7.5 0 1 1-2.2-5.4" />
+  </Svg>
+);
+
 /** The mark: a rounded tile with a cursor and a small ember spark. `light` is for the granite sidebar. */
 export function Logo({ size = 36, light = false }: { size?: number; light?: boolean }) {
   const tile = light ? '#F5F6F7' : '#15181C';

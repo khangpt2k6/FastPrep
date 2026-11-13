@@ -531,7 +531,7 @@ export function LettersView({ data, actions, jobs, online, now, toast }: Letters
                 >
                   <span className="cl-tile__top">
                     <span className="cl-tile__name">{t.name}</span>
-                    {t.id === inUse ? <span className="tag tag--violet">{enabled ? 'In use' : 'Selected'}</span> : null}
+                    {t.id === inUse ? <span className="tag tag--ember">{enabled ? 'In use' : 'Selected'}</span> : null}
                   </span>
                   <span className="cl-tile__desc">{t.description || 'Custom template'}</span>
                   <span className="cl-tile__foot" title="Generated parts">

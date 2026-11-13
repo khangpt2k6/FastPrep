@@ -1,68 +1,5 @@
 /* The Companies page, loaded with it. Tokens, .card, .searchfield and .emptystate come from styles.css. */
 
-/* Kinds of company as a tab strip: the chosen one is underlined in ember. */
-.copills {
-  display: flex;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  box-shadow: inset 0 -1px 0 var(--line);
-}
-
-.copills::-webkit-scrollbar {
-  display: none;
-}
-
-.copill {
-  position: relative;
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  height: 38px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 8px 8px 0 0;
-  background: none;
-  color: var(--ink-3);
-  font-size: 13.5px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.copill:hover {
-  color: var(--ink);
-  background: var(--fill);
-}
-
-.copill.is-on {
-  color: var(--ink);
-}
-
-.copill.is-on::after {
-  content: '';
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-  background: var(--ember-500);
-}
-
-.copill__count {
-  color: var(--ink-3);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.copill.is-on .copill__count {
-  color: var(--ember-700);
-}
-
 .asked {
   display: flex;
   flex-wrap: wrap;
@@ -376,9 +313,9 @@ a.posting:hover {
   .cogrid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
 
-  .copills {
-    margin: 0 -16px;
-    padding: 0 16px;
-  }
+/* The kinds of company: the same segmented tabs as Applications, Inbox and Memory, as wide as their labels. */
+.page--companies > .segmented {
+  align-self: flex-start;
 }

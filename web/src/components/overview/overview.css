@@ -404,7 +404,8 @@
   height: 20px;
 }
 
-/* The trail: a dotted path with a node per stage, the count over it, the share that went on between nodes. */
+/* The trail: a dotted path with a node per stage and its count over it. The share that went on to the next stop sits
+   between the counts, so the ember dot hopping from node to node never passes under it. */
 .trail {
   position: relative;
   padding: 8px 0 2px;
@@ -431,7 +432,7 @@
   background: var(--ember-500);
   box-shadow: 0 0 0 4px rgb(240 123 31 / 0.18), 0 0 14px rgb(240 123 31 / 0.6);
   translate: -50% -50%;
-  animation: trail-run 5.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation: trail-hop 7s ease-in-out infinite;
 }
 
 .trail__stages {
@@ -491,7 +492,7 @@
 
 .trail__rate {
   position: absolute;
-  top: 39px;
+  top: 7px;
   left: 100%;
   z-index: 1;
   display: grid;
@@ -786,10 +787,11 @@
   position: relative;
 }
 
+/* A thin bar: the five status colors stay quiet next to the one accent of the page. */
 .segbar__bar {
   display: flex;
   gap: 2px;
-  height: 30px;
+  height: 12px;
 }
 
 .segbar__part {
@@ -803,15 +805,15 @@
 }
 
 .segbar__part:first-child {
-  border-radius: 6px 3px 3px 6px;
+  border-radius: 4px 2px 2px 4px;
 }
 
 .segbar__part:last-child {
-  border-radius: 3px 6px 6px 3px;
+  border-radius: 2px 4px 4px 2px;
 }
 
 .segbar__part:only-child {
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 
@@ -1075,15 +1077,44 @@
   }
 }
 
-@keyframes trail-run {
+@keyframes trail-hop {
   0% {
     left: 0;
     opacity: 0;
   }
-  8% {
+  5% {
+    left: 0;
     opacity: 1;
   }
-  92% {
+  12% {
+    left: 0;
+  }
+  24% {
+    left: 20%;
+  }
+  31% {
+    left: 20%;
+  }
+  43% {
+    left: 40%;
+  }
+  50% {
+    left: 40%;
+  }
+  62% {
+    left: 60%;
+  }
+  69% {
+    left: 60%;
+  }
+  81% {
+    left: 80%;
+  }
+  88% {
+    left: 80%;
+  }
+  96% {
+    left: 100%;
     opacity: 1;
   }
   100% {
@@ -1107,6 +1138,71 @@
 @media (max-width: 1179px) {
   .ogrid--wide {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1023px) {
+  /* The trail turns and runs down the card. */
+  .trail {
+    padding: 0;
+  }
+
+  .trail__line {
+    top: 16px;
+    bottom: 16px;
+    left: 15px;
+    right: auto;
+    width: 2px;
+    height: auto;
+    background-size: 2px 8px;
+    background-position: 50% 0;
+  }
+
+  .trail__runner {
+    top: 0;
+    left: 50%;
+    animation-name: trail-hop-down;
+  }
+
+  .trail__stages {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .trail__stage {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-areas: 'node label count' 'node rate rate';
+    align-items: center;
+    column-gap: 10px;
+    padding: 6px 0;
+    text-align: left;
+  }
+
+  .trail__node {
+    grid-area: node;
+    justify-self: center;
+    margin: 0;
+  }
+
+  .trail__label {
+    grid-area: label;
+    margin: 0;
+  }
+
+  .trail__count {
+    grid-area: count;
+    height: auto;
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .trail__rate {
+    position: static;
+    grid-area: rate;
+    justify-self: start;
+    height: 18px;
+    translate: none;
   }
 }
 
@@ -1174,69 +1270,6 @@
     padding: 16px 16px 18px;
   }
 
-  /* The trail turns and runs down the card. */
-  .trail {
-    padding: 0;
-  }
-
-  .trail__line {
-    top: 16px;
-    bottom: 16px;
-    left: 15px;
-    right: auto;
-    width: 2px;
-    height: auto;
-    background-size: 2px 8px;
-    background-position: 50% 0;
-  }
-
-  .trail__runner {
-    top: 0;
-    left: 50%;
-    animation-name: trail-run-down;
-  }
-
-  .trail__stages {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
-  }
-
-  .trail__stage {
-    display: grid;
-    grid-template-columns: 32px minmax(0, 1fr) auto;
-    grid-template-areas: 'node label count' 'node rate rate';
-    align-items: center;
-    column-gap: 10px;
-    padding: 6px 0;
-    text-align: left;
-  }
-
-  .trail__node {
-    grid-area: node;
-    justify-self: center;
-    margin: 0;
-  }
-
-  .trail__label {
-    grid-area: label;
-    margin: 0;
-  }
-
-  .trail__count {
-    grid-area: count;
-    height: auto;
-    font-size: 22px;
-    line-height: 1.2;
-  }
-
-  .trail__rate {
-    position: static;
-    grid-area: rate;
-    justify-self: start;
-    height: 18px;
-    translate: none;
-  }
-
   .where {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1286,15 +1319,44 @@
   }
 }
 
-@keyframes trail-run-down {
+@keyframes trail-hop-down {
   0% {
     top: 0;
     opacity: 0;
   }
-  8% {
+  5% {
+    top: 0;
     opacity: 1;
   }
-  92% {
+  12% {
+    top: 0;
+  }
+  24% {
+    top: 20%;
+  }
+  31% {
+    top: 20%;
+  }
+  43% {
+    top: 40%;
+  }
+  50% {
+    top: 40%;
+  }
+  62% {
+    top: 60%;
+  }
+  69% {
+    top: 60%;
+  }
+  81% {
+    top: 80%;
+  }
+  88% {
+    top: 80%;
+  }
+  96% {
+    top: 100%;
     opacity: 1;
   }
   100% {

@@ -242,6 +242,8 @@ const COMMAND_TEXT: Record<string, (c: CommandRow) => string> = {
   apply: (c) => `Queued ${plural(c.job_ids.length, 'application')}${c.dry_run ? ' as a dry run' : ''}`,
   cover_letter: (c) => `Asked for ${plural(c.job_ids.length, 'letter')}`,
   resume: () => 'Sent a resume to read',
+  linkedin: () => 'Sent a LinkedIn profile to read',
+  calendar_add: () => 'Asked to add an event to Google Calendar',
 };
 
 /** The latest things that happened, newest first. Jobs found are grouped per day. */

@@ -4,7 +4,7 @@ import type { JobRow, LoadError } from '../../lib/types';
 import { SORT_LABEL, type MinScore, type SortKey } from '../../lib/jobs';
 import { CheckBox, EmptyState, PillGroup, SkeletonCards } from '../common';
 import { IconRadar, IconSearch, IconStar, IconX } from '../Icons';
-import { AnimatedNumber, Shimmer, StateFade } from '../motion';
+import { Shimmer, StateFade } from '../motion';
 import { PillSelect } from '../settings';
 import { JobCard } from './JobCard';
 import './jobs.css';
@@ -170,7 +170,7 @@ export function JobsPage(props: JobsPageProps) {
           {visible.length > 0 && !loading && !error ? <SelectAll ids={selectable} selected={selected} onToggleAll={props.onToggleAll} /> : null}
           <label className="jsearch">
             <IconSearch size={15} />
-            <input type="search" value={filters.query} onChange={(e) => set({ query: e.target.value })} placeholder="Search title, company, place" aria-label="Search jobs" />
+            <input type="search" value={filters.query} onChange={(e) => set({ query: e.target.value })} placeholder="Search jobs" aria-label="Search jobs by title, company or place" />
             {filters.query ? (
               <button type="button" className="icon-btn icon-btn--sm" onClick={() => set({ query: '' })} aria-label="Clear search">
                 <IconX size={13} />
@@ -212,16 +212,9 @@ export function JobsPage(props: JobsPageProps) {
           >
             <IconStar size={16} fill={filters.savedOnly ? 'currentColor' : 'none'} />
           </button>
-          <span className="jtool__count num" aria-live="polite">
-            {filtered ? (
-              <>
-                <AnimatedNumber value={visible.length} id="jobs-shown" /> of {candidates.length}
-              </>
-            ) : (
-              <>
-                <AnimatedNumber value={candidates.length} id="jobs-all" /> jobs
-              </>
-            )}
+          {/* The count sits beside the page title; screen readers hear it change here. */}
+          <span className="sr-only" aria-live="polite">
+            {loading ? '' : filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}
           </span>
           <FindButton searching={props.searching} onSearch={props.onSearch} small />
         </div>

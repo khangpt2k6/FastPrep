@@ -12,7 +12,7 @@ import { WolfRing } from '../mascot/Wolf';
 import { Contours } from '../motif';
 import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
 
-const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters', resume: 'Resume' };
+const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters', resume: 'Resume', linkedin: 'LinkedIn', calendar_add: 'Calendar' };
 
 const COMMAND_STATUS: Record<CommandRow['status'], { label: string; color: TagColor }> = {
   pending: { label: 'Waiting', color: 'gray' },
@@ -361,7 +361,11 @@ export function AgentPage(props: AgentPageProps) {
                               ? plural(c.job_ids.length, 'letter')
                               : c.kind === 'resume'
                                 ? 'Read resume'
-                                : 'More jobs'}
+                                : c.kind === 'linkedin'
+                                  ? 'Read LinkedIn profile'
+                                  : c.kind === 'calendar_add'
+                                    ? 'Add an event'
+                                    : 'More jobs'}
                           {c.kind === 'apply' ? c.dry_run ? <Tag color="yellow">Dry run</Tag> : <Tag color="red">Live</Tag> : null}
                         </span>
                         <span>

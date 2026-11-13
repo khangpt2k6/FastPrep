@@ -18,7 +18,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
+  gap: 8px 6px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   border-radius: var(--r-card) var(--r-card) 0 0;
@@ -33,11 +33,11 @@
 
 .jsearch {
   display: flex;
-  flex: 1 1 200px;
+  flex: 1 1 120px;
   align-items: center;
   gap: 8px;
-  min-width: 170px;
-  max-width: 320px;
+  min-width: 120px;
+  max-width: 340px;
   height: 34px;
   padding: 0 6px 0 11px;
   border-radius: var(--r-control);
@@ -149,6 +149,11 @@
   color: var(--ember-600);
 }
 
+.jtool .findbtn {
+  min-width: 0;
+  margin-left: auto;
+}
+
 .jtool__count {
   margin-left: auto;
   color: var(--ink-3);
@@ -252,7 +257,7 @@
   white-space: nowrap;
 }
 
-.jrow__meta > * + *::before {
+.jrow__meta > :not(:last-child)::after {
   content: '\00b7';
   margin: 0 7px;
   color: var(--ink-4);
@@ -401,6 +406,15 @@
 
   .jrow__hit .meter__word {
     display: none;
+  }
+}
+
+/* Between a small laptop and a tablet the search takes its own line, so the controls never leave Find more alone. */
+@media (max-width: 1099px) {
+  .jsearch {
+    flex: 1 1 100%;
+    max-width: none;
+    order: -1;
   }
 }
 

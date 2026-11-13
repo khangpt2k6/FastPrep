@@ -82,7 +82,17 @@ export function VTable({ head, rows }: { head: string[]; rows: (string | number)
       <tbody>
         {rows.map((r, i) => (
           <tr key={i}>
-            {r.map((c, j) => (j === 0 ? <th key={j} scope="row">{c}</th> : <td key={j} className="num">{c}</td>))}
+            {r.map((c, j) =>
+              j === 0 ? (
+                <th key={j} scope="row">
+                  {c}
+                </th>
+              ) : (
+                <td key={j} className="num">
+                  {typeof c === 'number' ? c.toLocaleString() : c}
+                </td>
+              ),
+            )}
           </tr>
         ))}
       </tbody>
@@ -325,9 +335,13 @@ export function Trail({ stages, active }: { stages: TrailStage[]; active: boolea
               {next ? (
                 <span
                   className="trail__rate num"
-                  title={rate !== null && rate > 100 ? `More at ${next.label} than at ${s.label}: not every one went through this stop` : `${s.label} to ${next.label}`}
+                  title={
+                    rate !== null && rate >= 100
+                      ? `${next.count.toLocaleString()} at ${next.label}, ${s.count.toLocaleString()} at ${s.label}: not every one went through ${s.label} first`
+                      : `${s.label} to ${next.label}`
+                  }
                 >
-                  {rate === null ? 'none' : rate > 100 ? '100%+' : rate >= 10 ? `${Math.round(rate)}%` : `${rate.toFixed(1)}%`}
+                  {rate === null ? 'none' : rate >= 100 ? 'all' : rate >= 10 ? `${Math.round(rate)}%` : `${rate.toFixed(1)}%`}
                 </span>
               ) : null}
             </li>

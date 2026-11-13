@@ -7,9 +7,6 @@ import { NotifyMenu } from './NotifyMenu';
 import { PhoneBar, Sidebar, TabBar, type AgentCardProps, type Marks, type SetupMark } from './Sidebar';
 import { DryRunSwitch } from './StatusControls';
 
-/** Settings-like pages read better narrow; they keep the same left edge as the rest. */
-const NARROW: Page[] = ['agent', 'profile', 'preferences', 'rules', 'memory'];
-
 interface ShellProps {
   page: Page;
   onNavigate: (page: Page) => void;
@@ -59,9 +56,9 @@ export function Shell({ page, onNavigate, marks, setup, agent, working, dryRun, 
           email={email}
         />
       </aside>
-      <PhoneBar page={page} onNavigate={onNavigate} agent={agent} live={!dryRun} alerts={alerts('bar')} />
+      <PhoneBar onNavigate={onNavigate} agent={agent} live={!dryRun} alerts={alerts('bar')} />
       <main className="app__main" id="main" tabIndex={-1}>
-        <div className={`column ${NARROW.includes(page) ? 'column--narrow' : ''}`} data-page={page}>
+        <div className="column" data-page={page}>
           {top}
           {children}
         </div>

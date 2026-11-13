@@ -27,6 +27,7 @@ import { useNotifyPrefs } from '../hooks/useNotifyPrefs';
 import { useNow } from '../hooks/useNow';
 import { useSavedJobs } from '../hooks/useSavedJobs';
 import { sendCoverLetters, useCoverLetters } from '../hooks/useCoverLetters';
+import { useCalendar } from '../hooks/useCalendar';
 import { useInbox } from '../hooks/useInbox';
 import { useRoute } from '../hooks/useRoute';
 import { AgentPage } from './agent/AgentPage';
@@ -49,6 +50,9 @@ import type { AgentCardProps, Marks, SetupMark } from './shell/Sidebar';
 import { statusWords } from './shell/StatusControls';
 import { Toasts, useToasts, type ToastTone } from './Toasts';
 import { PageTransition } from './motion';
+import { UpcomingCard } from './calendar/UpcomingCard';
+import { nextInterviewLine } from '../lib/calendar';
+import { companyLookup } from '../lib/overview';
 
 // Heavier pages load on first visit, so the first page comes up fast.
 const CoverLettersPage = lazy(() => import('./letters/CoverLettersPage').then((m) => ({ default: m.CoverLettersPage })));
@@ -60,6 +64,7 @@ const SetupPage = lazy(() => import('./setup/SetupPage').then((m) => ({ default:
 const CompaniesPage = lazy(() => import('./companies/CompaniesPage'));
 const InboxView = lazy(() => import('./inbox/InboxPage').then((m) => ({ default: m.InboxView })));
 const OverviewPage = lazy(() => import('./overview/OverviewPage').then((m) => ({ default: m.OverviewPage })));
+const CalendarPage = lazy(() => import('./calendar/CalendarPage'));
 const RulesPage = lazy(() => import('./rules/RulesPage').then((m) => ({ default: m.RulesPage })));
 
 export interface DashboardProps {
@@ -114,6 +119,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   const resumesT = useResumes(userId);
   const lettersT = useCoverLetters(userId);
   const inboxT = useInbox(userId);
+  const calendarT = useCalendar(userId);
   const notify = useNotifyPrefs();
   const { toasts, push, dismiss } = useToasts();
   const tail = useLogTail(agentT.agent);
@@ -185,6 +191,8 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     [jobsT.rows],
   );
   const sent = useMemo(() => applications.filter((j) => ['sent', 'unconfirmed'].includes(statusInfo(j).tone)).length, [applications]);
+  // Company names and logos for the calendar's companies, through the jobs.
+  const lookup = useMemo(() => companyLookup(jobsT.rows), [jobsT.rows]);
 
   // The form the agent is filling right now, shown on the agent page.
   const current = useMemo(() => applications.find((j) => j.status === 'applying') ?? null, [applications]);
@@ -476,12 +484,20 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
             queued={queued}
             onToggle={toggle}
             notices={notices(false)}
+            upcoming={
+              calendarT.error?.kind === 'missing-table' ? null : (
+                <UpcomingCard rows={calendarT.rows} now={now} loading={calendarT.loading} lookup={lookup} onOpen={() => navigate('calendar')} />
+              )
+            }
+            briefExtra={nextInterviewLine(calendarT.rows, now, (c) => lookup(c)?.name ?? c)}
           />
           {dock}
         </>
       );
       break;
-    case 'jobs':
+    case 'jobs': {
+      const narrowed = filters.query !== '' || filters.minScore !== 0 || filters.newOnly || filters.savedOnly || Boolean(company);
+      header = <PageHeader title={meta.title} subtitle={meta.sub} count={jobsT.loading ? undefined : narrowed ? `${visible.length} of ${candidates.length}` : candidates.length} />;
       content = (
         <JobsPage
           candidates={candidates}
@@ -514,6 +530,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
         />
       );
       break;
+    }
     case 'applications':
       header = <PageHeader title={meta.title} subtitle={meta.sub} count={applications.length || undefined} />;
       content = (
@@ -540,6 +557,10 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       break;
     case 'inbox':
       content = <InboxView table={inboxT} now={now} jobs={jobsT.rows} />;
+      break;
+    case 'calendar':
+      header = null;
+      content = <CalendarPage userId={userId} table={calendarT} jobs={jobsT.rows} inbox={inboxT.rows} now={now} online={online} toast={push} />;
       break;
     case 'agent':
       content = (

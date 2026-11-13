@@ -5,6 +5,8 @@ import type { AgentRow, AgentSettings, CommandRow, JobRow, MemoryRow, Preference
 import type { CoverLetterRow, CoverSettings, CoverTemplate } from '../../lib/coverLetter';
 import { STARTER_BODY } from '../../lib/coverLetter';
 import type { InboxRow } from '../../lib/inbox';
+import { nextInterviewLine, type CalendarCommand, type CalendarRow } from '../../lib/calendar';
+import { companyLookup } from '../../lib/overview';
 import type { NotifyPrefs } from '../../hooks/useNotifyPrefs';
 import type { LiveTable } from '../../hooks/useLiveTable';
 import type { Page } from '../../hooks/useRoute';
@@ -19,6 +21,7 @@ import { confetti } from '../../lib/confetti';
 import { AgentPage } from '../agent/AgentPage';
 import { agentTone, useLogTail } from '../agent/live';
 import { ApplicationsPage } from '../applications/ApplicationsPage';
+import { UpcomingCard } from '../calendar/UpcomingCard';
 import { Callout, SkeletonPanel } from '../common';
 import { ConfirmSubmit } from '../ConfirmSubmit';
 import { IconUser } from '../Icons';
@@ -45,6 +48,7 @@ import { mockPdfUrl } from './mockPdf';
 import { PageTransition } from './PageTransition';
 
 const CompaniesPage = lazy(() => import('../companies/CompaniesPage'));
+const CalendarView = lazy(() => import('../calendar/CalendarPage').then((m) => ({ default: m.CalendarView })));
 const OverviewPage = lazy(() => import('../overview/OverviewPage').then((m) => ({ default: m.OverviewPage })));
 const ProfileWizard = lazy(() => import('../profile/ProfileWizard').then((m) => ({ default: m.ProfileWizard })));
 
@@ -223,6 +227,52 @@ const INBOX: InboxRow[] = [
   { user_id: 'u', id: 'i5', company: 'Cloudflare', role: 'Systems Engineer Intern', status: 'offer', applied_at: iso(30000), updated_at: iso(50), subject: 'Offer letter: Systems Engineer Intern', mails: 6, by_agent: true, synced_at: iso(14) },
 ];
 
+/** A local time a number of days from today, as ISO. */
+const at = (days: number, hour: number, minute = 0) => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days, hour, minute).toISOString();
+};
+/** A calendar day for an all-day event: midnight UTC of that local date, the way Google gives a date. */
+const dayOnly = (days: number) => {
+  const d = new Date();
+  const local = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+  return new Date(Date.UTC(local.getFullYear(), local.getMonth(), local.getDate())).toISOString();
+};
+
+const event = (id: string, title: string, starts: string, ends: string | null, rest: Partial<CalendarRow> = {}): CalendarRow => ({
+  id,
+  title,
+  starts_at: starts,
+  ends_at: ends,
+  all_day: false,
+  location: '',
+  url: '',
+  kind: 'other',
+  company: '',
+  notes: '',
+  source: 'google',
+  synced_at: iso(4),
+  ...rest,
+});
+
+function mockEvents(): CalendarRow[] {
+  const now = new Date();
+  const soon = new Date(now.getTime() + 2 * 3_600_000 + 14 * 60_000);
+  return [
+    event('e1', 'Recruiter call with Datadog', soon.toISOString(), new Date(soon.getTime() + 30 * 60_000).toISOString(), { kind: 'call', company: 'Datadog', location: 'Phone', notes: 'Ask about the team and the timeline.' }),
+    event('e2', 'Technical interview with Stripe', at(1, 10), at(1, 10, 45), { kind: 'interview', company: 'Stripe', url: 'https://meet.google.com/abc-defg-hij', notes: 'Payments team, one coding round.' }),
+    event('e3', 'Snap online assessment due', dayOnly(2), dayOnly(3), { all_day: true, kind: 'deadline', company: 'Snap Inc.', url: 'https://www.hackerrank.com/test/snap' }),
+    event('e4', 'Cloudflare offer call', at(3, 15, 30), at(3, 16), { kind: 'call', company: 'Cloudflare', url: 'https://zoom.us/j/123456789', source: 'web' }),
+    event('e5', 'Ramp take-home', at(5, 9), at(5, 11), { kind: 'assessment', company: 'Ramp' }),
+    event('e6', 'Final round with Stripe', at(9, 13), at(9, 15), { kind: 'interview', company: 'Stripe', location: '510 Townsend St, San Francisco', source: 'agent' }),
+    event('e7', 'Dentist', at(1, 16), at(1, 17), { location: 'Tampa' }),
+    event('e8', 'Data Structures lecture', at(2, 11), at(2, 12, 15), { location: 'ENB 109' }),
+    event('e9', 'Bulls Hack planning', at(4, 18), at(4, 19)),
+    event('e10', 'Interview with Robinhood', at(-3, 14), at(-3, 14, 45), { kind: 'interview', company: 'Robinhood', url: 'https://meet.google.com/xyz-abcd-efg' }),
+    event('e11', 'Coffee chat with a Cisco engineer', at(-1, 9), at(-1, 9, 30), { kind: 'call', company: 'Cisco' }),
+  ];
+}
+
 const PROFILE_DATA = {
   personal: { first_name: 'Alex', last_name: 'Rivera', email: 'alex.rivera@usf.edu', phone: '+1 813 555 0142', city: 'Tampa', state: 'FL', country: 'United States', linkedin: 'linkedin.com/in/alexrivera', github: 'github.com/alexrivera' },
   education: [{ school: 'University of South Florida', degree: 'B.S.', field: 'Computer Science', gpa: '3.7', start: '2023-08', end: '2027-05' }],
@@ -294,7 +344,7 @@ const PREFS: NotifyPrefs = {
   setSound: () => undefined,
 };
 
-const ALL_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'agent', 'letters', 'companies', 'profile', 'preferences', 'rules', 'memory', 'setup'];
+const ALL_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'calendar', 'agent', 'letters', 'companies', 'profile', 'preferences', 'rules', 'memory', 'setup'];
 
 const rule = (id: string, kind: string, title: string, body: string, rest: Partial<RuleRow> = {}): RuleRow => ({
   id,
@@ -368,6 +418,18 @@ export default function Preview() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState(NO_JOB_FILTERS);
   const [noInbox, setNoInbox] = useState(false);
+  const [events, setEvents] = useState<CalendarRow[]>(mockEvents);
+  const [noEvents, setNoEvents] = useState(false);
+  const [calCommands, setCalCommands] = useState<CalendarCommand[]>(() => [
+    {
+      id: 90,
+      kind: 'calendar_add',
+      payload: { title: 'Mock interview with a friend', starts_at: at(6, 17), ends_at: at(6, 17, 45), all_day: false, kind: 'interview', company: '', location: 'Library', url: '', notes: '' },
+      status: 'failed',
+      error: 'Google Calendar refused the event: the calendar is read only.',
+      created_at: iso(30),
+    },
+  ]);
   const [dryRun, setDryRun] = useState(true);
   const [confirm, setConfirm] = useState<JobRow[] | null>(null);
   const [shot, setShot] = useState<{ job: JobRow; url: string } | null>(null);
@@ -662,13 +724,17 @@ export default function Preview() {
             queued={queuedIds}
             onToggle={toggleOne}
             notices={notices(false)}
+            upcoming={oldDb ? null : <UpcomingCard rows={noEvents ? [] : events} now={now} loading={loading} lookup={companyLookup(jobs)} onOpen={() => setPage('calendar')} />}
+            briefExtra={noEvents ? '' : nextInterviewLine(events, now, (c) => companyLookup(jobs)(c)?.name ?? c)}
           />
           {dock}
         </>
       );
       break;
-    case 'jobs':
+    case 'jobs': {
       pageBar = finishBar;
+      const narrowed = filters.query !== '' || filters.minScore !== 0 || filters.newOnly || filters.savedOnly || Boolean(company);
+      header = <PageHeader title={meta.title} subtitle={meta.sub} count={loading ? undefined : narrowed ? `${visible.length} of ${candidates.length}` : candidates.length} />;
       content = (
         <JobsPage
           candidates={candidates}
@@ -701,6 +767,7 @@ export default function Preview() {
         />
       );
       break;
+    }
     case 'applications':
       header = <PageHeader title={meta.title} subtitle={meta.sub} count={applications.length} />;
       content = (
@@ -718,6 +785,36 @@ export default function Preview() {
           queued={new Set(['a8'])}
           notices={!dryRun ? <LiveCallout /> : null}
           onApplyAgain={(j) => (dryRun ? push({ tone: 'ok', title: '1 job queued for dry run' }) : setConfirm([j]))}
+        />
+      );
+      break;
+    case 'calendar':
+      header = null;
+      pageBar = (
+        <button type="button" className={`btn btn--sm ${noEvents ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setNoEvents((v) => !v)}>
+          No events
+        </button>
+      );
+      content = (
+        <CalendarView
+          table={table(noEvents ? [] : events, loading, oldDb ? { kind: 'missing-table', message: 'missing' } : null)}
+          commands={noEvents ? [] : calCommands}
+          jobs={jobs}
+          inbox={INBOX}
+          now={now}
+          online={online}
+          toast={push}
+          onAdd={async (payload) => {
+            const id = Date.now();
+            setCalCommands((list) => [{ id, kind: 'calendar_add', payload, status: 'pending', error: '', created_at: new Date().toISOString() }, ...list]);
+            // The agent adds it a moment later, when it is online.
+            if (online) {
+              window.setTimeout(() => {
+                setEvents((list) => [...list, event(`web-${id}`, payload.title, new Date(payload.starts_at).toISOString(), payload.ends_at ? new Date(payload.ends_at).toISOString() : null, { ...payload, source: 'web' })]);
+                setCalCommands((list) => list.map((c) => (c.id === id ? { ...c, status: 'done' } : c)));
+              }, 2600);
+            }
+          }}
         />
       );
       break;

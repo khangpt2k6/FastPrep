@@ -96,7 +96,7 @@ export type CommandStatus = 'pending' | 'running' | 'done' | 'failed';
 
 export interface CommandRow {
   id: number;
-  kind: 'apply' | 'search' | 'cover_letter' | 'resume';
+  kind: 'apply' | 'search' | 'cover_letter' | 'resume' | 'linkedin' | 'calendar_add';
   job_ids: string[];
   dry_run: boolean;
   status: CommandStatus;

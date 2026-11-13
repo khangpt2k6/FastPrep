@@ -66,6 +66,10 @@ interface OverviewProps {
   onToggle: (id: string) => void;
   /** Callouts on top: Live mode, agent offline, profile unfinished. */
   notices?: ReactNode;
+  /** The next events from the calendar, right under the briefing. */
+  upcoming?: ReactNode;
+  /** A sentence added to the briefing, such as the next interview. */
+  briefExtra?: string;
 }
 
 const STATUS_TONE: Record<string, string> = {
@@ -192,11 +196,13 @@ export function OverviewPage(props: OverviewProps) {
             {greeting(now)}
             {props.firstName ? `, ${props.firstName}` : ''}
           </h1>
-          <p className="brief__line">{jobsLoading ? <Shimmer>Reading the numbers</Shimmer> : briefing(input)}</p>
+          <p className="brief__line">
+            {jobsLoading ? <Shimmer>Reading the numbers</Shimmer> : props.briefExtra ? `${briefing(input)} ${props.briefExtra}` : briefing(input)}
+          </p>
           <div className="brief__actions">
             <button type="button" className="btn btn--ember" onClick={props.onReviewStrong} aria-label={`Review strong matches, ${openStrong} open`}>
               Review strong matches
-              {openStrong ? <span className="btn__count num">{openStrong}</span> : null}
+              {openStrong ? <span className="btn__count num">{openStrong} open</span> : null}
             </button>
             <button type="button" className="btn btn--secondary" onClick={props.onSearch} disabled={props.searching}>
               <IconRadar size={15} className={props.searching ? 'spin-slow' : ''} />
@@ -212,6 +218,8 @@ export function OverviewPage(props: OverviewProps) {
           </p>
         </div>
       </section>
+
+      {props.upcoming}
 
       {props.notices}
 

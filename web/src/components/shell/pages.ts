@@ -4,6 +4,7 @@ import {
   IconBot,
   IconBriefcase,
   IconBuilding,
+  IconCalendar,
   IconFlag,
   IconGauge,
   IconLetter,
@@ -32,6 +33,7 @@ export const PAGE_META: Record<Page, PageMeta> = {
   jobs: { page: 'jobs', title: 'Jobs', short: 'Jobs', sub: 'Internships the agent found, scored against your resume.', Icon: IconBriefcase },
   applications: { page: 'applications', title: 'Applications', short: 'Applied', sub: 'Every form the agent filled or sent.', Icon: IconSend },
   inbox: { page: 'inbox', title: 'Inbox', short: 'Inbox', sub: 'Where each application stands, read from your mail.', Icon: IconMail },
+  calendar: { page: 'calendar', title: 'Calendar', short: 'Calendar', sub: 'Interviews, calls and deadlines, from your Google Calendar.', Icon: IconCalendar },
   agent: { page: 'agent', title: 'Agent', short: 'Agent', sub: 'The agent on your computer, live.', Icon: IconBot },
   letters: { page: 'letters', title: 'Letters', short: 'Letters', sub: 'Templates, and the letters the agent wrote from them.', Icon: IconLetter },
   companies: { page: 'companies', title: 'Companies', short: 'Companies', sub: 'What intern and new grad postings ask for, company by company.', Icon: IconBuilding },
@@ -43,9 +45,9 @@ export const PAGE_META: Record<Page, PageMeta> = {
 };
 
 /** The sidebar's first group. The Agent page opens from the agent card above it. */
-export const MAIN_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'letters', 'companies'];
+export const MAIN_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'calendar', 'letters', 'companies'];
 /** The person's own pages: the sidebar's second group. */
 export const YOU_PAGES: Page[] = ['setup', 'profile', 'preferences', 'rules', 'memory'];
 /** The phone's tab bar; everything else is in the More sheet. */
 export const TAB_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox'];
-export const MORE_PAGES: Page[] = ['agent', 'letters', 'companies', ...YOU_PAGES];
+export const MORE_PAGES: Page[] = ['agent', 'calendar', 'letters', 'companies', ...YOU_PAGES];

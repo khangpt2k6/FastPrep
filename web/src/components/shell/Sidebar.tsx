@@ -88,7 +88,7 @@ export function AgentCard({ agent, online, loading, now, settings, settingsOff, 
           {paused ? <IconPlay size={12} /> : <IconPause size={14} />}
           {paused ? 'Resume' : 'Pause'}
         </button>
-        <button type="button" className="sbtn sbtn--ember" onClick={onSearch} disabled={searching} title="Ask the agent for more jobs">
+        <button type="button" className="sbtn sbtn--ember" onClick={onSearch} disabled={searching} title={tone === 'off' ? 'Runs when the agent is back' : 'Ask the agent for more jobs'}>
           <IconRadar size={14} className={searching ? 'spin-slow' : ''} />
           {searching ? <Shimmer tone="inverse">Finding</Shimmer> : 'Find more'}
         </button>
@@ -193,9 +193,11 @@ export function Sidebar({ page, onNavigate, marks, setup, agent, dryRun, alerts,
   );
 }
 
-/** The phone's top bar: the wolf in its ring (opens the agent page), the page title, Live when it is on, alerts. */
-export function PhoneBar({ page, onNavigate, agent, live, alerts }: {
-  page: Page;
+/**
+ * The phone's top bar: the wolf in its ring with what the agent is doing (the page's own title is right below, so it
+ * is not repeated here), Live when it is on, and alerts. The wolf and its line open the agent page.
+ */
+export function PhoneBar({ onNavigate, agent, live, alerts }: {
   onNavigate: (page: Page) => void;
   agent: Pick<AgentCardProps, 'agent' | 'online' | 'loading' | 'now'>;
   live: boolean;
@@ -203,15 +205,18 @@ export function PhoneBar({ page, onNavigate, agent, live, alerts }: {
 }) {
   const state = agent.online ? agent.agent?.state ?? 'idle' : 'offline';
   const tone = agent.loading ? 'off' : agentTone(agent.online, state);
-  const { word } = statusWords(agent.agent, agent.online, agent.loading, agent.now, tone);
+  const { word, line } = statusWords(agent.agent, agent.online, agent.loading, agent.now, tone);
   return (
     <header className="phonebar">
-      <a className="phonebar__agent" href="#/agent" onClick={linkClick(onNavigate, 'agent')} aria-label={`Agent: ${word}. Open the agent page`}>
+      <a className="phonebar__agent" href="#/agent" onClick={linkClick(onNavigate, 'agent')} aria-label={`Your agent: ${word}. ${line}. Open the agent page`}>
         <WolfRing tone={tone} state={state} size={34} />
+        <span className="phonebar__who" aria-hidden="true">
+          <span className="phonebar__name">Your agent</span>
+          <span className="phonebar__line">
+            <Shimmer active={tone === 'busy'}>{line}</Shimmer>
+          </span>
+        </span>
       </a>
-      <p className="phonebar__title" aria-hidden="true">
-        {PAGE_META[page].title}
-      </p>
       {live ? <span className="livetag">Live</span> : null}
       {alerts}
     </header>
