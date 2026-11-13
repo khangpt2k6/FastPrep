@@ -214,7 +214,7 @@ begin
     execute format('alter table public.automation_commands drop constraint %I', found.conname);
   end loop;
 end $$;
-alter table public.automation_commands add constraint automation_commands_kind_check check (kind in ('apply', 'search', 'cover_letter', 'resume', 'linkedin'));
+alter table public.automation_commands add constraint automation_commands_kind_check check (kind in ('apply', 'search', 'cover_letter', 'resume', 'linkedin', 'calendar_add'));
 
 -- The agent's switches, set on the Agent page. paused: the agent keeps running but takes no command and fetches nothing
 -- until resumed. auto_fetch: every fetch_hours it brings the newest postings and scores at most fetch_limit new jobs.
@@ -359,4 +359,37 @@ create policy "own documents" on public.automation_documents for all to authenti
 do $$
 begin
   begin alter publication supabase_realtime add table public.automation_documents; exception when duplicate_object then null; end;
+end $$;
+
+-- The calendar: upcoming interviews, calls with companies and deadlines, read from the person's Google Calendar by the
+-- agent on their computer and pushed here, so the Calendar page can list them. The page adds one with a 'calendar_add'
+-- command (payload: title, starts_at, ends_at, kind, company, url, notes); the agent puts it in Google Calendar and here.
+-- kind: what the event is for the job hunt. source: where it came from ('google' read there, 'web' added on the page).
+create table if not exists public.automation_calendar (
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  id text not null,
+  title text not null,
+  starts_at timestamptz not null,
+  ends_at timestamptz,
+  all_day boolean not null default false,
+  location text not null default '',
+  url text not null default '',
+  kind text not null default 'other' check (kind in ('interview', 'call', 'assessment', 'deadline', 'other')),
+  company text not null default '',
+  notes text not null default '',
+  source text not null default 'google' check (source in ('google', 'web', 'agent')),
+  synced_at timestamptz not null default now(),
+  primary key (user_id, id)
+);
+create index if not exists automation_calendar_user on public.automation_calendar (user_id, starts_at);
+
+alter table public.automation_calendar enable row level security;
+drop policy if exists "own calendar" on public.automation_calendar;
+create policy "own calendar" on public.automation_calendar for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+alter table public.automation_calendar replica identity full;
+do $$
+begin
+  begin alter publication supabase_realtime add table public.automation_calendar; exception when duplicate_object then null; end;
 end $$;
