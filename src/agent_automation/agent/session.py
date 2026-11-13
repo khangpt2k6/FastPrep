@@ -18,6 +18,7 @@ from openai import AsyncOpenAI
 
 from agent_automation.agent.apply import MAILBOXES, NOTE, SKIPPED_BY_HOOK, Outcome, apply_to_job, signed_in, site_of
 from agent_automation.agent.apply import sign_in as sign_in_browser
+from agent_automation.agent.companies import key_of
 from agent_automation.agent.cover_letter import (
     DEFAULT_TEMPLATE,
     Letter,
@@ -26,11 +27,13 @@ from agent_automation.agent.cover_letter import (
     fields_for,
     file_name,
     letter_key,
+    letterhead_for,
     load_templates,
     render_pdf,
     write_letter,
 )
 from agent_automation.agent.cover_letter import load_skills as load_cover_skills
+from agent_automation.agent.cover_letter.research import company_notes
 from agent_automation.agent.llm import SPEND, Mark, make_client, no_credit, not_answering, refused
 from agent_automation.agent.scoring import NOT_JUDGED, NotAnswering, fits, question, score
 from agent_automation.home import Home, home_for
@@ -327,22 +330,31 @@ class Session:
         (preferences.md's when None), or `text` as the person left it. None when a letter_written hook stops it."""
         templates = load_templates(self.home)
         template = template or templates.get(self.letter_template_name()) or templates[DEFAULT_TEMPLATE]
-        job, answers = item.job, self.store.answers()
+        answers = self.store.answers()
+        # The employer as people call it ("Cisco"), not as the job database files it ("cisco/wd5/cisco_careers").
+        known_as, domain = self.store.companies().get(key_of(item.job.company), ("", ""))
+        job = replace(item.job, company=known_as) if known_as else item.job
         cv = self.config.cv.read_text(encoding="utf-8-sig")
         if text.strip():
             letter = Letter(template.id, text.strip() + "\n", {})
         else:
+            # What the company says of itself on its own site, read once a month: the letter may speak of it.
+            notes = await asyncio.to_thread(company_notes, job, self.config.data_dir / "company-notes", domain)
             letter = await write_letter(
-                self.client, self.config.model, template, job, cv, answers, load_cover_skills(self.home), voice=candidate_voice(self.home))
+                self.client, self.config.model, template, job, cv, answers, load_cover_skills(self.home), voice=candidate_voice(self.home),
+                company_notes=notes)
             hooked = await run_hooks(self.home, "letter_written", {"job": job_event(item), "letter": letter.text, "template": template.id}, log)
             if hooked.blocked:
                 log(f"No cover letter for {job.company}: {hooked.reason}")
                 return None
             if isinstance(changed := hooked.changes.get("letter"), str) and changed.strip():
                 letter.text = changed.strip() + "\n"
-        name = fields_for(answers, job, cv)["full_name"]
+        fields = fields_for(answers, job, cv)
+        name = fields["full_name"]
         folder = self.config.data_dir / "cvs" / "cover-letters" / letter_key(job.id)
-        letter.pdf = render_pdf(letter.text, folder / file_name(name, job.company), f"Cover letter: {job.title} at {job.company}", name)
+        letter.pdf = render_pdf(
+            letter.text, folder / file_name(name, job.company), f"Cover letter: {job.title} at {job.company}", name,
+            letterhead_for(fields, answers, self.home))
         return letter
 
     async def apply(

@@ -4784,13 +4784,206 @@ button.thumb:hover {
   font-size: 13px;
 }
 
+/* The tile's main button covers the whole card; the preview buttons sit above it. */
+.cl-tile__pick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cl-tile__pick::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.cl-tile__pick:focus-visible {
+  outline: none;
+}
+
+.cl-tile__pick:focus-visible::after {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
 .cl-tile__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 8px;
+  margin-top: auto;
+  padding-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.cl-tile__meta {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: auto;
-  color: var(--muted);
+}
+
+.cl-tile__previews {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cl-tile__btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  color: var(--ink-2, var(--ink));
+  font: inherit;
   font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.cl-tile__btn .cl-short {
+  display: none;
+}
+
+.cl-tile__btn:hover {
+  border-color: var(--brand);
+  color: var(--brand-dark);
+}
+
+.cl-tile__btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+/* Preview dialog: the template, a sample letter and the latest real one. */
+.cl-preview {
+  width: min(820px, 100%);
+}
+
+.cl-preview__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  flex: none;
+}
+
+.cl-preview__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.cl-preview__mark input {
+  accent-color: var(--brand);
+}
+
+.cl-preview__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.cl-preview__note svg {
+  flex: none;
+}
+
+.cl-preview .letterview__body {
+  background: var(--frost, #f5f6f7);
+}
+
+/* A letter on its page, as the PDF sets it: letterhead centered over a rule, Times New Roman below. */
+.cl-sheet {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 44px 56px 56px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  color: #111;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 15.5px;
+  line-height: 1.45;
+  box-shadow: 0 1px 0 rgb(21 24 28 / 0.03), 0 18px 40px -28px rgb(21 24 28 / 0.45);
+}
+
+.cl-sheet__head {
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1.2px solid #111;
+  text-align: center;
+}
+
+.cl-sheet__name {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.cl-sheet__tag {
+  margin-top: 4px;
+  font-size: 13.5px;
+}
+
+.cl-sheet__contacts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.cl-sheet__contacts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cl-sheet__body p + p {
+  margin-top: 12px;
+}
+
+.cl-gen {
+  padding: 1px 0;
+  border-radius: 3px;
+  background: var(--brand-soft);
+  color: inherit;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition: background-color 200ms ease;
+}
+
+.cl-sheet.is-plain .cl-gen {
+  background: transparent;
 }
 
 .cl-tile--new {
@@ -7857,6 +8050,23 @@ body:has(.savebar) .toasts {
   .cl-paper {
     padding: 20px 18px;
     font-size: 14.5px;
+  }
+
+  .cl-sheet {
+    padding: 24px 18px 28px;
+    font-size: 14.5px;
+  }
+
+  .cl-sheet__name {
+    font-size: 24px;
+  }
+
+  .cl-tile__btn .cl-long {
+    display: none;
+  }
+
+  .cl-tile__btn .cl-short {
+    display: inline;
   }
 
   .cl-gallery {

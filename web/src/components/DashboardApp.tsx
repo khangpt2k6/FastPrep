@@ -624,7 +624,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       content = <MemoryPage memory={memoryT} now={now} job={jobFilter} onClearJob={() => navigate('memory')} toast={push} jobs={jobsT.rows} />;
       break;
     case 'letters':
-      content = <CoverLettersPage userId={userId} jobs={jobsT.rows} online={online} now={now} toast={push} />;
+      content = <CoverLettersPage userId={userId} jobs={jobsT.rows} online={online} now={now} toast={push} profile={profile} />;
       break;
     case 'companies':
       header = null;

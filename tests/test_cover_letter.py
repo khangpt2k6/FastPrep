@@ -168,7 +168,7 @@ def test_the_persons_own_templates_and_skills_win_over_bundled_ones_of_the_same_
 
 
 def test_the_skills_come_in_their_order_and_the_candidates_voice_reaches_the_model(tmp_path: Path) -> None:
-    assert [skill.name for skill in load_skills(PROJECT)][:2] == ["Only true facts", "Match the job with proof"]
+    assert [skill.name for skill in load_skills(PROJECT)][:2] == ["Only true facts", "Two stories, two numbers"]
     (tmp_path / "preferences.md").write_text("---\nstyle: warm\ntone: calm and direct\navoid: [salary]\n---\nI coach a robotics team.", encoding="utf-8")
     model = ScriptedModel(_reply(opening="a.", fit="b.", closing="c."))
     voice = candidate_voice(Home(bundled_home(), tmp_path))

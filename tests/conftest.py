@@ -37,6 +37,13 @@ def a_computer_the_browser_can_open_on(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def no_company_site_read_over_the_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test reads a company's site for a cover letter: every page comes back empty, unless a test hands in its own."""
+    from agent_automation.agent.cover_letter import research
+    monkeypatch.setattr(research, "_fetch", lambda url: "")
+
+
+@pytest.fixture(autouse=True)
 def no_key_check_over_the_network(monkeypatch: pytest.MonkeyPatch) -> None:
     """A key typed in is tried against the service: in a test the service cannot be reached, which never blocks a key."""
     from openai import APIConnectionError

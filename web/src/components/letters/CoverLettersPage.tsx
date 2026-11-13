@@ -1,18 +1,30 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { JobRow } from '../../lib/types';
+import type { Profile } from '../../lib/profile';
 import { errorText } from '../../lib/errors';
 import { displayName, timeAgo } from '../../lib/format';
 import {
   DEFAULT_TEMPLATE,
   FIELDS,
+  GEN_END,
+  GEN_START,
+  SAMPLE_JOB,
   STARTER_BODY,
   checkTemplate,
+  contactsOf,
+  fillSample,
+  isSubjectLine,
+  letterParagraphs,
   newTemplateId,
   pieces,
+  sampleFields,
+  senderFrom,
   slotNames,
+  type ContactKind,
   type CoverLetterRow,
   type CoverSettings,
   type CoverTemplate,
+  type Sender,
 } from '../../lib/coverLetter';
 import {
   deleteCoverTemplate,
@@ -31,7 +43,25 @@ import { EmptyState, PillGroup, SkeletonCards } from '../common';
 import { Dialog } from '../Dialog';
 import { Shimmer } from '../motion';
 import { Switch } from '../settings';
-import { IconAlert, IconCheck, IconCopy, IconDownload, IconLetter, IconLink, IconPencil, IconPlus, IconSpark, IconTrash, IconX } from '../Icons';
+import {
+  IconAlert,
+  IconCheck,
+  IconCopy,
+  IconDownload,
+  IconFile,
+  IconGithub,
+  IconLetter,
+  IconLink,
+  IconLinkedin,
+  IconMail,
+  IconMapPin,
+  IconPencil,
+  IconPhone,
+  IconPlus,
+  IconSpark,
+  IconTrash,
+  IconX,
+} from '../Icons';
 import { SetupCard } from '../SetupCard';
 import type { ToastTone } from '../Toasts';
 
@@ -70,6 +100,8 @@ interface LettersViewProps {
   online: boolean;
   now: number;
   toast: Toast;
+  /** Fills the letterhead and fields of the sample letter; without it the sample uses a made-up person. */
+  profile?: Profile | null;
 }
 
 /** The template as the page it becomes: fixed text in a serif, fields as chips, slots as the notes the agent writes from. */
@@ -101,6 +133,175 @@ function Paper({ body }: { body: string }) {
         );
       })}
     </div>
+  );
+}
+
+const CONTACT_ICONS: Record<ContactKind, (props: { size?: number }) => ReactNode> = {
+  location: IconMapPin,
+  phone: IconPhone,
+  email: IconMail,
+  linkedin: IconLinkedin,
+  github: IconGithub,
+};
+
+/** A letter's text as lines, with the generated parts (between GEN_START and GEN_END) marked. */
+function letterBody(paragraphs: string[]): ReactNode[] {
+  let generated = false;
+  return paragraphs.map((paragraph, pi) => (
+    <p key={pi}>
+      {paragraph.split('\n').map((line, li) => {
+        const parts: ReactNode[] = [];
+        line.split(/([\u0002\u0003])/).forEach((part, k) => {
+          if (part === GEN_START) generated = true;
+          else if (part === GEN_END) generated = false;
+          else if (part) parts.push(generated ? <mark key={k} className="cl-gen">{part}</mark> : <Fragment key={k}>{part}</Fragment>);
+        });
+        const subject = isSubjectLine(line.split(GEN_START).join('').split(GEN_END).join(''));
+        return (
+          <Fragment key={li}>
+            {li ? <br /> : null}
+            {subject ? <strong>{parts}</strong> : parts}
+          </Fragment>
+        );
+      })}
+    </p>
+  ));
+}
+
+/** A letter on its page as the PDF draws it: the letterhead from the profile, then the letter in Times New Roman. */
+function Sheet({ text, sender, marked }: { text: string; sender: Sender; marked: boolean }) {
+  const contacts = contactsOf(sender);
+  return (
+    <article className={`cl-sheet ${marked ? '' : 'is-plain'}`} aria-label="Letter preview">
+      <header className="cl-sheet__head">
+        {sender.full_name ? <p className="cl-sheet__name">{sender.full_name}</p> : null}
+        {sender.tagline ? <p className="cl-sheet__tag">{sender.tagline}</p> : null}
+        {contacts.length ? (
+          <ul className="cl-sheet__contacts">
+            {contacts.map((c) => {
+              const Icon = CONTACT_ICONS[c.kind];
+              return (
+                <li key={c.kind}>
+                  <Icon size={12} /> {c.text}
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+      </header>
+      <div className="cl-sheet__body">{letterBody(letterParagraphs(text, sender.full_name))}</div>
+    </article>
+  );
+}
+
+type PreviewTab = 'template' | 'sample' | 'latest';
+type PreviewOpen = { id: string; tab: PreviewTab };
+
+interface PreviewProps {
+  template: CoverTemplate;
+  tab: PreviewTab;
+  sender: Sender;
+  /** The newest real letter from this template, when there is one. */
+  latest: { letter: CoverLetterRow; job: JobRow | undefined } | null;
+  now: number;
+  inUse: boolean;
+  onTab: (tab: PreviewTab) => void;
+  onUse: () => void;
+  onOpenLetter: (jobId: string) => void;
+  onClose: () => void;
+}
+
+function PreviewView({ template, tab, sender, latest, now, inUse, onTab, onUse, onOpenLetter, onClose }: PreviewProps) {
+  const [marked, setMarked] = useState(true);
+  const sample = useMemo(() => fillSample(template.id, template.body, sampleFields(sender)), [template.id, template.body, sender]);
+  const shown: PreviewTab = tab === 'latest' && !latest ? 'sample' : tab;
+  const latestName = latest ? (latest.job ? displayName(latest.job) : latest.letter.job_id) : '';
+  return (
+    <>
+      <header className="letterview__head">
+        <span className="cl-preview__icon" aria-hidden="true">
+          <IconLetter size={18} />
+        </span>
+        <div className="letterview__who">
+          <h2 id="template-preview-title">{template.name}</h2>
+          <span>{template.description || 'Custom template'}</span>
+        </div>
+        <button type="button" className="icon-btn" onClick={onClose} aria-label="Close preview" title="Close" data-autofocus>
+          <IconX size={18} />
+        </button>
+      </header>
+      <div className="letterview__tabs">
+        <PillGroup<PreviewTab>
+          label="Preview"
+          value={shown}
+          onChange={onTab}
+          options={[
+            { value: 'template', label: 'Template' },
+            { value: 'sample', label: 'Sample letter' },
+            ...(latest ? [{ value: 'latest' as const, label: 'Latest letter', title: latestName }] : []),
+          ]}
+        />
+        {shown === 'sample' ? (
+          <label className="cl-preview__mark">
+            <input type="checkbox" checked={marked} onChange={(e) => setMarked(e.target.checked)} /> Mark generated parts
+          </label>
+        ) : null}
+      </div>
+      <div className="letterview__body">
+        {shown === 'template' ? (
+          <>
+            <p className="cl-legend">
+              <span className="cl-field">Field</span> Profile or job
+              <span className="cl-slot cl-slot--inline">
+                <IconSpark size={12} /> Generated
+              </span>
+              Written per job
+            </p>
+            <Paper body={template.body} />
+          </>
+        ) : shown === 'sample' ? (
+          <>
+            <p className="cl-preview__note">
+              <IconSpark size={13} /> Sample for {SAMPLE_JOB.job_title} at {SAMPLE_JOB.company}. The agent writes the marked parts from your CV and each posting.
+            </p>
+            <Sheet text={sample} sender={sender} marked={marked} />
+          </>
+        ) : latest ? (
+          <>
+            <p className="cl-preview__note">
+              {latestName}
+              {latest.job ? ` · ${latest.job.title}` : ''} · {timeAgo(latest.letter.updated_at, now)}
+            </p>
+            <Sheet text={latest.letter.body} sender={sender} marked={false} />
+          </>
+        ) : null}
+      </div>
+      <footer className="letterview__foot">
+        <span className="savestate" title="Generated parts">
+          <IconSpark size={13} /> {slotNames(template.body).length} generated
+        </span>
+        {shown === 'latest' && latest ? (
+          <button type="button" className="btn btn--secondary btn--sm" onClick={() => onOpenLetter(latest.letter.job_id)}>
+            <IconPencil size={14} /> Open letter
+          </button>
+        ) : null}
+        <button type="button" className="btn btn--primary btn--sm" disabled={inUse} onClick={onUse}>
+          <IconCheck size={14} /> {inUse ? 'In use' : 'Use template'}
+        </button>
+      </footer>
+    </>
+  );
+}
+
+/** The template, a sample letter made from it, and its newest real letter, over the page. */
+function PreviewDialog({ view, onClose }: { view: Omit<PreviewProps, 'onClose'> | null; onClose: () => void }) {
+  const last = useRef(view);
+  if (view) last.current = view;
+  const shown = last.current;
+  return (
+    <Dialog open={view !== null} onClose={onClose} labelledBy="template-preview-title" className="letterview cl-preview">
+      {shown ? <PreviewView key={shown.template.id} {...shown} onClose={onClose} /> : null}
+    </Dialog>
   );
 }
 
@@ -433,7 +634,7 @@ function LetterDialog({ view, onClose }: { view: LetterViewProps | null; onClose
 }
 
 /** The page's content: the templates on the left, the letters in the rail. */
-export function LettersView({ data, actions, jobs, online, now, toast }: LettersViewProps) {
+export function LettersView({ data, actions, jobs, online, now, toast, profile }: LettersViewProps) {
   const { templates: templatesT, settings: settingsT, letters: lettersT } = data;
   const templates = useMemo(() => [...templatesT.rows].sort((a, b) => Number(b.builtin) - Number(a.builtin) || a.name.localeCompare(b.name)), [templatesT.rows]);
   const letters = useMemo(() => [...lettersT.rows].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)), [lettersT.rows]);
@@ -449,6 +650,11 @@ export function LettersView({ data, actions, jobs, online, now, toast }: Letters
   const opened = openLetter ? letters.find((l) => l.job_id === openLetter) ?? null : null;
   const names = useMemo(() => new Map(templates.map((t) => [t.id, t.name])), [templates]);
   const jobsById = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
+  const [preview, setPreview] = useState<PreviewOpen | null>(null);
+  const sender = useMemo(() => senderFrom(profile?.personal, profile?.education), [profile]);
+  const previewed = preview ? templates.find((t) => t.id === preview.id) ?? null : null;
+  // letters is newest first, so the first one from the template is its latest.
+  const previewLatest = previewed ? letters.find((l) => l.template_id === previewed.id && l.body.trim()) ?? null : null;
 
   const reloadAll = () => {
     templatesT.reload();
@@ -518,26 +724,36 @@ export function LettersView({ data, actions, jobs, online, now, toast }: Letters
             {templates.map((t) => {
               const on = t.id === focused?.id && !draft;
               return (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="listitem"
-                  className={`card cl-tile press ${on ? 'is-focus' : ''} ${t.id === inUse ? 'is-used' : ''}`}
-                  aria-pressed={on}
-                  onClick={() => {
-                    setDraft(null);
-                    setFocusId(t.id);
-                  }}
-                >
-                  <span className="cl-tile__top">
-                    <span className="cl-tile__name">{t.name}</span>
-                    {t.id === inUse ? <span className="tag tag--ember">{enabled ? 'In use' : 'Selected'}</span> : null}
+                <div key={t.id} role="listitem" className={`card cl-tile ${on ? 'is-focus' : ''} ${t.id === inUse ? 'is-used' : ''}`}>
+                  <button
+                    type="button"
+                    className="cl-tile__pick"
+                    aria-pressed={on}
+                    onClick={() => {
+                      setDraft(null);
+                      setFocusId(t.id);
+                    }}
+                  >
+                    <span className="cl-tile__top">
+                      <span className="cl-tile__name">{t.name}</span>
+                      {t.id === inUse ? <span className="tag tag--ember">{enabled ? 'In use' : 'Selected'}</span> : null}
+                    </span>
+                    <span className="cl-tile__desc">{t.description || 'Custom template'}</span>
+                  </button>
+                  <span className="cl-tile__foot">
+                    <span className="cl-tile__meta" title="Generated parts">
+                      {t.builtin ? 'Built in' : 'Custom'} · <IconSpark size={11} /> {slotNames(t.body).length}
+                    </span>
+                    <span className="cl-tile__previews">
+                      <button type="button" className="cl-tile__btn press" onClick={() => setPreview({ id: t.id, tab: 'template' })} aria-label={`Preview template ${t.name}`}>
+                        <IconFile size={13} /> <span className="cl-long">Preview template</span><span className="cl-short">Template</span>
+                      </button>
+                      <button type="button" className="cl-tile__btn press" onClick={() => setPreview({ id: t.id, tab: 'sample' })} aria-label={`Preview a cover letter from ${t.name}`}>
+                        <IconLetter size={13} /> <span className="cl-long">Preview letter</span><span className="cl-short">Letter</span>
+                      </button>
+                    </span>
                   </span>
-                  <span className="cl-tile__desc">{t.description || 'Custom template'}</span>
-                  <span className="cl-tile__foot" title="Generated parts">
-                    {t.builtin ? 'Built in' : 'Custom'} · <IconSpark size={11} /> {slotNames(t.body).length}
-                  </span>
-                </button>
+                </div>
               );
             })}
             <button
@@ -643,6 +859,28 @@ export function LettersView({ data, actions, jobs, online, now, toast }: Letters
         }
         onClose={() => setOpenLetter(null)}
       />
+
+      <PreviewDialog
+        view={
+          previewed && preview
+            ? {
+                template: previewed,
+                tab: preview.tab,
+                sender,
+                latest: previewLatest ? { letter: previewLatest, job: jobsById.get(previewLatest.job_id) } : null,
+                now,
+                inUse: previewed.id === inUse && enabled,
+                onTab: (tab) => setPreview({ id: previewed.id, tab }),
+                onUse: () => void choose(previewed.id, true),
+                onOpenLetter: (jobId) => {
+                  setPreview(null);
+                  setOpenLetter(jobId);
+                },
+              }
+            : null
+        }
+        onClose={() => setPreview(null)}
+      />
     </div>
   );
 }
@@ -653,14 +891,15 @@ interface CoverLettersPageProps {
   online: boolean;
   now: number;
   toast: Toast;
+  profile?: Profile | null;
 }
 
 /** The page wired to Supabase. */
-export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLettersPageProps) {
+export function CoverLettersPage({ userId, jobs, online, now, toast, profile }: CoverLettersPageProps) {
   const templates = useCoverTemplates(userId);
   const settings = useCoverSettings(userId);
   const letters = useCoverLetters(userId);
-  return <LettersView data={{ templates, settings, letters }} actions={LIVE_ACTIONS} jobs={jobs} online={online} now={now} toast={toast} />;
+  return <LettersView data={{ templates, settings, letters }} actions={LIVE_ACTIONS} jobs={jobs} online={online} now={now} toast={toast} profile={profile} />;
 }
 
 export default CoverLettersPage;
