@@ -1,17 +1,17 @@
-import type { ComponentType, ReactNode, SVGProps } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import type { AgentRow, CommandRow, JobRow, LiveStatus, LoadError } from '../../lib/types';
+import type { AgentRow, AgentSettings, CommandRow, JobRow, LiveStatus, LoadError } from '../../lib/types';
 import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
-import { AnimatedNumber, Swap } from '../motion';
-import { clock, plural, stateLabel, timeAgo, type TagColor } from '../../lib/format';
+import { AnimatedNumber, Orb, Shimmer, Swap, WaitingLines, orbState } from '../motion';
+import { clock, plural, stateLabel, timeAgo, untilText, waitingLines, type TagColor } from '../../lib/format';
 import { Callout, Tag } from '../common';
-import { IconActivity, IconAlert, IconBriefcase, IconClock, IconFile, IconHash, IconRadar, IconSearch, IconSend, IconSpark, IconTerminal } from '../Icons';
-import { StatusDot } from '../shell/StatusControls';
-import { CurrentJob, StartHint, agentTone, logItem, type LogEntry } from './live';
+import { Dialog } from '../Dialog';
+import { Group, GroupNote, NavRow, PillSelect, SettingRow, ToggleRow, type PillOption } from '../settings';
+import { IconAlert, IconCheckCircle, IconClock, IconDownload, IconFile, IconFilter, IconInfo, IconSpark, IconX } from '../Icons';
+import { AgentWolf } from '../mascot/Wolf';
+import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
 
-type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
-
-const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters' };
+const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters', resume: 'Resume' };
 
 const COMMAND_STATUS: Record<CommandRow['status'], { label: string; color: TagColor }> = {
   pending: { label: 'Waiting', color: 'gray' },
@@ -21,6 +21,27 @@ const COMMAND_STATUS: Record<CommandRow['status'], { label: string; color: TagCo
 };
 
 const LIVE_WORD: Record<LiveStatus, string> = { live: 'Connected', down: 'Reconnecting', connecting: 'Connecting' };
+
+const HOURS = [1, 3, 6, 12, 24];
+const LIMITS = [20, 40, 80];
+
+/** The options, plus the stored value when it is one the page does not offer (set by hand in the database). */
+function withCurrent(values: number[], current: number): number[] {
+  return values.includes(current) ? values : [...values, current].sort((a, b) => a - b);
+}
+
+const hourOptions = (current: number): PillOption<number>[] =>
+  withCurrent(HOURS, current).map((h) => ({ value: h, label: h === 1 ? 'Every hour' : `Every ${h} hours` }));
+
+const limitOptions = (current: number): PillOption<number>[] =>
+  withCurrent(LIMITS, current).map((n) => ({ value: n, label: `${n} jobs`, hint: n <= 20 ? 'Least credit' : n >= 80 ? 'Most choice' : undefined }));
+
+export interface SettingsState {
+  loading: boolean;
+  /** The table is not in the database yet: the controls are shown off. */
+  missing: boolean;
+  error: string | null;
+}
 
 interface AgentPageProps {
   agent: AgentRow | null;
@@ -35,27 +56,116 @@ interface AgentPageProps {
   sent: number;
   /** The job being filled right now, if any. */
   current: JobRow | null;
+  settings: AgentSettings;
+  settingsState: SettingsState;
+  onSettings: (patch: Partial<AgentSettings>) => void;
 }
 
-/** One property row, like a Notion page property: an icon and a name, then the value. */
-function Prop({ icon: Icon, label, children }: { icon: Icon; label: string; children: ReactNode }) {
+/** "Last check 47m ago, 12 new. Next in 2h 13m." */
+export function checkLine(agent: AgentRow | null, settings: AgentSettings, online: boolean, now: number): string {
+  const parts: string[] = [];
+  if (agent?.fetched_at) {
+    const ago = timeAgo(agent.fetched_at, now);
+    parts.push(`Last check ${ago}, ${agent.fetched_new ?? 0} new.`);
+  } else {
+    parts.push('No check yet.');
+  }
+  if (!settings.auto_fetch) parts.push('Automatic checks are off.');
+  else if (settings.paused) parts.push('Next check when the agent is on.');
+  else if (!online) parts.push('Next check when the agent is online.');
+  else {
+    const until = untilText(agent?.next_fetch_at, now);
+    parts.push(until ? `Next in ${until}.` : 'Next check soon.');
+  }
+  return parts.join(' ');
+}
+
+function heroWord(state: string): string {
+  return state === 'idle' || state === 'ready' ? 'Ready' : stateLabel(state);
+}
+
+function HowItWorks({ open, onClose, limit }: { open: boolean; onClose: () => void; limit: number }) {
+  const steps: { icon: ReactNode; title: string; text: string }[] = [
+    {
+      icon: <IconDownload size={18} />,
+      title: 'Fresh postings',
+      text: 'Every few hours the agent downloads the newest postings from a public job database built from company career sites: Greenhouse, Lever, Ashby, Workday and more.',
+    },
+    { icon: <IconFilter size={18} />, title: 'Your search', text: 'It keeps the internships that match your search.' },
+    {
+      icon: <IconSpark size={18} />,
+      title: 'Scored for you',
+      text: `It scores up to ${limit} of them against your resume. Scoring uses a little AI credit. An idle agent uses none.`,
+    },
+    { icon: <IconCheckCircle size={18} />, title: 'You decide', text: 'Nothing is sent without you.' },
+  ];
   return (
-    <div className="prop">
-      <dt className="prop__name">
-        <Icon size={15} />
-        {label}
-      </dt>
-      <dd className="prop__value">{children}</dd>
+    <Dialog open={open} onClose={onClose} labelledBy="how-title" className="smalldialog howdialog">
+      <header className="smalldialog__head">
+        <h2 id="how-title">How finding jobs works</h2>
+        <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+          <IconX size={18} />
+        </button>
+      </header>
+      <ol className="howsteps">
+        {steps.map((s, i) => (
+          <motion.li
+            key={s.title}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0, transition: { delay: 0.08 + i * 0.07, duration: 0.3 } }}
+          >
+            <span className="howsteps__icon" aria-hidden="true">
+              {s.icon}
+            </span>
+            <span className="howsteps__text">
+              <strong>{s.title}</strong>
+              <span>{s.text}</span>
+            </span>
+          </motion.li>
+        ))}
+      </ol>
+      <div className="smalldialog__actions">
+        <button type="button" className="btn btn--primary" onClick={onClose} data-autofocus>
+          Got it
+        </button>
+      </div>
+    </Dialog>
+  );
+}
+
+function Stat({ label, value, id, hint }: { label: string; value: number; id: string; hint?: string }) {
+  return (
+    <div className="stat" title={hint}>
+      <span className="stat__label">{label}</span>
+      <AnimatedNumber className="stat__value num" id={id} value={value} />
     </div>
   );
 }
 
-export function AgentPage({ agent, online, loading, error, onRetry, now, tail, commands, live, sent, current }: AgentPageProps) {
+export function AgentPage(props: AgentPageProps) {
+  const { agent, online, loading, error, onRetry, now, tail, commands, live, sent, current, settings, settingsState, onSettings } = props;
+  const [how, setHow] = useState(false);
   const state = online ? agent?.state ?? 'idle' : 'offline';
-  const tone = agentTone(online, state);
-  const word = loading ? 'Connecting' : stateLabel(state);
+  const tone = loading ? 'off' : agentTone(online, state);
+  const busy = tone === 'busy';
+  const word = loading ? 'Connecting' : heroWord(state);
+  const message = online ? agent?.message ?? '' : '';
   const lines = [...tail].reverse();
   const recent = [...commands].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).slice(0, 10);
+  const off = settingsState.missing || settingsState.loading;
+  const seen = agent?.last_seen ? timeAgo(agent.last_seen, now) : '';
+
+  let say: ReactNode;
+  if (loading) say = <Shimmer tone="inverse">Connecting to the agent</Shimmer>;
+  else if (!online)
+    say = (
+      <>
+        Double-click <strong className="nowrap">{START_SHORTCUT}</strong> on your desktop to start it.
+      </>
+    );
+  else if (tone === 'paused') say = 'Paused. It finishes what it is doing and waits.';
+  else if (message) say = <Shimmer tone="inverse" active={busy}>{message}</Shimmer>;
+  else say = busy ? <Shimmer tone="inverse">Working</Shimmer> : 'Waiting for jobs from this page.';
 
   return (
     <div className="page page--agent">
@@ -72,85 +182,180 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
           {error.message}
         </Callout>
       ) : null}
-      {!online && !loading ? (
-        <Callout tone="gray" icon={<IconTerminal size={16} />}>
-          <span className="callout__line">
-            Start the agent: <StartHint />
-          </span>
-        </Callout>
+
+      <section className={`hero hero--${tone}`} aria-labelledby="hero-state">
+        <svg className="hero__art" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="hero-aurora" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="#22d3ee" />
+              <stop offset="0.5" stopColor="#7c5cff" />
+              <stop offset="1" stopColor="#a855f7" />
+            </linearGradient>
+            <filter id="hero-veil" x="-20%" y="-60%" width="140%" height="220%">
+              <feGaussianBlur stdDeviation="18" />
+            </filter>
+          </defs>
+          <g filter="url(#hero-veil)" opacity="0.3">
+            <path d="M260 70 C380 20 500 120 640 50 S820 60 860 40" fill="none" stroke="url(#hero-aurora)" strokeWidth="34" strokeLinecap="round" className="anim-drift" style={{ ['--drift-dur' as string]: '18s', transformBox: 'fill-box', transformOrigin: 'center' }} />
+            <path d="M220 210 C360 170 470 230 600 190 S780 200 840 180" fill="none" stroke="url(#hero-aurora)" strokeWidth="20" strokeLinecap="round" opacity="0.6" className="anim-drift" style={{ ['--drift-dur' as string]: '22s', ['--drift-delay' as string]: '-6s', transformBox: 'fill-box', transformOrigin: 'center' }} />
+          </g>
+          <g fill="#f4f4f8" opacity="0.7">
+            <circle cx="420" cy="30" r="1.2" />
+            <circle cx="520" cy="60" r="0.9" />
+            <circle cx="610" cy="24" r="1.1" />
+            <circle cx="700" cy="70" r="0.8" />
+            <circle cx="760" cy="30" r="1.2" className="anim-twinkle" />
+            <circle cx="470" cy="226" r="0.9" />
+            <circle cx="660" cy="232" r="1" className="anim-twinkle" />
+          </g>
+        </svg>
+        <div className="hero__orb">
+          <Orb state={loading ? 'off' : orbState(tone)} size={188} className="hero__aura" />
+          <AgentWolf tone={loading ? 'off' : tone} state={state} size={136} eager className="hero__wolf" />
+        </div>
+        <div className="hero__body">
+          <p className="hero__eyebrow">
+            <span className={`sdot sdot--${loading ? 'off' : tone}`} aria-hidden="true" />
+            Agent
+          </p>
+          <h2 className="hero__state" id="hero-state">
+            <Swap id={word}>{word}</Swap>
+          </h2>
+          <p className={`hero__say ${tone === 'bad' ? 'is-bad' : ''}`} aria-live="polite">
+            {say}
+          </p>
+          {busy ? <WaitingLines className="hero__wait" lines={waitingLines(state, message)} every={3200} tone="inverse" /> : null}
+          {online && current ? (
+            <div className="hero__now">
+              <CurrentJob job={current} />
+            </div>
+          ) : null}
+          <ul className="hero__meta">
+            <li title="Last heartbeat">
+              <IconClock size={14} />
+              {seen ? `Seen ${seen}` : 'Never seen'}
+            </li>
+            {agent?.model ? (
+              <li title="Model">
+                <IconSpark size={14} />
+                {agent.model}
+              </li>
+            ) : null}
+            <li title="Resume">
+              <IconFile size={14} />
+              {agent?.resume_name || 'No resume loaded'}
+            </li>
+            <li className={`live-${live}`} title="Live updates">
+              <span className={`livedot livedot--${live}`} aria-hidden="true" />
+              <Swap id={live}>{LIVE_WORD[live]}</Swap>
+            </li>
+          </ul>
+          {!online && !loading ? (
+            <p className="hero__alt">
+              Or run <StartHint />
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <Group title="Controls">
+        <ToggleRow
+          title="Agent on"
+          checked={!settings.paused}
+          onChange={(on) => onSettings({ paused: !on })}
+          disabled={off}
+          description={
+            !online && !loading ? (
+              <>
+                Offline now. Double-click <strong className="nowrap">{START_SHORTCUT}</strong> on your desktop to start it.
+              </>
+            ) : (
+              'Takes jobs from this page. Paused, it finishes what it is doing and waits.'
+            )
+          }
+        />
+        <ToggleRow
+          title="Find new jobs automatically"
+          description="Brings the newest postings on a schedule and scores the ones that fit."
+          checked={settings.auto_fetch}
+          onChange={(v) => onSettings({ auto_fetch: v })}
+          disabled={off}
+        />
+        <SettingRow title="Check every" description="How often it looks for new postings." className={!settings.auto_fetch ? 'is-dim' : ''}>
+          <PillSelect<number>
+            label="Check every"
+            value={settings.fetch_hours}
+            options={hourOptions(settings.fetch_hours)}
+            display={(o) => (o.value === 1 ? '1 hour' : `${o.value} hours`)}
+            onChange={(v) => onSettings({ fetch_hours: v })}
+            disabled={off || !settings.auto_fetch}
+          />
+        </SettingRow>
+        <SettingRow
+          title="New jobs scored per round"
+          description="Each scored job uses a little AI credit."
+          className={`srow--last ${!settings.auto_fetch ? 'is-dim' : ''}`}
+        >
+          <PillSelect<number>
+            label="New jobs scored per round"
+            value={settings.fetch_limit}
+            options={limitOptions(settings.fetch_limit)}
+            display={(o) => String(o.value)}
+            onChange={(v) => onSettings({ fetch_limit: v })}
+            disabled={off || !settings.auto_fetch}
+          />
+        </SettingRow>
+        <p className="srow__note num">
+          <IconClock size={14} />
+          {checkLine(agent, settings, online, now)}
+        </p>
+        <NavRow title="How finding jobs works" description="Where jobs come from and what it costs." icon={<IconInfo size={18} />} onClick={() => setHow(true)} />
+      </Group>
+      {settingsState.missing ? (
+        <GroupNote tone="warn">
+          Needs the latest <code className="code">supabase/schema.sql</code>
+        </GroupNote>
+      ) : settingsState.error ? (
+        <GroupNote tone="warn">{settingsState.error}</GroupNote>
       ) : null}
 
-      <dl className="props">
-        <Prop icon={IconActivity} label="State">
-          <span className="propstate">
-            <StatusDot tone={loading ? 'off' : tone} />
-            <Swap id={word}>{word}</Swap>
-          </span>
-        </Prop>
-        <Prop icon={IconClock} label="Last seen">
-          {agent?.last_seen ? timeAgo(agent.last_seen, now) : <span className="muted">Never</span>}
-        </Prop>
-        {online && current ? (
-          <Prop icon={IconBriefcase} label="Current job">
-            <CurrentJob job={current} />
-          </Prop>
-        ) : null}
-        <Prop icon={IconFile} label="Resume">
-          {agent?.resume_name || <span className="muted">Not loaded</span>}
-        </Prop>
-        <Prop icon={IconSpark} label="Model">
-          {agent?.model || <span className="muted">Unknown</span>}
-        </Prop>
-        <Prop icon={IconSearch} label="Found">
-          <AnimatedNumber className="num" id="agent-found" value={agent?.jobs_found ?? 0} />
-        </Prop>
-        <Prop icon={IconHash} label="Scored">
-          <AnimatedNumber className="num" id="agent-scored" value={agent?.jobs_scored ?? 0} />
-        </Prop>
-        <Prop icon={IconSend} label="Sent">
-          <AnimatedNumber className="num" id="apps-sent" value={sent} />
-        </Prop>
-        <Prop icon={IconRadar} label="Realtime">
-          <span className={`live-${live}`}>
-            <Swap id={live}>{LIVE_WORD[live]}</Swap>
-          </span>
-        </Prop>
-      </dl>
+      <Group title="Activity" bare>
+        <div className="card stats">
+          <Stat label="Found" value={agent?.jobs_found ?? 0} id="agent-found" hint="Postings the agent has seen" />
+          <Stat label="Scored" value={agent?.jobs_scored ?? 0} id="agent-scored" hint="Jobs scored against your resume" />
+          <Stat label="Sent" value={sent} id="apps-sent" hint="Applications sent to employers" />
+          <Stat label="New last check" value={agent?.fetched_new ?? 0} id="agent-new" hint="New jobs the last check found" />
+        </div>
+      </Group>
 
-      <section className="section" aria-labelledby="log-title">
-        <h2 id="log-title" className="section__label">
-          Log
-        </h2>
+      <Group title="Log">
         {lines.length === 0 ? (
           <p className="empty-line">No log lines yet.</p>
         ) : (
-          <ol className={`logtail code ${online ? '' : 'is-past'}`} aria-live="polite">
+          <ol className={`logtail ${online ? '' : 'is-past'}`} aria-live="polite">
             <AnimatePresence initial={false}>
               {lines.map((e, i) => (
                 <motion.li key={`${e.at}-${e.message}`} className={i === 0 && online ? 'is-current' : ''} layout="position" {...logItem}>
-                  <time>{clock(e.at)}</time>
-                  <span className="logtail__state">{e.state}</span>
-                  <span className="logtail__msg">{e.message}</span>
+                  <time className="num">{clock(e.at)}</time>
+                  <span className="logtail__state">{stateLabel(e.state)}</span>
+                  <span className="logtail__msg">{i === 0 && online && busy ? <Shimmer tone="strong">{e.message}</Shimmer> : e.message}</span>
                 </motion.li>
               ))}
             </AnimatePresence>
           </ol>
         )}
-      </section>
+      </Group>
 
-      <section className="section" aria-labelledby="cmds-title">
-        <h2 id="cmds-title" className="section__label">
-          Commands
-        </h2>
+      <Group title="History">
         {recent.length === 0 ? (
           <p className="empty-line">No commands yet.</p>
         ) : (
-          <div className="dblist">
-            <div className="dblist__head cmd__grid" aria-hidden="true">
-              <span className="dblist__col">Type</span>
-              <span className="dblist__col">Detail</span>
-              <span className="dblist__col">Status</span>
-              <span className="dblist__col dblist__col--end">Created</span>
+          <div className="listcard">
+            <div className="listhead cmd__grid" aria-hidden="true">
+              <span className="listhead__col">Type</span>
+              <span className="listhead__col">Detail</span>
+              <span className="listhead__col">Status</span>
+              <span className="listhead__col listhead__col--end">Created</span>
             </div>
             <ul className="dblist__rows">
               <AnimatePresence initial={false}>
@@ -162,7 +367,7 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
                       key={c.id}
                       layout={i < LAYOUT_CAP ? 'position' : false}
                       variants={riseItem}
-                      custom={0}
+                      custom={i}
                       initial="hidden"
                       animate="shown"
                       exit="gone"
@@ -171,7 +376,13 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
                       <div className="cmd__grid">
                         <span className="cmd__kind">{COMMAND_KIND[c.kind] ?? c.kind}</span>
                         <span className="cmd__what">
-                          {c.kind === 'apply' ? plural(c.job_ids.length, 'job') : c.kind === 'cover_letter' ? plural(c.job_ids.length, 'letter') : 'More jobs'}
+                          {c.kind === 'apply'
+                            ? plural(c.job_ids.length, 'job')
+                            : c.kind === 'cover_letter'
+                              ? plural(c.job_ids.length, 'letter')
+                              : c.kind === 'resume'
+                                ? 'Read resume'
+                                : 'More jobs'}
                           {c.kind === 'apply' ? c.dry_run ? <Tag color="blue">Dry run</Tag> : <Tag color="red">Live</Tag> : null}
                         </span>
                         <span>
@@ -190,7 +401,9 @@ export function AgentPage({ agent, online, loading, error, onRetry, now, tail, c
             </ul>
           </div>
         )}
-      </section>
+      </Group>
+
+      <HowItWorks open={how} onClose={() => setHow(false)} limit={settings.fetch_limit} />
     </div>
   );
 }

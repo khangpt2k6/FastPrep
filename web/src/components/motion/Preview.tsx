@@ -1,50 +1,81 @@
 // Dev-only preview at #/__preview: the real pages with mock data, plus buttons that fake live events.
 // App.tsx only loads this behind import.meta.env.DEV, so it never ships in a production build.
-import { useEffect, useMemo, useState } from 'react';
-import type { AgentRow, CommandRow, JobRow, MemoryRow } from '../../lib/types';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { AgentRow, AgentSettings, CommandRow, JobRow, MemoryRow, PreferencesRow, ProfileRow, ResumeRow } from '../../lib/types';
+import type { CoverLetterRow, CoverSettings, CoverTemplate } from '../../lib/coverLetter';
+import { STARTER_BODY } from '../../lib/coverLetter';
+import type { InboxRow } from '../../lib/inbox';
 import type { NotifyPrefs } from '../../hooks/useNotifyPrefs';
 import type { LiveTable } from '../../hooks/useLiveTable';
 import type { Page } from '../../hooks/useRoute';
+import { useSavedJobs } from '../../hooks/useSavedJobs';
+import { useNow } from '../../hooks/useNow';
+import { useResumeActivated } from '../../hooks/useResumes';
+import { APPLICATION_STATUSES, WORKING_STATES, isOnline } from '../../lib/format';
+import { companyCounts, filterJobs, kindCounts, onTrack, sortJobs, type Track } from '../../lib/jobs';
+import { mergeProfile, profileProgress } from '../../lib/profile';
+import { activeResume } from '../../lib/resume';
+import { confetti } from '../../lib/confetti';
 import { AgentPage } from '../agent/AgentPage';
 import { useLogTail } from '../agent/live';
 import { ApplicationsPage } from '../applications/ApplicationsPage';
-import { Callout } from '../common';
+import { Callout, SkeletonPanel } from '../common';
 import { ConfirmSubmit } from '../ConfirmSubmit';
-import { IconRadar, IconUser } from '../Icons';
+import { IconUser } from '../Icons';
+import { InboxView } from '../inbox/InboxPage';
 import { ActionBar } from '../jobs/ActionBar';
-import { JobsPage, type MinScore } from '../jobs/JobsPage';
+import { BannerRow } from '../jobs/BannerRow';
+import { JobsPage, type JobFilterState } from '../jobs/JobsPage';
+import { CalendarCard, ProgressCard, applicationParts, useApplyDays } from '../jobs/Rail';
+import { LettersView, type LettersActions } from '../letters/CoverLettersPage';
 import { Lightbox } from '../Lightbox';
 import { MemoryPage } from '../memory/MemoryPage';
-import { LiveCallout, OfflineCallout } from '../shell/Notices';
+import { PreferencesView } from '../PreferencesPage';
+import { RulesView, type RulesActions } from '../rules/RulesPage';
+import type { RuleRow } from '../../lib/rules';
+import { ProfilePage } from '../profile/ProfilePage';
+import { SetupPage, type SetupStart } from '../setup/SetupPage';
+import { AccountMenu, Navbar } from '../shell/Navbar';
 import { NotifyMenu } from '../shell/NotifyMenu';
-import { MobileBar, PageHeader } from '../shell/PageHeader';
-import { PAGE_ICON, PAGE_TITLE, Sidebar } from '../shell/Sidebar';
-import { AgentStatus, DryRunSwitch } from '../shell/StatusControls';
+import { LiveCallout, OfflineCallout } from '../shell/Notices';
+import { PageHeader } from '../shell/PageHeader';
+import { PAGE_META } from '../shell/pages';
+import { AgentCard, QuickAgent } from '../shell/QuickAgent';
+import { DashSidebar, TabBar } from '../shell/Sidebar';
+import { AgentStatus, DryRunSwitch, RingPill } from '../shell/StatusControls';
 import { BootError, BootSplash } from '../Splash';
 import { Toasts, useToasts } from '../Toasts';
+import { mockPdfUrl } from './mockPdf';
 import { PageTransition } from './PageTransition';
+import { TopProgress } from './TopProgress';
+
+const CompaniesPage = lazy(() => import('../companies/CompaniesPage'));
+const ProfileWizard = lazy(() => import('../profile/ProfileWizard').then((m) => ({ default: m.ProfileWizard })));
 
 const iso = (minsAgo: number) => new Date(Date.now() - minsAgo * 60000).toISOString();
+const isoAhead = (mins: number) => new Date(Date.now() + mins * 60000).toISOString();
 
 /** A stand-in screenshot: a plain form page drawn as an SVG. */
 const SHOT = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1000' viewBox='0 0 800 1000'><rect width='800' height='1000' fill='#ffffff'/><rect x='60' y='60' width='300' height='28' rx='4' fill='#37352f'/>${[160, 250, 340, 430, 520]
-    .map((y) => `<rect x='60' y='${y}' width='180' height='14' rx='3' fill='#c9c8c4'/><rect x='60' y='${y + 24}' width='680' height='40' rx='4' fill='none' stroke='#d7d6d2' stroke-width='2'/>`)
-    .join('')}<rect x='60' y='640' width='200' height='48' rx='6' fill='#2383e2'/></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1000' viewBox='0 0 800 1000'><rect width='800' height='1000' fill='#ffffff'/><rect x='60' y='60' width='300' height='28' rx='6' fill='#0b0b12'/>${[160, 250, 340, 430, 520]
+    .map((y) => `<rect x='60' y='${y}' width='180' height='14' rx='3' fill='#d4d4dc'/><rect x='60' y='${y + 24}' width='680' height='40' rx='8' fill='none' stroke='#e7e7ec' stroke-width='2'/>`)
+    .join('')}<rect x='60' y='640' width='200' height='48' rx='10' fill='#6d3cf5'/></svg>`,
 )}`;
 
-/** Real domains, so logo sizes can be checked: cisco.com and boeing.com serve only 16px icons. */
-const COMPANIES: [raw: string, name: string, domain: string, title: string, location: string, score: number][] = [
-  ['cisco/wd5/cisco_careers', 'Cisco', 'cisco.com', 'Software Engineer Full-Stack / Backend I (Intern), United States', 'San Jose, California, US, United States of America; Austin, Texas, US; RTP, North Carolina, US', 4.9],
-  ['elevenlabs', 'ElevenLabs', 'elevenlabs.io', 'Backend Engineer, Voice Platform', 'Remote; London, United Kingdom', 4.7],
-  ['scopely', 'Scopely', 'scopely.com', 'Software Engineer, Game Services', 'Culver City, CA', 4.5],
-  ['verkada', 'Verkada', 'verkada.com', 'Frontend Engineer, Command Platform', 'San Mateo, CA', 4.3],
-  ['Snap Inc.', 'Snap', 'snap.com', 'Software Engineer, Camera Platform', 'Los Angeles, CA; Seattle, WA; New York, NY', 4.1],
-  ['g2i', 'G2i', 'g2i.co', 'React Native Engineer', 'Remote', 3.9],
-  ['jobgether', 'Jobgether', 'jobgether.com', 'Full Stack Developer', 'Remote; Ireland; Europe; United States; Poland; United Kingdom', 3.6],
-  ['DTCC Candidate Experience Site', 'DTCC', 'dtcc.com', 'Software Engineer', 'Tampa, FL, United States', 3.4],
-  ['The Cadmus Group, Inc.', 'Cadmus', 'cadmusgroup.com', 'Jr. Full Stack Developer', 'Arlington, VA', 3.2],
-  ['Northwind Labs', '', '', 'Data Analyst', 'Chicago, IL', 2.6],
+/** Real domains, so logos and the Companies page's job counts can be checked. */
+const COMPANIES: [raw: string, name: string, domain: string, title: string, location: string, score: number, foundMins: number][] = [
+  ['stripe', 'Stripe', 'stripe.com', 'Software Engineering Intern, Payments', 'San Francisco, CA; Seattle, WA; Remote', 4.9, 40],
+  ['cisco/wd5/cisco_careers', 'Cisco', 'cisco.com', 'Software Engineer Full-Stack / Backend I (Intern), United States', 'San Jose, California, US; Austin, Texas, US; RTP, North Carolina, US', 4.8, 300],
+  ['datadog', 'Datadog', 'datadoghq.com', 'Software Engineer Intern, Backend', 'New York, NY', 4.7, 90],
+  ['elevenlabs', 'ElevenLabs', 'elevenlabs.io', 'Machine Learning Engineer Intern, Voice', 'Remote; London, United Kingdom', 4.6, 2000],
+  ['cloudflare', 'Cloudflare', 'cloudflare.com', 'Systems Engineer Intern, Infrastructure', 'Austin, TX', 4.4, 1300],
+  ['ramp', 'Ramp', 'ramp.com', 'Frontend Engineer Intern', 'New York, NY', 4.3, 3000],
+  ['robinhood', 'Robinhood', 'robinhood.com', 'Data Science Intern', 'Menlo Park, CA', 4.1, 4200],
+  ['coinbase', 'Coinbase', 'coinbase.com', 'Software Engineer Intern, Mobile (iOS)', 'Remote', 3.9, 600],
+  ['stripe', 'Stripe', 'stripe.com', 'Data Engineering Intern', 'Remote', 3.8, 5000],
+  ['DTCC Candidate Experience Site', 'DTCC', 'dtcc.com', 'Software Engineer Intern', 'Tampa, FL, United States', 3.6, 7000],
+  ['The Cadmus Group, Inc.', 'Cadmus', 'cadmusgroup.com', 'Jr. Full Stack Developer Intern', 'Arlington, VA', 3.2, 8000],
+  ['Northwind Labs', '', '', 'QA Automation Intern', 'Chicago, IL', 2.6, 9000],
 ];
 
 function job(id: string, raw: string, name: string, domain: string, title: string, location: string, score: number, rest: Partial<JobRow> = {}): JobRow {
@@ -63,16 +94,17 @@ function job(id: string, raw: string, name: string, domain: string, title: strin
     screenshot_path: '',
     dry_run: false,
     updated_at: iso(5),
+    found_at: null,
     ...rest,
   };
 }
 
 function mockJobs(): JobRow[] {
-  const jobs = COMPANIES.map(([raw, name, domain, title, location, score], i) => job(`j${i}`, raw, name, domain, title, location, score));
+  const jobs = COMPANIES.map(([raw, name, domain, title, location, score, mins], i) => job(`j${i}`, raw, name, domain, title, location, score, { found_at: iso(mins) }));
   jobs.push(
-    job('a1', 'Boeing', 'Boeing', 'boeing.com', 'Software Engineer, Associate', 'Seattle, WA', 4.2, { status: 'applying', updated_at: iso(1) }),
-    job('a2', 'Snap Inc.', 'Snap', 'snap.com', 'Software Engineer, Infrastructure', 'Seattle, WA', 4.4, { status: 'submitted', note: 'Confirmation page reached.', screenshot_path: SHOT, updated_at: iso(30) }),
-    job('a3', 'elevenlabs', 'ElevenLabs', 'elevenlabs.io', 'Software Engineer, Full Stack', 'Remote', 4.6, {
+    job('a1', 'Boeing', 'Boeing', 'boeing.com', 'Software Engineer Intern, Associate', 'Seattle, WA', 4.2, { status: 'applying', updated_at: iso(1) }),
+    job('a2', 'Snap Inc.', 'Snap', 'snap.com', 'Software Engineer Intern, Infrastructure', 'Seattle, WA', 4.4, { status: 'submitted', note: 'Confirmation page reached.', screenshot_path: SHOT, updated_at: iso(30) }),
+    job('a3', 'elevenlabs', 'ElevenLabs', 'elevenlabs.io', 'Software Engineer Intern, Full Stack', 'Remote', 4.6, {
       status: 'blocked',
       reason: 'dry_run',
       dry_run: true,
@@ -80,46 +112,117 @@ function mockJobs(): JobRow[] {
       note: "Dry run (AGENT_DRY_RUN is set): filled, send control button[type='submit'] found, nothing sent.\nFilled required fields with the profile name, email and phone. Uploaded resume.pdf. Answered 3 open questions from Memory.",
       updated_at: iso(80),
     }),
-    job('a4', 'verkada', 'Verkada', 'verkada.com', 'Software Engineer, Backend', 'San Mateo, CA', 4.0, {
-      status: 'blocked',
-      reason: 'closed',
-      dry_run: true,
-      note: "The posting redirects to the employer's job board error page.",
-      updated_at: iso(140),
-    }),
-    job('a5', 'g2i', 'G2i', 'g2i.co', 'Senior Frontend Engineer', 'Remote', 3.8, { status: 'unconfirmed', note: 'Pressed submit; no confirmation page appeared.', updated_at: iso(220) }),
-    job('a6', 'scopely', 'Scopely', 'scopely.com', 'Data Engineer', 'Culver City, CA', 3.5, { status: 'failed', reason: 'form_not_loaded', note: 'The form timed out on page 3.', updated_at: iso(400) }),
-    job('a7', 'Northwind Labs', '', '', 'QA Engineer', 'Remote', 3.1, { status: 'blocked', reason: 'missing_info', note: 'The form asks for a security clearance level.', updated_at: iso(900) }),
-    job('a8', 'jobgether', 'Jobgether', 'jobgether.com', 'Platform Engineer', 'Remote', 3.4, { status: 'refused', note: 'The form rejected the phone number format.', updated_at: iso(1300) }),
+    job('a4', 'verkada', 'Verkada', 'verkada.com', 'Software Engineer Intern, Backend', 'San Mateo, CA', 4.0, { status: 'blocked', reason: 'closed', dry_run: true, note: "The posting redirects to the employer's job board error page.", updated_at: iso(1500) }),
+    job('a5', 'g2i', 'G2i', 'g2i.co', 'Frontend Engineer Intern', 'Remote', 3.8, { status: 'unconfirmed', note: 'Pressed submit; no confirmation page appeared.', updated_at: iso(2900) }),
+    job('a6', 'scopely', 'Scopely', 'scopely.com', 'Data Engineer Intern', 'Culver City, CA', 3.5, { status: 'failed', reason: 'form_not_loaded', note: 'The form timed out on page 3.', updated_at: iso(4400) }),
+    job('a7', 'Northwind Labs', '', '', 'QA Engineer Intern', 'Remote', 3.1, { status: 'blocked', reason: 'missing_info', note: 'The form asks for a security clearance level.', updated_at: iso(5900) }),
+    job('a8', 'jobgether', 'Jobgether', 'jobgether.com', 'Platform Engineer Intern', 'Remote', 3.4, { status: 'refused', note: 'The form rejected the phone number format.', updated_at: iso(8700) }),
   );
   return jobs;
 }
 
+type Mode = 'applying' | 'scoring' | 'searching' | 'reading' | 'ready' | 'paused' | 'offline' | 'error';
+const MODES: Mode[] = ['applying', 'scoring', 'searching', 'reading', 'ready', 'paused', 'offline', 'error'];
+const MODE_MESSAGE: Record<Mode, string> = {
+  applying: '1/2 Boeing: Software Engineer Intern, Associate: filling page 2',
+  scoring: 'Scoring 12/40: Stripe, Software Engineering Intern, Payments',
+  searching: 'Downloading the newest postings',
+  reading: 'Reading resume_2026.pdf',
+  ready: 'Waiting for jobs',
+  paused: 'Paused',
+  offline: '',
+  error: 'The browser closed before the form loaded.',
+};
+
 const AGENT: AgentRow = {
   user_id: 'u',
   state: 'applying',
-  message: '1/2 Boeing: Software Engineer, Associate: filling page 2',
+  message: MODE_MESSAGE.applying,
   resume_name: 'resume_2026.pdf',
   model: 'gpt-5-mini',
   jobs_found: 1284,
   jobs_scored: 312,
   last_seen: iso(0),
+  fetched_at: iso(47),
+  next_fetch_at: isoAhead(133),
+  fetched_new: 12,
 };
-
-const LINES = [
-  'reading the form on page 3',
-  'answering: Why do you want to work here?',
-  'uploading resume_2026.pdf',
-  'checking required fields',
-  'scoring 24 new postings against the resume',
-];
 
 const MEMORY: MemoryRow[] = [
   { id: 1, question: 'Why do you want to work at ElevenLabs?', answer: 'I have been building voice tools on the side for two years, and your API is the one I reach for first. I want to work on the platform that made those projects possible, and help it scale to the next million developers.', source: 'learned', pinned: true, company: 'elevenlabs', job_title: 'Software Engineer, Full Stack', job_id: 'a3', created_at: iso(80), updated_at: iso(80) },
   { id: 2, question: 'Are you legally authorized to work in the United States?', answer: 'Yes.', source: 'user', pinned: true, company: '', job_title: '', job_id: '', created_at: iso(3000), updated_at: iso(3000) },
-  { id: 3, question: 'Describe a project you are proud of.', answer: 'An agent that scores job postings against my resume and fills the applications in a real browser. It runs on my laptop, reports to a dashboard, and never sends anything in dry run.', source: 'learned', pinned: false, company: 'cisco/wd5/cisco_careers', job_title: 'Software Engineer Intern', job_id: 'j0', created_at: iso(200), updated_at: iso(200) },
+  { id: 3, question: 'Describe a project you are proud of.', answer: 'An agent that scores job postings against my resume and fills the applications in a real browser. It runs on my laptop, reports to a dashboard, and never sends anything in dry run.', source: 'learned', pinned: false, company: 'cisco/wd5/cisco_careers', job_title: 'Software Engineer Intern', job_id: 'j1', created_at: iso(200), updated_at: iso(200) },
   { id: 4, question: 'How did you hear about this role?', answer: 'Company website.', source: 'learned', pinned: false, company: 'verkada', job_title: 'Software Engineer, Backend', job_id: 'a4', created_at: iso(140), updated_at: iso(140) },
 ];
+
+const INBOX: InboxRow[] = [
+  { user_id: 'u', id: 'i1', company: 'Stripe', role: 'Software Engineering Intern', status: 'interview', applied_at: iso(9000), updated_at: iso(120), subject: 'Next steps: technical interview', mails: 4, by_agent: true, synced_at: iso(14) },
+  { user_id: 'u', id: 'i2', company: 'Snap', role: 'Software Engineer Intern, Infrastructure', status: 'assessment', applied_at: iso(4000), updated_at: iso(600), subject: 'Your HackerRank assessment for Snap', mails: 2, by_agent: true, synced_at: iso(14) },
+  { user_id: 'u', id: 'i3', company: 'Datadog', role: 'Software Engineer Intern', status: 'applied', applied_at: iso(2000), updated_at: iso(2000), subject: 'Thanks for applying to Datadog', mails: 1, by_agent: false, synced_at: iso(14) },
+  { user_id: 'u', id: 'i4', company: 'Robinhood', role: 'Data Science Intern', status: 'rejected', applied_at: iso(20000), updated_at: iso(7000), subject: 'Update on your application', mails: 2, by_agent: true, synced_at: iso(14) },
+  { user_id: 'u', id: 'i5', company: 'Cloudflare', role: 'Systems Engineer Intern', status: 'offer', applied_at: iso(30000), updated_at: iso(50), subject: 'Offer letter: Systems Engineer Intern', mails: 6, by_agent: true, synced_at: iso(14) },
+];
+
+const PROFILE_DATA = {
+  personal: { first_name: 'Alex', last_name: 'Rivera', email: 'alex.rivera@usf.edu', phone: '+1 813 555 0142', city: 'Tampa', state: 'FL', country: 'United States', linkedin: 'linkedin.com/in/alexrivera', github: 'github.com/alexrivera' },
+  education: [{ school: 'University of South Florida', degree: 'B.S.', field: 'Computer Science', gpa: '3.7', start: '2023-08', end: '2027-05' }],
+  experience: [
+    { company: 'Tampa Bay Robotics Lab', title: 'Software Intern', location: 'Tampa, FL', start: '2025-05', end: '2025-08', description: 'Built a telemetry dashboard used by 40 people\nCut report time from 2 hours to 10 minutes' },
+    { company: 'USF Bulls Hack', title: 'Organizer', location: 'Tampa, FL', start: '2024-09', end: 'Present', description: 'Ran a 300 person hackathon' },
+  ],
+  skills: ['Python', 'TypeScript', 'React', 'SQL', 'Go', 'Docker'],
+  preferences: { desired_roles: 'Software engineering intern', desired_locations: 'Tampa, Remote', work_mode: 'Any' },
+  authorization: { countries: ['United States'], authorized_us: 'Yes', needs_sponsorship: '' },
+};
+
+const PROFILE_ROW: ProfileRow = { user_id: 'u', data: PROFILE_DATA, completed: false, updated_by: 'web', updated_at: iso(600) };
+
+const RESUME_DATA = {
+  search: { titles: ['Software Engineer Intern', 'Backend Engineer Intern', 'Data Engineer Intern'], cities: ['Tampa, FL', 'New York, NY'], countries: ['United States'], goals: 'Backend or data internships for summer 2027, remote is fine.' },
+  profile: { personal: PROFILE_DATA.personal, education: PROFILE_DATA.education, experience: PROFILE_DATA.experience, skills: PROFILE_DATA.skills },
+};
+
+const resumeRow = (id: number, status: string, mins: number, rest: Partial<ResumeRow> = {}): ResumeRow => ({
+  id,
+  name: 'resume_2026.pdf',
+  path: '',
+  size: 186_000,
+  status,
+  error: '',
+  data: status === 'active' || status === 'old' ? RESUME_DATA : {},
+  created_at: iso(mins),
+  updated_at: iso(mins),
+  ...rest,
+});
+
+const TEMPLATES: CoverTemplate[] = [
+  { id: 'classic', name: 'Classic', description: 'Plain and short, for most applications', body: STARTER_BODY, builtin: true, updated_at: iso(9000) },
+  { id: 'startup', name: 'Startup', description: 'Warmer, for small teams', body: STARTER_BODY.replace('Best regards', 'Thanks'), builtin: true, updated_at: iso(9000) },
+  { id: 'mine-data', name: 'Data roles', description: 'Leads with the analytics project', body: STARTER_BODY, builtin: false, updated_at: iso(300) },
+];
+
+const LETTER_LINES = [
+  'Alex Rivera',
+  'alex.rivera@usf.edu | +1 813 555 0142',
+  '',
+  'Dear Hiring Team,',
+  '',
+  'I am applying for the Software Engineering Intern role on the Payments team.',
+  'Last summer I built a telemetry dashboard that 40 engineers used every day,',
+  'and I would like to bring the same care to the systems that move money.',
+  '',
+  'At the Tampa Bay Robotics Lab I cut report time from two hours to ten minutes.',
+  'I write Python and TypeScript every day and I am comfortable reading logs at 2am.',
+  '',
+  'I would welcome a conversation about the team and the role.',
+  '',
+  'Best regards,',
+  'Alex Rivera',
+];
+
+function letterText(company: string): string {
+  return LETTER_LINES.join('\n').replace('the Payments team', `the ${company} team`);
+}
 
 const PREFS: NotifyPrefs = {
   permission: 'default',
@@ -131,62 +234,260 @@ const PREFS: NotifyPrefs = {
   setSound: () => undefined,
 };
 
-type Tone = 'calm' | 'busy' | 'off' | 'bad';
-const TONE_STATE: Record<Tone, string> = { calm: 'ready', busy: 'applying', off: 'offline', bad: 'error' };
-const TONES: Tone[] = ['busy', 'calm', 'off', 'bad'];
-const PAGES: Page[] = ['jobs', 'applications', 'agent', 'memory'];
+const ALL_PAGES: Page[] = ['jobs', 'applications', 'inbox', 'agent', 'letters', 'companies', 'profile', 'preferences', 'rules', 'memory', 'setup'];
+
+const rule = (id: string, kind: string, title: string, body: string, rest: Partial<RuleRow> = {}): RuleRow => ({
+  id,
+  kind,
+  title,
+  description: '',
+  body,
+  default_body: body,
+  enabled: true,
+  builtin: true,
+  sort: 1,
+  updated_by: 'agent',
+  updated_at: iso(3000),
+  ...rest,
+});
+
+/** What the agent ships, plus a few of the person's own. */
+function mockRules(): RuleRow[] {
+  const letter: [string, string, string][] = [
+    ['Only true facts', 'Nothing the resume and profile do not say.', 'Use only facts from the resume and the profile. Never invent a number, a tool or a result.'],
+    ['Match the job with proof', 'Two duties from the posting, each with evidence.', 'Pick two things the posting asks for and show a result from the resume for each.'],
+    ['Why this company', 'One specific reason, not a compliment.', 'Name one product, paper or team of the company and tie it to something I built.'],
+    ['Sound like a person', 'Plain words, short sentences.', 'Write like a student writing to a person. No buzzwords, no "I am thrilled".'],
+    ['Keep it light on tech', 'At most two tool names.', 'Name at most two tools. A recruiter reads it first, not an engineer.'],
+    ["Speak the posting's language", "Use the posting's own words for the role.", 'When the posting names a skill, use the same words for it.'],
+    ['Handle what is missing', 'Say less rather than guess.', 'When the resume has nothing for a requirement, leave it out instead of stretching.'],
+    ['Fill the slot', 'Write exactly what each generated part asks for.', "Follow each part's note for length and content."],
+  ];
+  return [
+    ...letter.map(([title, description, body], i) =>
+      rule(`cover-letter/${i}`, 'cover_letter', title, body, {
+        description,
+        sort: i,
+        ...(i === 3 ? { body: 'Write like a student writing to a person. Contractions are fine. No buzzwords.', updated_by: 'web', updated_at: iso(200) } : {}),
+        ...(i === 6 ? { enabled: false, updated_by: 'web' } : {}),
+      }),
+    ),
+    rule('cover-letter/mine-hackathon-k2x9', 'cover_letter', 'Mention the hackathon', 'When the team builds developer tools, mention organizing USF Bulls Hack.', { description: 'For developer tools teams', builtin: false, default_body: '', sort: 9, updated_by: 'web' }),
+    rule('section/opening', 'section', 'opening', 'Start with the role name and one line on why I fit it.', { builtin: false, default_body: '', updated_by: 'web' }),
+    rule('answer/why-this-company', 'answer', 'Why this company', 'Name one thing they built that I used, then the project of mine it relates to.', { builtin: false, default_body: '', sort: 0, updated_by: 'web' }),
+    rule('answer/salary-expectations', 'answer', 'Salary expectations', 'Say I am flexible and focused on learning, unless a number is required.', { builtin: false, default_body: '', sort: 5, updated_by: 'web', enabled: false }),
+    rule(
+      'always/builtin',
+      'always',
+      'Built-in instructions',
+      [
+        'Write in the first person.',
+        'Never claim work authorization the profile does not state.',
+        'Keep answers under the length the form allows.',
+        'Do not mention salary unless asked.',
+        'Never send anything in a dry run.',
+      ].join('\n'),
+      { description: 'What the agent always follows.', sort: 0 },
+    ),
+    rule('always/american-spelling-a1b2', 'always', 'American spelling', 'Use American spelling everywhere.', { builtin: false, default_body: '', sort: 50, updated_by: 'web' }),
+  ];
+}
+
+const table = <T,>(rows: T[], loading: boolean, error: LiveTable<T>['error'] = null): LiveTable<T> => ({ rows, loading, error, live: 'live', reload: () => undefined });
+
+const NO_FILTERS: Omit<JobFilterState, 'company'> = { query: '', minScore: 0, track: 'all', role: null, sort: 'score' };
 
 export default function Preview() {
   const [page, setPage] = useState<Page>('jobs');
+  const [company, setCompany] = useState<string | null>(null);
+  const [companyParams, setCompanyParams] = useState(() => new URLSearchParams());
   const [screen, setScreen] = useState<'app' | 'splash' | 'error'>('app');
   const [jobs, setJobs] = useState<JobRow[]>(mockJobs);
-  const [agent, setAgent] = useState<AgentRow>(AGENT);
-  const [tone, setTone] = useState<Tone>('busy');
+  const [mode, setMode] = useState<Mode>('applying');
+  const [agentBase, setAgentBase] = useState<AgentRow>(AGENT);
+  const [settings, setSettings] = useState<AgentSettings>({ paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40 });
+  const [oldDb, setOldDb] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [minScore, setMinScore] = useState<MinScore>(0);
-  const [query, setQuery] = useState('');
+  const [filters, setFilters] = useState(NO_FILTERS);
   const [dryRun, setDryRun] = useState(true);
   const [confirm, setConfirm] = useState<JobRow[] | null>(null);
   const [shot, setShot] = useState<{ job: JobRow; url: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
+  const [resumes, setResumes] = useState<ResumeRow[]>(() => [resumeRow(3, 'active', 4300), resumeRow(1, 'old', 30000, { name: 'resume_old.pdf' }), resumeRow(2, 'failed', 20000, { name: 'scan.pdf', error: 'The PDF is a scanned image with no text in it.' })]);
+  const [setupKey, setSetupKey] = useState(0);
+  const [setupStart, setSetupStart] = useState<SetupStart | undefined>(undefined);
+  const [letters, setLetters] = useState<CoverLetterRow[]>([]);
+  const [lettersSettings, setLettersSettings] = useState<CoverSettings>({ user_id: 'u', enabled: true, template_id: 'classic', updated_at: iso(300) });
+  const [templates, setTemplates] = useState<CoverTemplate[]>(TEMPLATES);
+  const [rules, setRules] = useState<RuleRow[]>(mockRules);
+  const [wizard, setWizard] = useState<{ open: boolean; key: number; step: number }>({ open: false, key: 0, step: 0 });
+  const [prefsRow, setPrefsRow] = useState<PreferencesRow>({ user_id: 'u', tone: 'Warm', length: 'Medium', highlight: 'Distributed systems, data pipelines', avoid: 'Salary expectations', notes: '', sample: '', learn: true, updated_at: iso(900) });
   const { toasts, push, dismiss } = useToasts();
-  const online = tone !== 'off';
-  const shownAgent = useMemo<AgentRow>(() => ({ ...agent, state: TONE_STATE[tone], last_seen: online ? agent.last_seen : iso(180) }), [agent, tone, online]);
-  const tail = useLogTail(shownAgent);
-  const now = Date.now();
+  const { saved, toggle: toggleSaved } = useSavedJobs();
+  const now = useNow(2000);
+
+  // The PDF for the first letter, made once.
+  useEffect(() => {
+    const url = mockPdfUrl(LETTER_LINES);
+    setLetters([
+      { job_id: 'j0', template_id: 'classic', body: letterText('Payments'), pdf_path: url, problems: '', updated_by: 'agent', updated_at: iso(25) },
+      { job_id: 'j2', template_id: 'mine-data', body: letterText('Datadog'), pdf_path: '', problems: '', updated_by: 'agent', updated_at: iso(140) },
+      { job_id: 'j4', template_id: 'startup', body: letterText('Cloudflare'), pdf_path: url, problems: 'The letter names a project twice.', updated_by: 'web', updated_at: iso(600) },
+    ]);
+    return () => URL.revokeObjectURL(url);
+  }, []);
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoading(false), 900);
     return () => window.clearTimeout(t);
   }, []);
 
-  const candidates = useMemo(() => jobs.filter((j) => j.status === 'scored').sort((a, b) => (b.score ?? 0) - (a.score ?? 0)), [jobs]);
-  const visible = candidates.filter((j) => (j.score ?? 0) >= minScore && `${j.title} ${j.company_name}`.toLowerCase().includes(query.toLowerCase()));
-  const applications = jobs.filter((j) => j.status !== 'scored').sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  const offline = mode === 'offline';
+  // The heartbeat follows the clock, so the mock agent stays online while the page is open.
+  const agent: AgentRow = {
+    ...agentBase,
+    state: offline ? 'idle' : mode === 'ready' ? 'idle' : mode,
+    message: offline ? '' : MODE_MESSAGE[mode],
+    last_seen: new Date(now - (offline ? 180 * 60000 : 1500)).toISOString(),
+  };
+  const online = isOnline(agent.state, agent.last_seen, now);
+  const state = online ? agent.state : 'offline';
+  const tail = useLogTail(agent);
+  const working = online && WORKING_STATES.includes(state);
+  const isSearching = searching || (online && (state === 'searching' || state === 'scoring'));
+
+  const candidates = useMemo(() => jobs.filter((j) => j.status === 'scored'), [jobs]);
+  const visible = useMemo(() => sortJobs(filterJobs(candidates, { ...filters, company, saved, now }), filters.sort), [candidates, filters, company, saved]);
+  const kinds = useMemo(() => kindCounts(candidates), [candidates]);
+  const companies = useMemo(() => companyCounts(candidates), [candidates]);
+  const trackCounts = useMemo(() => {
+    const out = {} as Record<Track, number>;
+    for (const t of ['all', 'new', 'remote', 'top', 'saved'] as Track[]) out[t] = candidates.filter((j) => onTrack(j, t, saved, now)).length;
+    return out;
+  }, [candidates, saved]);
+  const applications = jobs.filter((j) => APPLICATION_STATUSES.includes(j.status)).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  const parts = applicationParts(applications);
+  const days = useApplyDays(applications);
+  const finished = parts.sent + parts.filled + parts.blocked;
   const current = online ? applications.find((j) => j.status === 'applying') ?? null : null;
   const commands: CommandRow[] = [
+    { id: 4, kind: 'resume', job_ids: [], dry_run: true, status: 'done', error: '', created_at: iso(4300) },
     { id: 3, kind: 'cover_letter', job_ids: ['j1', 'j2'], dry_run: true, status: 'pending', error: '', created_at: iso(1) },
     { id: 2, kind: 'apply', job_ids: ['a1', 'a2'], dry_run: true, status: 'running', error: '', created_at: iso(2) },
     { id: 1, kind: 'search', job_ids: [], dry_run: false, status: 'done', error: '', created_at: iso(40) },
     { id: 0, kind: 'apply', job_ids: ['a6'], dry_run: false, status: 'failed', error: 'The browser closed before the form loaded.', created_at: iso(400) },
   ];
-  const memory: LiveTable<MemoryRow> = { rows: MEMORY, loading, error: null, live: 'live', reload: () => undefined };
+  const memory: LiveTable<MemoryRow> = table(MEMORY, loading);
+  const profile = useMemo(() => mergeProfile(PROFILE_ROW.data), []);
+  const profileComplete = PROFILE_ROW.completed && profileProgress(profile).every((s) => s.done);
+  const active = activeResume(resumes);
+  const pending = resumes.find((r) => r.status === 'uploaded' || r.status === 'reading') ?? null;
+  const hasResume = Boolean(active);
+  const setupMark = { done: hasResume && profileComplete, progress: ((hasResume ? 1 : 0) + (profileComplete ? 1 : 0)) / 2, label: '1 of 2 done' };
+  const resumesTable = { rows: resumes, loading, error: oldDb ? { kind: 'missing-table' as const, message: 'missing' } : null };
 
-  const finish = () => {
-    setJobs((list) => list.map((j) => (j.status === 'applying' ? { ...j, status: 'submitted', note: 'Confirmation page reached.', screenshot_path: SHOT, updated_at: iso(0) } : j)));
-    push({ tone: 'ok', title: 'Sent to Boeing' });
+  useResumeActivated(resumes, !loading, (row) => {
+    confetti();
+    push({ tone: 'ok', title: 'Resume ready', detail: row.name });
+  });
+
+  const setResume = useCallback((id: number, patch: Partial<ResumeRow>) => setResumes((list) => list.map((r) => (r.id === id ? { ...r, ...patch, updated_at: iso(0) } : r))), []);
+
+  /** Puts a fresh resume row in the given state and remounts Set up following it. */
+  const setupState = (status: 'uploaded' | 'reading' | 'active' | 'failed') => {
+    const id = Date.now();
+    const first = status === 'active' ? 'reading' : status;
+    setResumes((list) => [resumeRow(id, first, 0, { name: 'resume_fall_2026.pdf', error: status === 'failed' ? 'The file is password protected.' : '' }), ...list.map((r) => (r.status === 'active' && status === 'active' ? r : r))]);
+    setSetupStart({ trackedId: id });
+    setSetupKey((k) => k + 1);
+    setPage('setup');
+    if (status === 'active') {
+      window.setTimeout(() => {
+        setResumes((list) => list.map((r) => (r.id === id ? { ...r, status: 'active', data: RESUME_DATA } : r.status === 'active' ? { ...r, status: 'old' } : r)));
+      }, 900);
+    }
+  };
+
+  const uploadFlow = (file: File): Promise<number> =>
+    new Promise((resolve) => {
+      window.setTimeout(() => {
+        const id = Date.now();
+        setResumes((list) => [resumeRow(id, 'uploaded', 0, { name: file.name, size: file.size }), ...list]);
+        resolve(id);
+        window.setTimeout(() => setResume(id, { status: 'reading' }), 1600);
+        window.setTimeout(() => setResumes((list) => list.map((r) => (r.id === id ? { ...r, status: 'active', data: RESUME_DATA } : r.status === 'active' ? { ...r, status: 'old' } : r))), 5200);
+      }, 1400);
+    });
+
+  const lettersActions: LettersActions = {
+    saveSettings: async (enabled, templateId) => setLettersSettings((s) => ({ ...s, enabled, template_id: templateId })),
+    saveTemplate: async (t) => setTemplates((list) => [...list.filter((x) => x.id !== t.id), { ...t, builtin: false, updated_at: iso(0) }]),
+    deleteTemplate: async (id) => setTemplates((list) => list.filter((t) => t.id !== id)),
+    saveLetter: async (jobId, body) => setLetters((list) => list.map((l) => (l.job_id === jobId ? { ...l, body, updated_by: 'web', updated_at: iso(0) } : l))),
+    sendLetters: async (jobIds, fresh) => {
+      if (fresh) setLetters((list) => list.filter((l) => !jobIds.includes(l.job_id)));
+      window.setTimeout(() => {
+        const url = mockPdfUrl(LETTER_LINES);
+        setLetters((list) => list.map((l) => (jobIds.includes(l.job_id) ? { ...l, pdf_path: url, updated_at: new Date().toISOString() } : l)));
+      }, online ? 2600 : 999_999);
+    },
+  };
+
+  const rulesActions: RulesActions = {
+    save: async (r) => {
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+      setRules((list) => {
+        const old = list.find((x) => x.id === r.id);
+        const next: RuleRow = { ...(old ?? rule(r.id, r.kind, r.title, r.body, { builtin: false, default_body: '' })), ...r, updated_by: 'web', updated_at: iso(0) } as RuleRow;
+        return old ? list.map((x) => (x.id === r.id ? next : x)) : [...list, next];
+      });
+    },
+    reset: async (r) => {
+      setRules((list) => list.map((x) => (x.id === r.id ? { ...x, body: x.default_body, enabled: true, updated_by: 'agent', updated_at: iso(0) } : x)));
+    },
+    remove: async (id) => setRules((list) => list.filter((x) => x.id !== id)),
+  };
+
+  const finish = (live: boolean) => {
+    setJobs((list) => list.map((j) => (j.status === 'applying' ? { ...j, status: 'submitted', dry_run: !live, note: 'Confirmation page reached.', screenshot_path: SHOT, updated_at: iso(0) } : j)));
+    push({ tone: 'ok', title: live ? 'Sent to Boeing' : 'Filled at Boeing (dry run)' });
+    if (live) confetti();
   };
   const newJob = () => {
     const n = jobs.length;
-    setJobs((list) => [job(`n${n}`, 'jobgether', 'Jobgether', 'jobgether.com', 'Data Analyst II', 'Remote; United States', 4.8, { updated_at: iso(0) }), ...list]);
+    setJobs((list) => [job(`n${n}`, 'jobgether', 'Jobgether', 'jobgether.com', 'AI Engineer Intern, Agents', 'Remote; United States', 4.8, { updated_at: iso(0), found_at: iso(0) }), ...list]);
+    push({ tone: 'info', title: 'New job found', detail: 'Jobgether' });
+  };
+  const search = () => {
+    setSearching(true);
+    window.setTimeout(() => {
+      setSearching(false);
+      newJob();
+    }, 3200);
   };
   const reset = () => {
     setJobs(mockJobs());
     setSelected(new Set());
+    setFilters(NO_FILTERS);
+    setCompany(null);
   };
-  const logLine = () =>
-    setAgent((a) => ({ ...a, message: `${LINES[Math.floor(Math.random() * LINES.length)]} (${new Date().toLocaleTimeString()})`, jobs_scored: a.jobs_scored + 7 }));
-  const nextTone = () => setTone((t) => TONES[(TONES.indexOf(t) + 1) % TONES.length]);
+
+  const quick = {
+    agent,
+    online,
+    loading: false,
+    now,
+    settings,
+    settingsOff: oldDb,
+    onSettings: (patch: Partial<AgentSettings>) => {
+      setSettings((s) => ({ ...s, ...patch }));
+      if ('paused' in patch) setMode(patch.paused ? 'paused' : 'ready');
+    },
+    searching: isSearching,
+    onSearch: search,
+    onOpen: () => setPage('agent'),
+  };
 
   if (screen !== 'app') {
     return (
@@ -201,161 +502,359 @@ export default function Preview() {
     );
   }
 
-  const dryRunSwitch = <DryRunSwitch dryRun={dryRun} onChange={setDryRun} />;
-  const status = (compact: boolean) => (
-    <AgentStatus agent={shownAgent} online={online} loading={false} now={now} live="live" onOpen={() => setPage('agent')} compact={compact} />
-  );
-  const alerts = (variant: 'sidebar' | 'bar') => (
-    <NotifyMenu prefs={PREFS} recent={applications.slice(0, 5)} now={now} onOpenRecent={() => setPage('applications')} variant={variant} />
-  );
-
-  let actions = null;
-  let content;
-  if (page === 'jobs') {
-    actions = (
-      <>
-        <button type="button" className="btn btn--secondary btn--sm" onClick={newJob}>
-          <IconRadar size={14} />
-          Find jobs
+  const meta = PAGE_META[page];
+  let header: ReactNode = <PageHeader title={meta.title} subtitle={meta.sub} wolf={meta.wolf} />;
+  let content: ReactNode;
+  let pageBar: ReactNode = null;
+  switch (page) {
+    case 'jobs':
+      header = <h1 className="sr-only">Jobs</h1>;
+      pageBar = (
+        <>
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => finish(false)}>
+            Finish (dry run)
+          </button>
+          <button type="button" className="btn btn--sm btn--brand" onClick={() => finish(true)}>
+            Finish (sent)
+          </button>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={newJob}>
+            New job
+          </button>
+        </>
+      );
+      content = (
+        <JobsPage
+          candidates={candidates}
+          visible={visible}
+          loading={loading}
+          error={null}
+          onRetry={() => undefined}
+          selected={selected}
+          queued={new Set(['j10'])}
+          onToggle={(id) =>
+            setSelected((s) => {
+              const n = new Set(s);
+              if (n.has(id)) n.delete(id);
+              else n.add(id);
+              return n;
+            })
+          }
+          onToggleAll={(ids, on) => setSelected(on ? new Set(ids) : new Set())}
+          saved={saved}
+          onSave={toggleSaved}
+          filters={{ ...filters, company }}
+          onFilters={(patch) => {
+            const { company: next, ...rest } = patch;
+            if (next !== undefined) setCompany(next);
+            if (Object.keys(rest).length) setFilters((f) => ({ ...f, ...rest }));
+          }}
+          onClearFilters={() => {
+            setFilters(NO_FILTERS);
+            setCompany(null);
+          }}
+          kinds={kinds}
+          companies={companies}
+          trackCounts={trackCounts}
+          searching={isSearching}
+          onSearch={search}
+          now={now}
+          scored={agent.jobs_scored}
+          found={agent.jobs_found}
+          banner={
+            <BannerRow
+              found={agent.jobs_found}
+              searching={isSearching}
+              onSearch={search}
+              setup={{ done: setupMark.done, label: setupMark.done ? 'Ready' : hasResume ? 'Finish your profile' : 'Step 1 of 3' }}
+              letters={letters.length}
+              sent={parts.sent}
+              onNavigate={setPage}
+            />
+          }
+          notices={
+            <>
+              {!dryRun ? <LiveCallout /> : null}
+              {!online ? <OfflineCallout /> : null}
+              <Callout
+                tone="yellow"
+                icon={<IconUser size={16} />}
+                action={
+                  <button type="button" className="btn btn--primary btn--sm">
+                    Finish
+                  </button>
+                }
+              >
+                <strong>Profile incomplete.</strong> Needed before applying.
+              </Callout>
+            </>
+          }
+          actionBar={
+            <ActionBar
+              count={selected.size}
+              dryRun={dryRun}
+              online={online}
+              applying={false}
+              onApply={() => {
+                const chosen = candidates.filter((j) => selected.has(j.id));
+                if (dryRun) {
+                  push({ tone: 'ok', title: `${chosen.length} jobs queued for dry run` });
+                  setSelected(new Set());
+                } else setConfirm(chosen);
+              }}
+              onLetters={() => push({ tone: 'ok', title: `Writing ${selected.size} letters` })}
+              writing={false}
+              onClear={() => setSelected(new Set())}
+            />
+          }
+          rail={
+            <>
+              <CalendarCard days={days} now={now} />
+              <ProgressCard parts={parts} onOpen={() => setPage('applications')} />
+              <AgentCard {...quick} />
+            </>
+          }
+        />
+      );
+      break;
+    case 'applications':
+      header = <PageHeader title={meta.title} subtitle={meta.sub} wolf={meta.wolf} count={applications.length} />;
+      content = (
+        <ApplicationsPage
+          items={applications}
+          loading={loading}
+          error={null}
+          onRetry={() => undefined}
+          now={now}
+          onOpenShot={(j, url) => setShot({ job: j, url })}
+          onOpenAnswers={() => setPage('memory')}
+          answerCounts={new Map([['a3', 3], ['a2', 4]])}
+          dryRun={dryRun}
+          online={online}
+          queued={new Set(['a8'])}
+          notices={!dryRun ? <LiveCallout /> : null}
+          onApplyAgain={(j) => (dryRun ? push({ tone: 'ok', title: '1 job queued for dry run' }) : setConfirm([j]))}
+        />
+      );
+      break;
+    case 'inbox':
+      content = <InboxView table={table(INBOX, loading, oldDb ? { kind: 'missing-table', message: 'missing' } : null)} now={now} />;
+      break;
+    case 'agent':
+      content = (
+        <AgentPage
+          agent={agent}
+          online={online}
+          loading={false}
+          error={null}
+          onRetry={() => undefined}
+          now={now}
+          tail={tail}
+          commands={commands}
+          live="live"
+          sent={parts.sent}
+          current={current}
+          settings={settings}
+          settingsState={{ loading: false, missing: oldDb, error: null }}
+          onSettings={quick.onSettings}
+        />
+      );
+      pageBar = (
+        <button type="button" className="btn btn--sm btn--secondary" onClick={() => setAgentBase((a) => ({ ...a, jobs_scored: a.jobs_scored + 7, jobs_found: a.jobs_found + 31, fetched_new: (a.fetched_new ?? 0) + 3 }))}>
+          Count up
         </button>
-        {dryRunSwitch}
-      </>
-    );
-    content = (
-      <JobsPage
-        candidates={candidates}
-        visible={visible}
-        loading={loading}
-        error={null}
-        onRetry={() => undefined}
-        selected={selected}
-        queued={new Set(['j8'])}
-        onToggle={(id) =>
-          setSelected((s) => {
-            const n = new Set(s);
-            if (n.has(id)) n.delete(id);
-            else n.add(id);
-            return n;
-          })
-        }
-        onToggleAll={(ids, on) => setSelected(on ? new Set(ids) : new Set())}
-        minScore={minScore}
-        onMinScore={setMinScore}
-        query={query}
-        onQuery={setQuery}
-        onClearFilters={() => {
-          setMinScore(0);
-          setQuery('');
-        }}
-        searching={false}
-        onSearch={newJob}
-        notices={
-          <>
-            {!dryRun ? <LiveCallout /> : null}
-            {!online ? <OfflineCallout /> : null}
-            <Callout
-              tone="yellow"
-              icon={<IconUser size={16} />}
-              action={
-                <button type="button" className="btn btn--primary btn--sm">
-                  Finish
-                </button>
+      );
+      break;
+    case 'letters':
+      content = (
+        <LettersView
+          data={{
+            templates: table(templates, loading),
+            settings: { ...table([lettersSettings], loading), settings: lettersSettings },
+            letters: table(letters, loading),
+          }}
+          actions={lettersActions}
+          jobs={jobs}
+          online={online}
+          now={now}
+          toast={push}
+        />
+      );
+      break;
+    case 'companies':
+      header = null;
+      content = (
+        <CompaniesPage
+          jobs={candidates}
+          params={companyParams}
+          setParams={(patch) =>
+            setCompanyParams((p) => {
+              const next = new URLSearchParams(p);
+              for (const [k, v] of Object.entries(patch)) {
+                if (v) next.set(k, v);
+                else next.delete(k);
               }
-            >
-              <strong>Profile incomplete.</strong> Needed before applying.
-            </Callout>
-          </>
-        }
-        actionBar={
-          <ActionBar
-            count={selected.size}
-            dryRun={dryRun}
-            online={online}
-            applying={false}
-            onApply={() => {
-              const chosen = candidates.filter((j) => selected.has(j.id));
-              if (dryRun) {
-                push({ tone: 'ok', title: `${chosen.length} jobs queued for dry run` });
-                setSelected(new Set());
-              } else setConfirm(chosen);
-            }}
-            onLetters={() => push({ tone: 'ok', title: `Writing ${selected.size} letters` })}
-            writing={false}
-            onClear={() => setSelected(new Set())}
-          />
-        }
-      />
-    );
-  } else if (page === 'applications') {
-    actions = dryRunSwitch;
-    content = (
-      <ApplicationsPage
-        items={applications}
-        loading={loading}
-        error={null}
-        onRetry={() => undefined}
-        now={now}
-        onOpenShot={(j, url) => setShot({ job: j, url })}
-        onOpenAnswers={() => setPage('memory')}
-        answerCounts={new Map([['a3', 3], ['a2', 4]])}
-        dryRun={dryRun}
-        online={online}
-        queued={new Set(['a8'])}
-        notices={!dryRun ? <LiveCallout /> : null}
-        onApplyAgain={(j) => (dryRun ? push({ tone: 'ok', title: '1 job queued for dry run' }) : setConfirm([j]))}
-      />
-    );
-  } else if (page === 'memory') {
-    content = <MemoryPage memory={memory} now={now} job={null} onClearJob={() => undefined} toast={push} />;
-  } else {
-    content = (
-      <AgentPage
-        agent={shownAgent}
-        online={online}
-        loading={false}
-        error={null}
-        onRetry={() => undefined}
-        now={now}
-        tail={tail}
-        commands={commands}
-        live="live"
-        sent={applications.filter((j) => j.status === 'submitted' || j.status === 'unconfirmed').length}
-        current={current}
-      />
-    );
+              return next;
+            })
+          }
+          onSeeJobs={(key) => {
+            setCompany(key);
+            setPage('jobs');
+          }}
+        />
+      );
+      break;
+    case 'profile':
+      content = loading ? (
+        <SkeletonPanel count={4} />
+      ) : (
+        <ProfilePage
+          profile={profile}
+          row={PROFILE_ROW}
+          onEdit={(step) => setWizard((w) => ({ open: true, key: w.key + 1, step }))}
+          resume={{ active, pending, loading: false, missing: oldDb, agentName: agent.resume_name }}
+          now={now}
+          onReplace={() => setPage('setup')}
+        />
+      );
+      break;
+    case 'preferences':
+      content = (
+        <PreferencesView
+          row={prefsRow}
+          loading={loading}
+          error={null}
+          reload={() => undefined}
+          save={(p) =>
+            new Promise<void>((resolve) => {
+              window.setTimeout(() => {
+                setPrefsRow((r) => ({ ...r, ...p }));
+                resolve();
+              }, 700);
+            })
+          }
+          onSaved={() => push({ tone: 'ok', title: 'Preferences saved' })}
+          onManageMemory={() => setPage('memory')}
+        />
+      );
+      break;
+    case 'rules':
+      content = (
+        <RulesView
+          data={{
+            rules: table(rules, loading, oldDb ? { kind: 'missing-table', message: 'missing' } : null),
+            templates: table(templates, loading),
+            settings: { settings: lettersSettings, loading },
+          }}
+          actions={rulesActions}
+          toast={push}
+          onNavigate={setPage}
+        />
+      );
+      break;
+    case 'memory':
+      content = <MemoryPage memory={memory} now={now} job={null} onClearJob={() => undefined} toast={push} />;
+      break;
+    case 'setup':
+      header = null;
+      pageBar = (
+        <>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={() => (setSetupStart({ upload: { name: 'resume_fall_2026.pdf', size: 212_000 } }), setSetupKey((k) => k + 1))}>
+            Uploading
+          </button>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={() => setupState('uploaded')}>
+            Waiting
+          </button>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={() => setupState('reading')}>
+            Reading
+          </button>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={() => setupState('active')}>
+            Active
+          </button>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={() => setupState('failed')}>
+            Failed
+          </button>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={() => (setSetupStart({ step: 2 }), setSetupKey((k) => k + 1))}>
+            Customize
+          </button>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={() => (setSetupStart({ step: 3 }), setSetupKey((k) => k + 1))}>
+            Done
+          </button>
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => (setSetupStart({}), setSetupKey((k) => k + 1))}>
+            Drop zone
+          </button>
+        </>
+      );
+      content = (
+        <SetupPage
+          key={setupKey}
+          start={setupStart}
+          resumes={resumesTable}
+          online={online}
+          now={now}
+          onUpload={uploadFlow}
+          onDelete={async (row) => setResumes((list) => list.filter((r) => r.id !== row.id))}
+          onSaveRead={async () => undefined}
+          onApply={async () => {
+            push({ tone: 'ok', title: 'Profile updated', detail: 'The wizard opens at Review' });
+          }}
+          onSeeJobs={() => setPage('jobs')}
+          onEditProfile={() => push({ tone: 'info', title: 'The wizard opens here' })}
+          toast={push}
+        />
+      );
+      break;
   }
 
   return (
-    <div className={`shell ${dryRun ? '' : 'is-live'}`}>
-      <Sidebar
+    <div className={`app ${dryRun ? '' : 'is-live'}`}>
+      <TopProgress active={working || isSearching} />
+      <Navbar
         page={page}
-        onNavigate={(target) => setPage(PAGES.includes(target) ? target : 'jobs')}
-        marks={{
-          applications: { node: <span className="navcount num">1</span>, label: '1 in progress' },
-          profile: { node: <span className="navdot navdot--orange" />, label: 'incomplete' },
-        }}
-        alerts={alerts('sidebar')}
-        status={status(false)}
+        onNavigate={setPage}
+        setup={setupMark}
+        status={<AgentStatus agent={agent} online={online} loading={false} now={now} live="live" onOpen={() => setPage('agent')} />}
+        ring={<RingPill done={finished} total={finished + candidates.length} label={`${finished} of ${finished + candidates.length} jobs done`} onClick={() => setPage('applications')} />}
+        alerts={<NotifyMenu prefs={PREFS} recent={applications.slice(0, 5)} now={now} onOpenRecent={() => setPage('applications')} variant="bar" />}
+        dryRun={<DryRunSwitch dryRun={dryRun} onChange={setDryRun} />}
+        account={<AccountMenu email="alex.rivera@usf.edu" />}
       />
-      <div className="shell__main">
-        <MobileBar status={status(true)} alerts={alerts('bar')} />
-        <main className="shell__content">
+      <div className="layout">
+        <aside className="layout__side">
+          <DashSidebar
+            page={page}
+            onNavigate={setPage}
+            marks={{
+              jobs: { node: <span className="navcount num">{candidates.length}</span>, label: `${candidates.length} jobs` },
+              applications: { node: <span className="navcount num">1</span>, label: '1 in progress' },
+              profile: { node: <span className="navdot navdot--amber" />, label: 'incomplete' },
+            }}
+            setup={setupMark}
+            companies={companies.slice(0, 6)}
+            activeCompany={company}
+            onCompany={(key) => {
+              setCompany(key);
+              setPage('jobs');
+            }}
+          />
+        </aside>
+        <main className={`layout__main layout__main--${page}`}>
           <div className="devbar" aria-label="Preview controls">
             <span className="devbar__label">Preview</span>
-            <button type="button" className="btn btn--sm btn--primary" onClick={finish}>
-              Finish
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={newJob}>
-              New job
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={logLine}>
-              Log line
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={nextTone}>
-              Agent: {TONE_STATE[tone]}
+            <select className="btn btn--sm btn--secondary" value={page} onChange={(e) => setPage(e.target.value as Page)} aria-label="Page">
+              {ALL_PAGES.map((p) => (
+                <option key={p} value={p}>
+                  {PAGE_META[p].title}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={() => setMode((m) => MODES[(MODES.indexOf(m) + 1) % MODES.length])}>
+              Agent: {mode}
             </button>
             <button type="button" className="btn btn--sm btn--secondary" onClick={() => setLoading((v) => !v)}>
               {loading ? 'Loaded' : 'Loading'}
+            </button>
+            <button type="button" className="btn btn--sm btn--secondary" onClick={() => confetti()}>
+              Confetti
             </button>
             <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'info', title: 'New answer learned', detail: 'Why do you want to work here?' })}>
               Toast
@@ -363,22 +862,44 @@ export default function Preview() {
             <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'error', title: 'Could not queue jobs', detail: 'JWT expired' })}>
               Error
             </button>
+            <button type="button" className={`btn btn--sm ${oldDb ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setOldDb((v) => !v)}>
+              Old database
+            </button>
             <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('splash')}>
               Splash
             </button>
             <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('error')}>
               Boot error
             </button>
+            {pageBar}
             <button type="button" className="btn btn--sm btn--ghost" onClick={reset}>
               Reset
             </button>
           </div>
           <PageTransition pageKey={page}>
-            <PageHeader icon={PAGE_ICON[page]} title={PAGE_TITLE[page]} actions={actions} />
-            {content}
+            {header}
+            <Suspense fallback={<SkeletonPanel count={5} />}>{content}</Suspense>
           </PageTransition>
         </main>
       </div>
+      <TabBar page={page} onNavigate={setPage} marks={{}} setup={setupMark} email="alex.rivera@usf.edu" more={<DryRunSwitch dryRun={dryRun} onChange={setDryRun} compact />} />
+      {page !== 'agent' ? <QuickAgent {...quick} /> : null}
+      {wizard.key > 0 ? (
+        <Suspense fallback={null}>
+          <ProfileWizard
+            open={wizard.open}
+            openKey={wizard.key}
+            startStep={wizard.step}
+            reason="manual"
+            row={PROFILE_ROW}
+            accountEmail="alex.rivera@usf.edu"
+            onClose={() => setWizard((w) => ({ ...w, open: false }))}
+            onSaved={() => setWizard((w) => ({ ...w, open: false }))}
+            onPersisted={() => undefined}
+            onDraftError={(message) => push({ tone: 'error', title: 'Draft not saved', detail: message })}
+          />
+        </Suspense>
+      ) : null}
       <ConfirmSubmit jobs={confirm} onCancel={() => setConfirm(null)} onConfirm={() => setConfirm(null)} />
       <Lightbox shot={shot} onClose={() => setShot(null)} />
       <Toasts toasts={toasts} onDismiss={dismiss} />

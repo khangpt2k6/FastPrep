@@ -1,37 +1,33 @@
-import type { ComponentType, ReactNode, SVGProps } from 'react';
-import { Logo } from '../Icons';
-
-type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
+import type { ReactNode } from 'react';
+import { Wolf, type WolfMood } from '../mascot/Wolf';
 
 interface PageHeaderProps {
-  icon: Icon;
   title: string;
-  /** Small page actions on the right, such as Find jobs or the Dry run switch. */
+  /** One gray line under the title. */
+  subtitle?: string;
+  /** The page's wolf, beside the title. */
+  wolf?: WolfMood;
+  /** A count in a chip beside the title. */
+  count?: ReactNode;
+  /** Controls on the right; they wrap under the title on a phone. */
   actions?: ReactNode;
 }
 
-/** A small line icon, the title, and the page's actions on the right. */
-export function PageHeader({ icon: Icon, title, actions }: PageHeaderProps) {
+/** After Arena's page header: the wolf, a big title with a count chip, one gray line, actions on the right. */
+export function PageHeader({ title, subtitle, wolf, count, actions }: PageHeaderProps) {
   return (
     <header className="pagehead">
       <div className="pagehead__title">
-        <Icon size={22} className="pagehead__icon" />
-        <h1>{title}</h1>
+        {wolf ? <Wolf mood={wolf} size={56} motion="pop" eager className="pagehead__wolf" /> : null}
+        <div className="pagehead__text">
+          <div className="pagehead__line">
+            <h1>{title}</h1>
+            {count !== undefined && count !== null ? <span className="chip chip--count num">{count}</span> : null}
+          </div>
+          {subtitle ? <p className="pagehead__sub">{subtitle}</p> : null}
+        </div>
       </div>
       {actions ? <div className="pagehead__actions">{actions}</div> : null}
     </header>
-  );
-}
-
-/** The phone's top bar: the mark, the agent's status and alerts. Hidden on wider screens. */
-export function MobileBar({ status, alerts }: { status: ReactNode; alerts: ReactNode }) {
-  return (
-    <div className="mobilebar">
-      <span className="mobilebar__mark" aria-hidden="true">
-        <Logo size={22} />
-      </span>
-      <div className="mobilebar__status">{status}</div>
-      <div className="mobilebar__alerts">{alerts}</div>
-    </div>
   );
 }

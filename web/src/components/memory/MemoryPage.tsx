@@ -7,7 +7,7 @@ import { Dialog } from '../Dialog';
 import { AnimatePresence } from 'motion/react';
 import { CompanyLogo } from '../CompanyLogo';
 import { EmptyState, PillGroup, SkeletonCards } from '../common';
-import { IconAlert, IconMemory, IconPlus, IconSearch, IconX } from '../Icons';
+import { IconPlus, IconSearch, IconX } from '../Icons';
 import { SetupCard } from '../SetupCard';
 import type { ToastInput } from '../Toasts';
 import { MemoryCard } from './MemoryCard';
@@ -155,8 +155,8 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
   if (memory.error) {
     body = (
       <EmptyState
-        icon={<IconAlert size={22} />}
-        title="Could not load answers."
+        wolf="thinking"
+        title="Could not load answers"
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={memory.reload}>
             Retry
@@ -167,12 +167,16 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
       </EmptyState>
     );
   } else if (memory.loading) {
-    body = <SkeletonCards count={3} />;
+    body = (
+      <div className="card listcard">
+        <SkeletonCards count={4} check={false} zebra />
+      </div>
+    );
   } else if (scoped.length === 0) {
     body = (
       <EmptyState
-        icon={<IconMemory size={22} />}
-        title={job ? `No answers for ${job.company} yet.` : 'No answers yet.'}
+        wolf="thinking"
+        title={job ? `No answers for ${job.company} yet` : 'No answers yet'}
         action={
           <button type="button" className="btn btn--primary btn--sm" onClick={() => setTeaching(true)}>
             <IconPlus size={15} />
@@ -182,10 +186,11 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
       />
     );
   } else if (shown.length === 0) {
-    body = <p className="empty-line">No matching answers.</p>;
+    body = <EmptyState compact wolf="thinking" title="No matches" />;
   } else {
     body = (
-      <ul className="dblist dblist__rows memlist">
+      <div className="card listcard">
+      <ul className="memlist">
         <AnimatePresence>
         {shown.map((row, i) => (
           <MemoryCard
@@ -200,12 +205,13 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
         ))}
         </AnimatePresence>
       </ul>
+      </div>
     );
   }
 
   return (
     <div className="page page--memory">
-      <div className="dbbar">
+      <div className="toolbar">
         <PillGroup<Filter>
           label="Show"
           value={filter}
@@ -217,9 +223,9 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
             { value: 'pinned', label: 'Pinned', count: counts.pinned, title: 'Used word for word' },
           ]}
         />
-        <div className="dbbar__right">
-          <label className="searchbox">
-            <IconSearch size={14} />
+        <div className="toolbar__end">
+          <label className="searchpill">
+            <IconSearch size={15} />
             <input
               type="search"
               value={query}
@@ -228,7 +234,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
               aria-label="Search questions and answers"
             />
           </label>
-          <button type="button" className="btn btn--primary btn--sm" onClick={() => setTeaching(true)}>
+          <button type="button" className="btn btn--brand btn--sm" onClick={() => setTeaching(true)}>
             <IconPlus size={14} />
             New answer
           </button>

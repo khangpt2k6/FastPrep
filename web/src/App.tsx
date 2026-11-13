@@ -5,7 +5,6 @@ import { Dashboard } from './components/Dashboard';
 import { Notice } from './components/Notice';
 import { BootError, BootSplash } from './components/Splash';
 import { SignIn } from './components/auth/SignIn';
-import { SignOutButton } from './components/auth/SignOutButton';
 
 // Dev-only motion preview with mock data at #/__preview. Dropped from production builds.
 const Preview = import.meta.env.DEV ? lazy(() => import('./components/motion/Preview')) : null;
@@ -52,11 +51,6 @@ function OwnerGate() {
   if (!ready) return <BootSplash />;
   // Nothing of the dashboard is rendered, and no row is asked for, before a person signs in.
   if (!session) return <SignIn onSignIn={signIn} note={note} />;
-  const email = session.user.email ?? '';
-  return (
-    <>
-      <Dashboard key={session.user.id} userId={session.user.id} email={email} />
-      <SignOutButton email={email} className="signout signout--floating" />
-    </>
-  );
+  // Sign out lives in the dashboard's navbar (account menu) and in the phone's More menu.
+  return <Dashboard key={session.user.id} userId={session.user.id} email={session.user.email ?? ''} />;
 }

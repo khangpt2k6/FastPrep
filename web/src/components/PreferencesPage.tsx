@@ -1,15 +1,27 @@
 import { useEffect, useId, useState } from 'react';
-import type { AnswerLength, Preferences } from '../lib/types';
+import { AnimatePresence, motion } from 'motion/react';
+import type { AnswerLength, LoadError, Preferences, PreferencesRow } from '../lib/types';
 import { errorText } from '../lib/errors';
 import { clock } from '../lib/format';
+import { dockVariants } from '../lib/motion';
 import { DEFAULT_PREFERENCES, savePreferences, usePreferences } from '../hooks/useAutomationData';
 import { IconAlert, IconCheck, IconSpark } from './Icons';
-import { Callout } from './common';
+import { Callout, SkeletonRows } from './common';
+import { Group, NavRow, PillSelect, SettingRow, ToggleRow, type PillOption } from './settings';
 import { SetupCard } from './SetupCard';
+import { Wolf } from './mascot/Wolf';
 
-const TONES = ['Professional', 'Warm', 'Confident', 'Concise', 'Enthusiastic'];
+const TONES: PillOption<string>[] = [
+  { value: '', label: 'Default' },
+  { value: 'Professional', label: 'Professional' },
+  { value: 'Warm', label: 'Warm' },
+  { value: 'Confident', label: 'Confident' },
+  { value: 'Concise', label: 'Concise' },
+  { value: 'Enthusiastic', label: 'Enthusiastic' },
+];
 
-const LENGTHS: { value: Exclude<AnswerLength, ''>; label: string; hint: string }[] = [
+const LENGTHS: PillOption<AnswerLength>[] = [
+  { value: '', label: 'Default' },
   { value: 'Short', label: 'Short', hint: '1 to 2 sentences' },
   { value: 'Medium', label: 'Medium', hint: '3 to 5 sentences' },
   { value: 'Detailed', label: 'Detailed', hint: 'Up to 150 words' },
@@ -54,42 +66,55 @@ function pick(p: Partial<Preferences> | null): Preferences {
   };
 }
 
-function Area({ label, value, onChange, placeholder, hint, rows = 3 }: {
-  label: string;
+/** A setting that is a text box: the title and a gray line, then the box inside the card. */
+function AreaRow({ title, description, value, onChange, placeholder, rows = 3 }: {
+  title: string;
+  description?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  hint?: string;
   rows?: number;
 }) {
   const id = useId();
   return (
-    <div className="field">
-      <label className="field__label" htmlFor={id}>
-        {label}
-      </label>
+    <div className="srow srow--area">
+      <div className="srow__text">
+        <label className="srow__title" htmlFor={id}>
+          {title}
+        </label>
+        {description ? (
+          <p className="srow__desc" id={`${id}-d`}>
+            {description}
+          </p>
+        ) : null}
+      </div>
       <textarea
         id={id}
         className="input textarea"
         rows={rows}
         value={value}
         placeholder={placeholder}
+        aria-describedby={description ? `${id}-d` : undefined}
         onChange={(e) => onChange(e.target.value)}
-        aria-describedby={hint ? `${id}-hint` : undefined}
       />
-      {hint ? (
-        <span className="field__hint" id={`${id}-hint`}>
-          {hint}
-        </span>
-      ) : null}
     </div>
   );
 }
 
 type SaveState = { state: 'idle' } | { state: 'saving' } | { state: 'saved'; at: number } | { state: 'error'; message: string };
 
-export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: () => void }) {
-  const { row, loading, error, reload } = usePreferences(userId);
+export interface PreferencesViewProps {
+  row: PreferencesRow | null;
+  loading: boolean;
+  error: LoadError | null;
+  reload: () => void;
+  save: (prefs: Preferences) => Promise<void>;
+  onSaved: () => void;
+  onManageMemory: () => void;
+}
+
+/** The page's content, after ChatGPT's personalization settings: sections of cards with rows. */
+export function PreferencesView({ row, loading, error, reload, save: persist, onSaved, onManageMemory }: PreferencesViewProps) {
   const [form, setForm] = useState<Preferences>(() => pick(null));
   const [baseline, setBaseline] = useState(() => JSON.stringify(pick(null)));
   const [save, setSave] = useState<SaveState>({ state: 'idle' });
@@ -107,7 +132,7 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
   async function submit() {
     setSave({ state: 'saving' });
     try {
-      await savePreferences(form);
+      await persist(form);
       setBaseline(JSON.stringify(form));
       setSave({ state: 'saved', at: Date.now() });
       onSaved();
@@ -139,123 +164,102 @@ export function PreferencesPage({ userId, onSaved }: { userId: string; onSaved: 
 
   return (
     <div className="page page--prefs">
-      <section className="prefs" aria-label="Answer preferences" aria-busy={loading}>
-        <div className="field">
-          <span className="field__label" id="tone-label">
-            Tone
-          </span>
-          <div className="choice" role="group" aria-labelledby="tone-label">
-            {TONES.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={`choice__btn ${form.tone === t ? 'is-on' : ''}`}
-                aria-pressed={form.tone === t}
-                onClick={() => set('tone', form.tone === t ? '' : t)}
-              >
-                {form.tone === t ? <IconCheck size={14} /> : null}
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="prefs" aria-busy={loading}>
+        {loading ? (
+          <>
+            <SkeletonRows count={2} />
+            <SkeletonRows count={3} />
+          </>
+        ) : (
+          <>
+            <Group title="Answer style">
+              <SettingRow title="Tone" description="The voice of open answers.">
+                <PillSelect label="Tone" value={form.tone} options={TONES.some((t) => t.value === form.tone) ? TONES : [...TONES, { value: form.tone, label: form.tone }]} onChange={(v) => set('tone', v)} />
+              </SettingRow>
+              <SettingRow title="Length" description="How long each answer runs.">
+                <PillSelect<AnswerLength> label="Length" value={form.length} options={LENGTHS} onChange={(v) => set('length', v)} />
+              </SettingRow>
+            </Group>
 
-        <div className="field">
-          <span className="field__label" id="length-label">
-            Length
-          </span>
-          <div className="segments" role="group" aria-labelledby="length-label">
-            {LENGTHS.map((l) => (
-              <button
-                key={l.value}
-                type="button"
-                className={`segment ${form.length === l.value ? 'is-on' : ''}`}
-                aria-pressed={form.length === l.value}
-                onClick={() => set('length', form.length === l.value ? '' : l.value)}
-              >
-                <span className="segment__label">{l.label}</span>
-                <span className="segment__hint">{l.hint}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+            <Group title="Custom instructions">
+              <AreaRow title="Emphasize" description="What to bring up when it fits." value={form.highlight} onChange={(v) => set('highlight', v)} placeholder="AI agents, distributed systems" />
+              <AreaRow title="Forbidden" description="What never to mention." value={form.avoid} onChange={(v) => set('avoid', v)} placeholder="Salary expectations" />
+              <AreaRow title="Notes" description="Anything else about how to write." value={form.notes} onChange={(v) => set('notes', v)} placeholder="First person, American spelling" />
+              <AreaRow title="Writing sample" description="Used to match your style." value={form.sample} onChange={(v) => set('sample', v)} placeholder="Paste an answer you wrote" rows={5} />
+            </Group>
 
-        <div className="prefs__grid">
-          <Area
-            label="Emphasize"
-            value={form.highlight}
-            onChange={(v) => set('highlight', v)}
-            placeholder="AI agents, distributed systems"
-          />
-          <Area
-            label="Forbidden"
-            value={form.avoid}
-            onChange={(v) => set('avoid', v)}
-            placeholder="Salary expectations"
-          />
-        </div>
-        <Area label="Notes" value={form.notes} onChange={(v) => set('notes', v)} placeholder="First person, American spelling" />
-        <Area
-          label="Writing sample"
-          value={form.sample}
-          onChange={(v) => set('sample', v)}
-          placeholder="Paste an answer you wrote"
-          hint="Used to match your style"
-          rows={5}
-        />
-
-        <label className="row-switch row-switch--card">
-          <span className="row-switch__text">
-            <strong>Learn from answers</strong>
-            <span>Save new answers to Memory</span>
-          </span>
-          <input type="checkbox" role="switch" checked={form.learn} onChange={(e) => set('learn', e.target.checked)} />
-          <span className="switch" aria-hidden="true">
-            <span className="switch__thumb" />
-          </span>
-        </label>
-
-        <footer className="prefs__foot">
-          <span className={`savestate savestate--${save.state}`} role="status" aria-live="polite">
-            {save.state === 'saving'
-              ? 'Saving'
-              : save.state === 'error'
-                ? `Not saved: ${save.message}`
-                : dirty
-                  ? 'Unsaved changes'
-                  : save.state === 'saved'
-                    ? `Saved ${clock(save.at)}`
-                    : row
-                      ? 'Saved'
-                      : 'Defaults'}
-          </span>
-          <button type="button" className="btn btn--primary" onClick={submit} disabled={!dirty || save.state === 'saving' || loading}>
-            {save.state === 'saving' ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />}
-            Save
-          </button>
-        </footer>
-      </section>
+            <Group title="Memory">
+              <ToggleRow title="Learn from answers" description="Save new answers to Memory." checked={form.learn} onChange={(v) => set('learn', v)} />
+              <NavRow title="Saved answers" description="See, pin and edit what the agent reuses." onClick={onManageMemory} />
+            </Group>
+          </>
+        )}
+      </div>
 
       <aside className="prefs-side">
-        <section className="preview" aria-labelledby="preview-title">
-          <p className="section__label" id="preview-title">
-            Preview
-          </p>
+        <section className="card preview" aria-labelledby="preview-title">
+          <div className="preview__head">
+            <Wolf mood="reading" size={40} motion="none" />
+            <p className="preview__label" id="preview-title">
+              Preview
+            </p>
+          </div>
           <p className="preview__q">Why are you interested in this role?</p>
           <div className="preview__tags">
             {summary(form).map((s) => (
-              <span className="softchip" key={s}>
+              <span className="chip" key={s}>
                 {s}
               </span>
             ))}
           </div>
-          <blockquote className="preview__a">{example}</blockquote>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.blockquote key={form.length || 'default'} className="preview__a" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              {example}
+            </motion.blockquote>
+          </AnimatePresence>
           <p className="preview__note" title="Each form gets a fresh answer">
             <IconSpark size={14} />
             Example only
           </p>
         </section>
       </aside>
+
+      <AnimatePresence>
+        {dirty || save.state === 'saving' || save.state === 'error' ? (
+          <motion.div className="savebar" role="region" aria-label="Unsaved changes" variants={dockVariants} initial="hidden" animate="shown" exit="gone">
+            <span className={`savestate savestate--${save.state}`} role="status" aria-live="polite">
+              {save.state === 'saving' ? 'Saving' : save.state === 'error' ? `Not saved: ${save.message}` : 'Unsaved changes'}
+            </span>
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => {
+                setForm(JSON.parse(baseline) as Preferences);
+                setSave({ state: 'idle' });
+              }}
+              disabled={save.state === 'saving'}
+            >
+              Discard
+            </button>
+            <button type="button" className="btn btn--brand btn--sm" onClick={submit} disabled={!dirty || save.state === 'saving'}>
+              {save.state === 'saving' ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />}
+              Save
+            </button>
+          </motion.div>
+        ) : save.state === 'saved' ? (
+          <motion.p key="saved" className="savedline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <IconCheck size={14} /> Saved {clock(save.at)}
+          </motion.p>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
+
+/** The page wired to Supabase. */
+export function PreferencesPage({ userId, onSaved, onManageMemory }: { userId: string; onSaved: () => void; onManageMemory: () => void }) {
+  const { row, loading, error, reload } = usePreferences(userId);
+  return <PreferencesView row={row} loading={loading} error={error} reload={() => void reload()} save={savePreferences} onSaved={onSaved} onManageMemory={onManageMemory} />;
+}
+
+export default PreferencesPage;

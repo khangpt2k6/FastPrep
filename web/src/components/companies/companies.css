@@ -1,0 +1,362 @@
+/* The Companies page, loaded with it. Tokens, .card, .searchpill and .emptystate come from styles.css. */
+
+.copills {
+  display: flex;
+  gap: 6px;
+  margin: 0 -16px;
+  padding: 0 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.copills::-webkit-scrollbar {
+  display: none;
+}
+
+.copill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.copill:hover {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.copill.is-on {
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 0 1px 2px rgb(15 26 23 / 0.18), 0 4px 10px -4px rgb(15 26 23 / 0.35);
+}
+
+.copill__count {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.copill.is-on .copill__count {
+  color: rgb(255 255 255 / 0.72);
+}
+
+.asked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.asked__label {
+  flex: none;
+  margin-right: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.askchip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.askchip:hover {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.askchip.is-on {
+  background: var(--ink);
+  color: #fff;
+  box-shadow: none;
+}
+
+.askchip__count {
+  color: var(--muted);
+}
+
+.askchip.is-on .askchip__count {
+  color: rgb(255 255 255 / 0.7);
+}
+
+.askchip.is-on .tech__svg path[fill='currentColor'] {
+  fill: #fff;
+}
+
+.cogrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.cocard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  transition: transform 200ms var(--ease), box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.cocard:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-pop);
+}
+
+.cocard__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cocard__who {
+  min-width: 0;
+}
+
+.cocard__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.cocard__cat {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.cocard__jobs {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  box-shadow: inset 0 0 0 1px var(--brand-ring);
+  color: var(--brand-dark);
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cocard__jobs + .evidence {
+  margin-left: 0;
+}
+
+.evidence {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  margin-left: auto;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.evidence--a {
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+}
+
+.evidence--b {
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+}
+
+.evidence--c {
+  background: #fdf3dc;
+  color: var(--part-text);
+}
+
+.cocard__row {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.cocard__rowlabel {
+  padding-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cocard__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cocard__summary {
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cocard__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.cocard__see {
+  margin-left: auto;
+}
+
+.comono {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgb(15 23 41 / 0.1), 0 1px 2px rgb(15 23 41 / 0.12);
+}
+
+.comono img {
+  max-width: 28px;
+  max-height: 28px;
+  object-fit: contain;
+}
+
+.comono--text {
+  background: var(--surface-alt);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.tech {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tech--need {
+  background: var(--brand-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tech--stack {
+  background: var(--surface-alt);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-soft);
+}
+
+.tech--niche {
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+}
+
+button.tech:hover {
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+button.tech--need:hover {
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+
+.tech.is-on {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.tech__svg,
+.tech__img {
+  flex: none;
+}
+
+.tech__img {
+  object-fit: contain;
+}
+
+.posting {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.posting:hover {
+  background: var(--surface-alt);
+  color: var(--ink);
+}
+
+.posting__cycle {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.posting--none {
+  box-shadow: none;
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+}
+
+@media (max-width: 1179px) {
+  .cogrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 719px) {
+  .cogrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .copills {
+    margin: 0 -16px;
+  }
+}

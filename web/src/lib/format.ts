@@ -28,6 +28,28 @@ export function clock(ms: number): string {
   return new Date(ms).toLocaleTimeString(undefined, { hour12: false });
 }
 
+/** How long until a time, as "2h 13m", "47m" or "under a minute"; '' when it is unknown or already past. */
+export function untilText(iso: string | null | undefined, now: number): string {
+  if (!iso) return '';
+  const then = Date.parse(iso);
+  if (!Number.isFinite(then) || then <= now) return '';
+  const m = Math.floor((then - now) / 60000);
+  if (m < 1) return 'under a minute';
+  const h = Math.floor(m / 60);
+  if (h === 0) return `${m}m`;
+  if (h < 48) return m % 60 ? `${h}h ${m % 60}m` : `${h}h`;
+  return `${Math.round(h / 24)}d`;
+}
+
+/** A job the agent found in the last day gets the New tag. */
+export const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export function isNewJob(job: Pick<JobRow, 'found_at'>, now: number): boolean {
+  if (!job.found_at) return false;
+  const found = Date.parse(job.found_at);
+  return Number.isFinite(found) && now - found < NEW_WINDOW_MS && now - found > -60_000;
+}
+
 export const STATE_LABEL: Record<AgentState, string> = {
   idle: 'Idle',
   starting: 'Starting',
@@ -39,11 +61,53 @@ export const STATE_LABEL: Record<AgentState, string> = {
   writing: 'Writing letters',
   applied: 'Applied',
   error: 'Error',
+  paused: 'Paused',
   offline: 'Offline',
 };
 
 export function stateLabel(state: string): string {
   return STATE_LABEL[state as AgentState] ?? state;
+}
+
+/** States where the agent works through a queue, with the top progress bar on. */
+export const WORKING_STATES = ['searching', 'scoring', 'applying', 'writing', 'reading'];
+
+/** "12/40" or "12 of 40" in a log line, as numbers. */
+export function progressOf(message: string): { done: number; total: number } | null {
+  const hit = /(\d+)\s*(?:\/|of)\s*(\d+)/.exec(message ?? '');
+  if (!hit) return null;
+  const done = Number(hit[1]);
+  const total = Number(hit[2]);
+  return total > 0 && done <= total ? { done, total } : null;
+}
+
+/** Short lines that rotate while the agent works on something long. */
+export function waitingLines(state: string, message = ''): string[] {
+  const p = progressOf(message);
+  switch (state) {
+    case 'scoring':
+      return [p ? `Reading job ${p.done} of ${p.total}` : 'Reading the new postings', 'Comparing them with your resume', 'Finding roles you fit'];
+    case 'searching':
+      return ['Picking places to search', 'Checking company career sites', 'Finding roles you fit'];
+    case 'reading':
+      return ['Reading your experience', 'Picking out your skills', 'Finding roles you fit', 'Picking places to search'];
+    case 'writing':
+      return ['Writing letters', 'Matching your experience to the role', 'Checking the tone'];
+    case 'applying':
+      return [p ? `Form ${p.done} of ${p.total}` : 'Filling the form', 'Answering the questions', 'Checking required fields'];
+    case 'starting':
+      return ['Starting up', 'Opening the browser'];
+    default:
+      return [];
+  }
+}
+
+/** A file size as people read it: "182 KB", "1.4 MB". */
+export function fileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export const APPLICATION_STATUSES = ['applying', 'submitted', 'unconfirmed', 'refused', 'blocked', 'failed'];
@@ -209,7 +273,6 @@ export function scoreColor(score: number): TagColor {
   if (score >= 4) return 'blue';
   return 'gray';
 }
-
 /** "2024-08 → Present", with an arrow instead of a dash. */
 export function monthRange(start: string, end: string): string {
   if (!start && !end) return '';

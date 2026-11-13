@@ -44,7 +44,7 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
   return (
     <motion.li
       ref={ref}
-      className={`dbrow memcard ${row.pinned ? 'is-pinned' : ''}`}
+      className={`memcard ${index % 2 === 0 ? 'is-striped' : ''} ${row.pinned ? 'is-pinned' : ''}`}
       layout={index < LAYOUT_CAP ? 'position' : false}
       variants={riseItem}
       custom={index}

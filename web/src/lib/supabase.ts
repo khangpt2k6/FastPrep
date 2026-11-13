@@ -40,6 +40,9 @@ export const TABLES = {
   coverTemplates: 'automation_cover_templates',
   coverSettings: 'automation_cover_settings',
   coverLetters: 'automation_cover_letters',
+  settings: 'automation_settings',
+  resumes: 'automation_resumes',
+  rules: 'automation_rules',
 } as const;
 
 export const PROOFS_BUCKET = 'automation-proofs';

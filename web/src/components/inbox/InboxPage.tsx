@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useInbox } from '../../hooks/useInbox';
+import type { LiveTable } from '../../hooks/useLiveTable';
 import { INBOX_STATUSES, dayOf, sortInbox, statusOf, type InboxRow, type InboxStatus } from '../../lib/inbox';
-import { initialOf, monogramColors, plural, timeAgo } from '../../lib/format';
+import { plural, timeAgo } from '../../lib/format';
+import { CompanyLogo } from '../CompanyLogo';
 import { EmptyState, PillGroup, SkeletonCards, Tag } from '../common';
-import { IconAlert, IconSend } from '../Icons';
+import { IconBot, IconUser } from '../Icons';
 import './inbox.css';
 
 type Filter = 'all' | InboxStatus;
@@ -13,13 +15,11 @@ interface InboxPageProps {
   now: number;
 }
 
-function Row({ row, now }: { row: InboxRow; now: number }) {
+function Row({ row, now, index }: { row: InboxRow; now: number; index: number }) {
   const status = statusOf(row.status);
   return (
-    <li className="inboxrow">
-      <span className="inboxrow__mark" style={monogramColors(row.company)} aria-hidden="true">
-        {initialOf(row.company)}
-      </span>
+    <li className={`inboxrow ${index % 2 === 0 ? 'is-striped' : ''}`} style={{ animationDelay: `${Math.min(index, 10) * 30}ms` }}>
+      <CompanyLogo name={row.company} size={34} />
       <div className="inboxrow__main">
         <p className="inboxrow__title">
           <span className="inboxrow__company">{row.company}</span>
@@ -30,19 +30,25 @@ function Row({ row, now }: { row: InboxRow; now: number }) {
         </p>
       </div>
       <div className="inboxrow__meta">
-        <Tag color={status.color}>{status.label}</Tag>
-        <span className="inboxrow__when" title={`Applied ${dayOf(row.applied_at)}, ${row.mails} ${plural(row.mails, 'mail')}`}>
+        <Tag color={status.color} className="tag--status">
+          <span className="tag__dot" aria-hidden="true" />
+          {status.label}
+        </Tag>
+        <span className="inboxrow__when num" title={`Applied ${dayOf(row.applied_at)}, ${plural(row.mails, 'mail')}`}>
           {timeAgo(row.updated_at, now)}
         </span>
-        <span className="inboxrow__by">{row.by_agent ? 'Sent by the agent' : 'Sent by you'}</span>
+        <span className={`inboxrow__by ${row.by_agent ? 'is-agent' : ''}`} title={row.by_agent ? 'Sent by the agent' : 'Sent by you'}>
+          {row.by_agent ? <IconBot size={14} /> : <IconUser size={14} />}
+          <span>{row.by_agent ? 'Agent' : 'You'}</span>
+        </span>
       </div>
     </li>
   );
 }
 
-/** Where each application stands, read from the person's own mail by the agent on their computer. */
-export function InboxPage({ userId, now }: InboxPageProps) {
-  const { rows, loading, error, reload } = useInbox(userId);
+/** The page's content for a table of inbox rows, so the preview can feed it mock data. */
+export function InboxView({ table, now }: { table: LiveTable<InboxRow>; now: number }) {
+  const { rows, loading, error, reload } = table;
   const [filter, setFilter] = useState<Filter>('all');
 
   const sorted = useMemo(() => sortInbox(rows), [rows]);
@@ -69,39 +75,59 @@ export function InboxPage({ userId, now }: InboxPageProps) {
 
   if (error) {
     return (
-      <EmptyState
-        icon={<IconAlert size={22} />}
-        title={error.kind === 'missing-table' ? 'The inbox table is not set up yet' : 'Could not load the inbox'}
-        action={
-          <button type="button" className="btn btn--secondary btn--sm" onClick={reload}>
-            Try again
-          </button>
-        }
-      >
-        {error.kind === 'missing-table' ? 'Run supabase/schema.sql on the project once, then start the agent.' : error.message}
-      </EmptyState>
+      <div className="card">
+        <EmptyState
+          wolf="thinking"
+          title={error.kind === 'missing-table' ? 'Inbox not set up yet' : 'Could not load the inbox'}
+          text={error.kind === 'missing-table' ? 'Run supabase/schema.sql on the project once, then start the agent.' : error.message}
+          action={
+            <button type="button" className="btn btn--secondary btn--sm" onClick={reload}>
+              Try again
+            </button>
+          }
+        />
+      </div>
     );
   }
-  if (loading) return <SkeletonCards count={5} />;
+  if (loading) {
+    return (
+      <div className="card listcard">
+        <SkeletonCards count={6} check={false} zebra />
+      </div>
+    );
+  }
   if (rows.length === 0) {
     return (
-      <EmptyState icon={<IconSend size={22} />} title="No applications read from your mail yet">
-        Set GMAIL_ADDRESS and GMAIL_APP_PASSWORD in .env on your computer and start the agent. It reads your Gmail read-only and lists
-        here where each application stands.
-      </EmptyState>
+      <div className="card">
+        <EmptyState
+          wolf="reading"
+          title="No mail read yet"
+          text="Set GMAIL_ADDRESS and GMAIL_APP_PASSWORD in .env on your computer and start the agent. It reads your Gmail read-only and lists here where each application stands."
+        />
+      </div>
     );
   }
   return (
-    <section className="inbox" aria-label="Applications read from your mail">
+    <section className="inbox page" aria-label="Applications read from your mail">
       <div className="inbox__bar">
         <PillGroup label="Status" options={options} value={active} onChange={setFilter} />
-        {synced ? <span className="inbox__synced">Mail read {timeAgo(synced, now)}</span> : null}
+        {synced ? <span className="inbox__synced num">Mail read {timeAgo(synced, now)}</span> : null}
       </div>
-      <ul className="inbox__list">
-        {shown.map((row) => (
-          <Row key={row.id} row={row} now={now} />
-        ))}
-      </ul>
+      <div className="card listcard">
+        <ul className="inbox__list">
+          {shown.map((row, i) => (
+            <Row key={row.id} row={row} now={now} index={i} />
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
+
+/** Where each application stands, read from the person's own mail by the agent on their computer. */
+export function InboxPage({ userId, now }: InboxPageProps) {
+  const table = useInbox(userId);
+  return <InboxView table={table} now={now} />;
+}
+
+export default InboxPage;

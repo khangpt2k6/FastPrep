@@ -11,18 +11,9 @@ import { IconArrowLeft, IconArrowRight, IconCheck, IconX } from '../Icons';
 import { AuthorizationStep, EducationStep, EeoStep, ExperienceStep, PersonalStep, SkillsStep } from './steps';
 import { ReviewStep } from './ReviewStep';
 
-export const STEPS = [
-  { title: 'Personal', short: 'Personal' },
-  { title: 'Education', short: 'Education' },
-  { title: 'Experience', short: 'Experience' },
-  { title: 'Skills and preferences', short: 'Skills' },
-  { title: 'Work authorization', short: 'Work auth' },
-  { title: 'Self-identification', short: 'Identity' },
-  { title: 'Review', short: 'Review' },
-];
-export const REVIEW_STEP = STEPS.length - 1;
+import { REVIEW_STEP, STEPS, type WizardReason } from './wizardSteps';
 
-export type WizardReason = 'auto' | 'manual' | 'apply';
+export { REVIEW_STEP, STEPS, type WizardReason };
 
 interface ProfileWizardProps {
   open: boolean;

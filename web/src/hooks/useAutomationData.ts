@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { TABLES, supabase } from '../lib/supabase';
 import { toLoadError } from '../lib/errors';
-import type { AgentRow, CommandRow, JobRow, LoadError, MemoryRow, Preferences, PreferencesRow, ProfileRow } from '../lib/types';
+import type {
+  AgentRow,
+  AgentSettings,
+  AgentSettingsRow,
+  CommandRow,
+  JobRow,
+  LoadError,
+  MemoryRow,
+  Preferences,
+  PreferencesRow,
+  ProfileRow,
+} from '../lib/types';
 import { useLiveTable } from './useLiveTable';
 
 // Every column: company_name and company_domain come through once the agent adds them, and naming them
@@ -176,6 +187,47 @@ export async function sendApply(jobIds: string[], dryRun: boolean) {
 
 export async function sendSearch() {
   const { error } = await supabase.from(TABLES.commands).insert({ kind: 'search' });
+  if (error) throw error;
+}
+
+/** What the agent does with no settings row yet. Keep in step with automation_settings in supabase/schema.sql. */
+export const DEFAULT_SETTINGS: AgentSettings = { paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40 };
+
+/** The stored settings over the defaults; anything missing or out of range falls back. */
+export function readSettings(row: Partial<AgentSettingsRow> | null | undefined): AgentSettings {
+  const d = DEFAULT_SETTINGS;
+  if (!row) return { ...d };
+  const hours = Number(row.fetch_hours);
+  const limit = Number(row.fetch_limit);
+  return {
+    paused: typeof row.paused === 'boolean' ? row.paused : d.paused,
+    auto_fetch: typeof row.auto_fetch === 'boolean' ? row.auto_fetch : d.auto_fetch,
+    fetch_hours: Number.isFinite(hours) && hours >= 1 && hours <= 48 ? hours : d.fetch_hours,
+    fetch_limit: Number.isFinite(limit) && limit >= 0 && limit <= 200 ? limit : d.fetch_limit,
+  };
+}
+
+/** The agent's switches, live: pausing it, automatic fetching and how much each round scores. */
+export function useAgentSettings(userId: string) {
+  const load = useCallback(
+    () => supabase.from(TABLES.settings).select('*').eq('user_id', userId).limit(1).returns<AgentSettingsRow[]>(),
+    [userId],
+  );
+  const table = useLiveTable<AgentSettingsRow>({
+    table: TABLES.settings,
+    userId,
+    load,
+    keyOf: (row) => row.user_id,
+    pollMs: 30_000,
+  });
+  return { ...table, settings: table.rows[0] ?? null };
+}
+
+export async function saveAgentSettings(settings: AgentSettings) {
+  const { paused, auto_fetch, fetch_hours, fetch_limit } = settings;
+  const { error } = await supabase
+    .from(TABLES.settings)
+    .upsert({ paused, auto_fetch, fetch_hours, fetch_limit, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
   if (error) throw error;
 }
 

@@ -1,47 +1,49 @@
-/* The Inbox page. Tokens, .tag, .segmented and .emptystate come from styles.css. */
+/* The Inbox page. Tokens, .card, .tag, .segmented and .emptystate come from styles.css. */
 
 .inbox__bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  gap: 12px;
 }
 
 .inbox__synced {
-  font-size: 12px;
-  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
 }
 
 .inbox__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--line);
 }
 
 .inboxrow {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--line);
+  min-height: 60px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  animation: fade-up 260ms var(--ease-out) both;
+  transition: background-color 140ms ease;
+}
+
+.inboxrow.is-striped {
+  background: color-mix(in srgb, var(--surface-alt) 80%, transparent);
 }
 
 .inboxrow:hover {
-  background: var(--row-hover);
-}
-
-.inboxrow__mark {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-tag);
-  font-size: 14px;
-  font-weight: 600;
+  background: var(--brand-soft);
 }
 
 .inboxrow__main {
@@ -62,8 +64,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .inboxrow__role,
@@ -72,29 +74,47 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-2);
+  color: var(--muted);
 }
 
 .inboxrow__role {
   font-size: 14px;
+  color: var(--ink-soft);
 }
 
 .inboxrow__sub {
-  font-size: 12px;
+  margin-top: 1px;
+  font-size: 12.5px;
 }
 
 .inboxrow__meta {
   flex: none;
   display: grid;
-  grid-template-columns: 96px 64px 112px;
+  grid-template-columns: 116px 64px 72px;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--text-2);
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.inboxrow__meta .tag {
+  justify-self: start;
 }
 
 .inboxrow__when {
   text-align: right;
+}
+
+.inboxrow__by {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-weight: 600;
+}
+
+.inboxrow__by.is-agent {
+  color: var(--brand-dark);
 }
 
 @media (max-width: 720px) {

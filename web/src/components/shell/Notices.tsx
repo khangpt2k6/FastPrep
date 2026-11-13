@@ -1,13 +1,16 @@
 import { Callout } from '../common';
 import { IconAlert, IconTerminal } from '../Icons';
-import { StartHint } from '../agent/live';
+import { START_SHORTCUT, StartHint } from '../agent/live';
 
 /** Shown while the agent is offline: how to start it. */
 export function OfflineCallout() {
   return (
     <Callout tone="gray" icon={<IconTerminal size={16} />}>
       <span className="callout__line">
-        Agent offline. Start it: <StartHint />
+        <span>
+          <strong>Agent offline.</strong> Double-click <strong className="nowrap">{START_SHORTCUT}</strong> on your desktop, or run
+        </span>
+        <StartHint />
       </span>
     </Callout>
   );

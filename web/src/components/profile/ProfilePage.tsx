@@ -3,9 +3,11 @@ import { motion } from 'motion/react';
 import { SPRING } from '../../lib/motion';
 import { bulletLines, profileProgress, type Profile } from '../../lib/profile';
 import { monthRange } from '../../lib/format';
-import type { ProfileRow } from '../../lib/types';
+import type { ProfileRow, ResumeRow } from '../../lib/types';
 import { Callout } from '../common';
+import { Group } from '../settings';
 import { IconAlert, IconGithub, IconGlobe, IconLinkedin, IconMail, IconMapPin, IconPencil, IconPhone, IconPlus, IconSpark } from '../Icons';
+import { ResumeCard } from './ResumeCard';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
@@ -24,6 +26,18 @@ interface ProfilePageProps {
   profile: Profile;
   row: ProfileRow | null;
   onEdit: (step: number) => void;
+  /** The resume card: the active resume, one the agent is still reading, and the table's state. */
+  resume: {
+    active: ResumeRow | null;
+    pending: ResumeRow | null;
+    loading: boolean;
+    missing: boolean;
+    /** The resume the agent has loaded on the computer, when the table has none. */
+    agentName: string;
+  };
+  now: number;
+  /** Go to Set up to upload a new resume. */
+  onReplace: () => void;
 }
 
 function withScheme(url: string) {
@@ -219,7 +233,7 @@ function TabBody({ tab, profile, onEdit }: { tab: TabKey; profile: Profile; onEd
   }
 }
 
-export function ProfilePage({ profile, row, onEdit }: ProfilePageProps) {
+export function ProfilePage({ profile, row, onEdit, resume, now, onReplace }: ProfilePageProps) {
   const [tab, setTab] = useState<TabKey>('personal');
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const sections = profileProgress(profile);
@@ -265,40 +279,46 @@ export function ProfilePage({ profile, row, onEdit }: ProfilePageProps) {
         </Callout>
       ) : null}
 
-      <div className="tabs viewtabs" role="tablist" aria-label="Profile sections">
-        {TABS.map((t, i) => (
-          <button
-            key={t.key}
-            ref={(el) => {
-              tabRefs.current[i] = el;
-            }}
-            type="button"
-            role="tab"
-            id={`tab-${t.key}`}
-            aria-selected={tab === t.key}
-            aria-controls="profile-panel"
-            tabIndex={tab === t.key ? 0 : -1}
-            className={`viewtab ${tab === t.key ? 'is-on' : ''}`}
-            onClick={() => setTab(t.key)}
-            onKeyDown={(e) => onTabKey(e, i)}
-          >
-            <span>{t.title}</span>
-            {missing.has(t.step) ? <span className="navdot navdot--orange" title="Incomplete" /> : null}
-            {tab === t.key ? <motion.span className="viewtab__bar" layoutId="profile-tab" transition={SPRING} aria-hidden="true" /> : null}
-          </button>
-        ))}
-      </div>
+      <ResumeCard {...resume} now={now} onReplace={onReplace} />
 
-      <section className="tabpanel" role="tabpanel" id="profile-panel" aria-labelledby={`tab-${current.key}`}>
-        <header className="tabpanel__head">
-          <h2 className="sr-only">{current.title}</h2>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => onEdit(current.step)} aria-label={`Edit ${current.title}`}>
-            <IconPencil size={14} />
-            Edit
-          </button>
-        </header>
-        <TabBody tab={tab} profile={profile} onEdit={onEdit} />
-      </section>
+      <Group title="Details" bare>
+        <div className="panel profilecard">
+          <div className="profilecard__bar">
+            <div className="tabs viewtabs" role="tablist" aria-label="Profile sections">
+              {TABS.map((t, i) => (
+                <button
+                  key={t.key}
+                  ref={(el) => {
+                    tabRefs.current[i] = el;
+                  }}
+                  type="button"
+                  role="tab"
+                  id={`tab-${t.key}`}
+                  aria-selected={tab === t.key}
+                  aria-controls="profile-panel"
+                  tabIndex={tab === t.key ? 0 : -1}
+                  className={`viewtab ${tab === t.key ? 'is-on' : ''}`}
+                  onClick={() => setTab(t.key)}
+                  onKeyDown={(e) => onTabKey(e, i)}
+                >
+                  <span>{t.title}</span>
+                  {missing.has(t.step) ? <span className="navdot navdot--orange" title="Incomplete" /> : null}
+                  {tab === t.key ? <motion.span className="viewtab__bar" layoutId="profile-tab" transition={SPRING} aria-hidden="true" /> : null}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="btn btn--ghost btn--sm profilecard__edit" onClick={() => onEdit(current.step)} aria-label={`Edit ${current.title}`}>
+              <IconPencil size={14} />
+              Edit
+            </button>
+          </div>
+
+          <section className="tabpanel" role="tabpanel" id="profile-panel" aria-labelledby={`tab-${current.key}`}>
+            <h2 className="sr-only">{current.title}</h2>
+            <TabBody tab={tab} profile={profile} onEdit={onEdit} />
+          </section>
+        </div>
+      </Group>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export const PAGES = ['jobs', 'applications', 'agent', 'profile', 'preferences', 'memory', 'letters'] as const;
+export const PAGES = ['jobs', 'applications', 'inbox', 'agent', 'profile', 'preferences', 'memory', 'letters', 'setup', 'companies', 'rules'] as const;
 export type Page = (typeof PAGES)[number];
 
 export interface Route {
@@ -43,5 +43,20 @@ export function useRoute() {
     window.scrollTo({ top: 0 });
   }, []);
 
-  return { ...route, navigate };
+  /**
+   * Changes the current page's query in place, for filters kept in the address ("#/companies?tech=Go").
+   * No history entry and no scroll: a filter is not a new page.
+   */
+  const setParams = useCallback((patch: Record<string, string | null>) => {
+    const { page, params } = parse();
+    for (const [key, value] of Object.entries(patch)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}#/${page}${query ? `?${query}` : ''}`);
+    setRoute(parse());
+  }, []);
+
+  return { ...route, navigate, setParams };
 }

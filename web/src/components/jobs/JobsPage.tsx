@@ -1,15 +1,30 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
 import type { JobRow, LoadError } from '../../lib/types';
-import { CheckBox, EmptyState, PillGroup, SkeletonCards } from '../common';
-import { IconAlert, IconBriefcase, IconRadar, IconSearch } from '../Icons';
+import type { CompanyCount, MinScore, SortKey, Track } from '../../lib/jobs';
+import { CheckBox, EmptyState, SkeletonCards } from '../common';
+import { IconRadar } from '../Icons';
+import { Shimmer, StateFade } from '../motion';
 import { JobCard } from './JobCard';
-import { AnimatedNumber, StateFade } from '../motion';
+import { CompanyBar, RoleChips } from './ChipRows';
+import { ListToolbar } from './ListToolbar';
+import { TrackPills } from './TrackPills';
 
-export type MinScore = 0 | 3 | 4;
+export type { MinScore };
+
+export interface JobFilterState {
+  query: string;
+  minScore: MinScore;
+  track: Track;
+  role: string | null;
+  company: string | null;
+  sort: SortKey;
+}
 
 interface JobsPageProps {
+  /** Scored jobs that can still be applied to, before any filter. */
   candidates: JobRow[];
+  /** After every filter, in the chosen order. */
   visible: JobRow[];
   loading: boolean;
   error: LoadError | null;
@@ -18,16 +33,27 @@ interface JobsPageProps {
   queued: Set<string>;
   onToggle: (id: string) => void;
   onToggleAll: (ids: string[], select: boolean) => void;
-  minScore: MinScore;
-  onMinScore: (value: MinScore) => void;
-  query: string;
-  onQuery: (value: string) => void;
+  saved: Set<string>;
+  onSave: (id: string) => void;
+  filters: JobFilterState;
+  onFilters: (patch: Partial<JobFilterState>) => void;
   onClearFilters: () => void;
+  kinds: { name: string; count: number }[];
+  companies: CompanyCount[];
+  trackCounts: Record<Track, number>;
+  /** A search is on its way or running: the button shimmers "Finding jobs". */
   searching: boolean;
   onSearch: () => void;
+  now: number;
+  scored: number;
+  found: number;
+  /** The gradient cards on top. */
+  banner?: ReactNode;
   /** Callouts above the list: agent offline, Live mode, profile incomplete. */
   notices?: ReactNode;
   actionBar: ReactNode;
+  /** The right column: calendar, progress, the agent. */
+  rail?: ReactNode;
 }
 
 function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Set<string>; onToggleAll: JobsPageProps['onToggleAll'] }) {
@@ -45,10 +71,20 @@ function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Se
   );
 }
 
+/** "Find more", or a shimmering "Finding jobs" while a search runs. */
+export function FindButton({ searching, onSearch, small = false }: { searching: boolean; onSearch: () => void; small?: boolean }) {
+  return (
+    <button type="button" className={`btn btn--primary ${small ? 'btn--sm' : ''} findbtn`} onClick={onSearch} disabled={searching} title="Ask the agent for more jobs">
+      <IconRadar size={15} className={searching ? 'spin-slow' : ''} />
+      {searching ? <Shimmer tone="inverse">Finding jobs</Shimmer> : 'Find more'}
+    </button>
+  );
+}
+
 export function JobsPage(props: JobsPageProps) {
-  const { candidates, visible, loading, error, selected, queued, minScore, query } = props;
+  const { candidates, visible, loading, error, selected, queued, filters, now } = props;
   const selectable = visible.filter((j) => !queued.has(j.id)).map((j) => j.id);
-  const filtered = visible.length !== candidates.length;
+  const set = props.onFilters;
 
   let body: ReactNode;
   let state = 'list';
@@ -56,40 +92,35 @@ export function JobsPage(props: JobsPageProps) {
     state = 'error';
     body = (
       <EmptyState
-        icon={<IconAlert size={20} />}
-        title="Could not load jobs."
+        wolf="thinking"
+        title="Could not load jobs"
+        text={error.message}
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={props.onRetry}>
             Retry
           </button>
         }
-      >
-        {error.message}
-      </EmptyState>
+      />
     );
   } else if (loading) {
     state = 'loading';
-    body = <SkeletonCards count={6} />;
+    body = <SkeletonCards count={8} check zebra />;
   } else if (candidates.length === 0) {
     state = 'none';
     body = (
       <EmptyState
-        icon={<IconBriefcase size={20} />}
-        title="No scored jobs yet."
-        action={
-          <button type="button" className="btn btn--primary btn--sm" onClick={props.onSearch} disabled={props.searching}>
-            {props.searching ? <span className="spinner" aria-hidden="true" /> : <IconRadar size={14} />}
-            Find jobs
-          </button>
-        }
+        wolf="music"
+        title="No scored jobs yet"
+        text={props.searching ? <Shimmer>The agent is looking now.</Shimmer> : 'Ask the agent to look for some.'}
+        action={<FindButton searching={props.searching} onSearch={props.onSearch} />}
       />
     );
   } else if (visible.length === 0) {
     state = 'filtered';
     body = (
       <EmptyState
-        icon={<IconSearch size={20} />}
-        title="No matching jobs."
+        wolf="thinking"
+        title="No matches"
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={props.onClearFilters}>
             Clear filters
@@ -99,53 +130,66 @@ export function JobsPage(props: JobsPageProps) {
     );
   } else {
     body = (
-      <div className="dblist">
-        <div className="dblist__head jobrow__grid">
-          <SelectAll ids={selectable} selected={selected} onToggleAll={props.onToggleAll} />
-          <span className="dblist__col dblist__col--name">Job</span>
-          <span className="dblist__col dblist__col--end">Score</span>
+      <>
+        <div className="jhead" aria-hidden="true">
           <span />
+          <span />
+          <span>Job</span>
+          <span className="jhead__loc">Place</span>
+          <span className="jhead__time">Found</span>
+          <span className="jhead__score">Match</span>
         </div>
-        <ul className="dblist__rows">
-          <AnimatePresence>
+        <ul className="jlist">
+          <AnimatePresence mode="popLayout">
             {visible.map((job, i) => (
-              <JobCard key={job.id} index={i} job={job} selected={selected.has(job.id)} queued={queued.has(job.id)} onToggle={props.onToggle} />
+              <JobCard
+                key={job.id}
+                index={i}
+                job={job}
+                now={now}
+                selected={selected.has(job.id)}
+                queued={queued.has(job.id)}
+                saved={props.saved.has(job.id)}
+                onToggle={props.onToggle}
+                onSave={props.onSave}
+              />
             ))}
           </AnimatePresence>
         </ul>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="page page--jobs">
-      {props.notices}
-      <div className="dbbar">
-        <PillGroup<MinScore>
-          label="Minimum score"
-          value={minScore}
-          onChange={props.onMinScore}
-          options={[
-            { value: 0, label: 'All', title: 'Any score' },
-            { value: 3, label: '3+', title: 'Score 3 or more' },
-            { value: 4, label: '4+', title: 'Score 4 or more' },
-          ]}
-        />
-        <div className="dbbar__right">
-          <label className="searchbox">
-            <IconSearch size={14} />
-            <input type="search" value={query} onChange={(e) => props.onQuery(e.target.value)} placeholder="Search" aria-label="Search jobs by title or company" />
-          </label>
-          {!loading && !error && candidates.length > 0 ? (
-            <span className="count num" aria-label={filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}>
-              <AnimatedNumber value={visible.length} from={visible.length} duration={0.3} />
-              {filtered ? ` of ${candidates.length}` : ' jobs'}
-            </span>
-          ) : null}
-        </div>
+    <div className="home">
+      <div className="home__main page">
+        {props.notices}
+        {props.banner}
+        <RoleChips kinds={props.kinds} active={filters.role} onPick={(role) => set({ role })} />
+        <CompanyBar companies={props.companies} active={filters.company} onPick={(company) => set({ company })} />
+        <TrackPills active={filters.track} counts={props.trackCounts} onPick={(track) => set({ track })} />
+        <section className="card listcard" aria-label="Jobs">
+          <div className="listcard__top">
+            {visible.length > 0 && !loading && !error ? <SelectAll ids={selectable} selected={selected} onToggleAll={props.onToggleAll} /> : null}
+            <ListToolbar
+              query={filters.query}
+              onQuery={(query) => set({ query })}
+              sort={filters.sort}
+              onSort={(sort) => set({ sort })}
+              minScore={filters.minScore}
+              onMinScore={(minScore) => set({ minScore })}
+              shown={visible.length}
+              total={candidates.length}
+              scored={props.scored}
+              found={props.found}
+              action={<FindButton searching={props.searching} onSearch={props.onSearch} small />}
+            />
+          </div>
+          <StateFade state={state}>{body}</StateFade>
+        </section>
+        {props.actionBar}
       </div>
-      <StateFade state={state}>{body}</StateFade>
-      {props.actionBar}
+      {props.rail ? <aside className="home__rail">{props.rail}</aside> : null}
     </div>
   );
 }

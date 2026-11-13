@@ -11,6 +11,7 @@ import {
   pieces,
   slotNames,
   type CoverLetterRow,
+  type CoverSettings,
   type CoverTemplate,
 } from '../../lib/coverLetter';
 import {
@@ -23,19 +24,48 @@ import {
   useCoverSettings,
   useCoverTemplates,
 } from '../../hooks/useCoverLetters';
+import type { LiveTable } from '../../hooks/useLiveTable';
 import { useSignedUrl } from '../../hooks/useSignedUrl';
 import { CompanyLogo } from '../CompanyLogo';
-import { EmptyState, SkeletonCards } from '../common';
+import { EmptyState, PillGroup, SkeletonCards } from '../common';
 import { Dialog } from '../Dialog';
-import { IconAlert, IconCheck, IconCopy, IconLetter, IconLink, IconPencil, IconPlus, IconSpark, IconTrash, IconX } from '../Icons';
+import { Shimmer } from '../motion';
+import { Switch } from '../settings';
+import { IconAlert, IconCheck, IconCopy, IconDownload, IconLetter, IconLink, IconPencil, IconPlus, IconSpark, IconTrash, IconX } from '../Icons';
 import { SetupCard } from '../SetupCard';
 import type { ToastTone } from '../Toasts';
 
 type Toast = (toast: { tone: ToastTone; title: string; detail?: string }) => void;
 type Draft = { id: string; name: string; description: string; body: string; isNew: boolean };
 
-interface CoverLettersPageProps {
-  userId: string;
+/** What the page reads. The container below fills it from Supabase; the preview fills it with mock rows. */
+export interface LettersData {
+  templates: LiveTable<CoverTemplate>;
+  settings: LiveTable<CoverSettings> & { settings: CoverSettings | null };
+  letters: LiveTable<CoverLetterRow>;
+}
+
+/** What the page writes. */
+export interface LettersActions {
+  saveSettings: (enabled: boolean, templateId: string) => Promise<void>;
+  saveTemplate: (template: Pick<CoverTemplate, 'id' | 'name' | 'description' | 'body'>) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
+  saveLetter: (jobId: string, body: string) => Promise<void>;
+  /** Asks the agent for letters; `fresh` drops the kept ones first. Without it the agent only renders the PDF again. */
+  sendLetters: (jobIds: string[], fresh: boolean) => Promise<void>;
+}
+
+export const LIVE_ACTIONS: LettersActions = {
+  saveSettings: saveCoverSettings,
+  saveTemplate: saveCoverTemplate,
+  deleteTemplate: deleteCoverTemplate,
+  saveLetter: saveCoverLetter,
+  sendLetters: sendCoverLetters,
+};
+
+interface LettersViewProps {
+  data: LettersData;
+  actions: LettersActions;
   jobs: JobRow[];
   online: boolean;
   now: number;
@@ -100,7 +130,7 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
 
   return (
     <div className="cl-editor">
-      <div className="prefs__grid">
+      <div className="grid-fields">
         <div className="field">
           <label className="field__label" htmlFor={nameId}>
             Name
@@ -111,14 +141,7 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
           <label className="field__label" htmlFor={descId}>
             Use for
           </label>
-          <input
-            id={descId}
-            className="input"
-            value={draft.description}
-            maxLength={140}
-            placeholder="Startups, internships"
-            onChange={(e) => onChange({ ...draft, description: e.target.value })}
-          />
+          <input id={descId} className="input" value={draft.description} maxLength={140} placeholder="Startups, internships" onChange={(e) => onChange({ ...draft, description: e.target.value })} />
         </div>
       </div>
 
@@ -126,11 +149,11 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
         <span className="field__label">Insert</span>
         <div className="choice">
           {Object.entries(FIELDS).map(([name, label]) => (
-            <button key={name} type="button" className="choice__btn cl-chip" title={`{{${name}}}`} onClick={() => insert(`{{${name}}}`)}>
+            <button key={name} type="button" className="choice__btn cl-chip press" title={`{{${name}}}`} onClick={() => insert(`{{${name}}}`)}>
               {label}
             </button>
           ))}
-          <button type="button" className="choice__btn cl-chip cl-chip--slot" onClick={() => insert('{{new_part: what to write here}}')}>
+          <button type="button" className="choice__btn cl-chip cl-chip--slot press" onClick={() => insert('{{new_part: what to write here}}')}>
             <IconSpark size={13} /> Generated part
           </button>
         </div>
@@ -140,15 +163,7 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
         <label className="field__label" htmlFor={bodyId}>
           Template
         </label>
-        <textarea
-          id={bodyId}
-          ref={area}
-          className="input textarea cl-body"
-          rows={16}
-          spellCheck={false}
-          value={draft.body}
-          onChange={(e) => onChange({ ...draft, body: e.target.value })}
-        />
+        <textarea id={bodyId} ref={area} className="input textarea cl-body" rows={16} spellCheck={false} value={draft.body} onChange={(e) => onChange({ ...draft, body: e.target.value })} />
         <span className="field__hint">{'{{part: note}}'} is generated for each job.</span>
       </div>
 
@@ -164,7 +179,7 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
         <Paper body={draft.body} />
       )}
 
-      <footer className="prefs__foot">
+      <footer className="cl-foot">
         <span className="savestate" title="Generated parts">
           <IconSpark size={13} /> {slotNames(draft.body).length}
         </span>
@@ -180,38 +195,33 @@ function Editor({ draft, onChange, onSave, onCancel, saving }: {
   );
 }
 
-function PdfLink({ path, version }: { path: string; version: string }) {
-  const { url, failed } = useSignedUrl(path, version);
-  if (!path || failed) return null;
-  if (!url) return <span className="spinner" aria-hidden="true" />;
-  return (
-    <a className="btn btn--secondary btn--sm" href={url} target="_blank" rel="noreferrer">
-      <IconLink size={14} /> PDF
-    </a>
-  );
-}
-
 /** One row in the rail. The letter itself opens at reading width in a dialog. */
-function LetterItem({ letter, job, templateName, now, open, onOpen }: {
+function LetterItem({ letter, job, templateName, now, open, onOpen, index }: {
   letter: CoverLetterRow;
   job: JobRow | undefined;
   templateName: string;
   now: number;
   open: boolean;
   onOpen: () => void;
+  index: number;
 }) {
   const name = job ? displayName(job) : letter.job_id;
   return (
-    <li className={`cl-letter ${open ? 'is-open' : ''}`}>
-      <button type="button" className="cl-letter__head" onClick={onOpen} aria-haspopup="dialog" title="Read and edit">
+    <li className={`cl-letter ${open ? 'is-open' : ''} ${index % 2 === 0 ? 'is-striped' : ''}`}>
+      <button type="button" className="cl-letter__head press" onClick={onOpen} aria-haspopup="dialog" title="Read and edit">
         <CompanyLogo name={name} domain={job?.company_domain} size={32} />
         <span className="cl-letter__what">
-          <strong>{name}</strong>
-          <span>{job ? job.title : ''}</span>
-        </span>
-        <span className="cl-letter__meta">
-          <time className="num">{timeAgo(letter.updated_at, now)}</time>
+          <span className="cl-letter__top">
+            <strong>{name}</strong>
+            <time className="num">{timeAgo(letter.updated_at, now)}</time>
+          </span>
+          <span className="cl-letter__role">{job ? job.title : ''}</span>
           <span className="cl-letter__tags">
+            {letter.pdf_path ? (
+              <span className="pdfmark" title="PDF ready">
+                PDF
+              </span>
+            ) : null}
             {letter.updated_by === 'web' ? <span className="tag tag--gray">Edited</span> : null}
             {letter.problems ? (
               <span className="tag tag--yellow" title={letter.problems}>
@@ -234,14 +244,73 @@ interface LetterViewProps {
   templateName: string;
   online: boolean;
   toast: Toast;
+  actions: LettersActions;
   onChanged: () => void;
-  onClose: () => void;
 }
 
-/** The letter on paper, editable. Keyed by job, so another letter starts clean. */
-function LetterView({ letter, job, templateName, online, toast, onChanged, onClose }: LetterViewProps) {
+/** Waiting for the agent to render the PDF: first for our own save to land, then for the agent's newer row. */
+type PdfWait = { phase: 'save' | 'render'; at: string } | null;
+
+function PdfPane({ letter, name, online, wait, onMake, busy }: { letter: CoverLetterRow; name: string; online: boolean; wait: PdfWait; onMake: () => void; busy: boolean }) {
+  const { url, failed } = useSignedUrl(letter.pdf_path, letter.updated_at);
+  const file = `${name} cover letter.pdf`;
+  const { url: downloadUrl } = useSignedUrl(letter.pdf_path, letter.updated_at, file);
+  if (!letter.pdf_path) {
+    return (
+      <div className="pdfpane pdfpane--empty">
+        <span className="pdfpane__icon" aria-hidden="true">
+          <IconLetter size={26} />
+        </span>
+        <p className="pdfpane__title">No PDF yet</p>
+        <p className="pdfpane__text">The agent makes the PDF with the letter.</p>
+        {wait ? (
+          <p className="pdfpane__text">{online ? <Shimmer>Making the PDF</Shimmer> : 'The PDF is made when the agent is online.'}</p>
+        ) : (
+          <button type="button" className="btn btn--brand btn--sm" onClick={onMake} disabled={busy}>
+            Make PDF
+          </button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="pdfpane">
+      <div className="pdfpane__bar">
+        {wait ? (
+          <span className="pdfpane__note">{online ? <Shimmer>Updating the PDF</Shimmer> : 'PDF updates when the agent is online'}</span>
+        ) : (
+          <span className="pdfpane__note">The PDF the agent attaches</span>
+        )}
+        {url ? (
+          <a className="btn btn--secondary btn--sm" href={url} target="_blank" rel="noreferrer">
+            <IconLink size={14} />
+            <span className="hide-sm">Open in new tab</span>
+          </a>
+        ) : null}
+        {downloadUrl ? (
+          <a className="btn btn--secondary btn--sm" href={downloadUrl} download={file}>
+            <IconDownload size={14} />
+            <span className="hide-sm">Download</span>
+          </a>
+        ) : null}
+      </div>
+      {failed ? (
+        <p className="pdfpane__text">The PDF could not be opened.</p>
+      ) : url ? (
+        <iframe className="pdfpane__frame" src={url} title={`Cover letter PDF for ${name}`} />
+      ) : (
+        <span className="skeleton pdfpane__skel" aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
+/** The letter on paper, editable, or its PDF. Keyed by job, so another letter starts clean. */
+function LetterView({ letter, job, templateName, online, toast, actions, onChanged, onClose }: LetterViewProps & { onClose: () => void }) {
   const [text, setText] = useState(letter.body);
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<'text' | 'pdf'>('text');
+  const [wait, setWait] = useState<PdfWait>(null);
   const dirty = text !== letter.body;
 
   useEffect(() => {
@@ -249,11 +318,21 @@ function LetterView({ letter, job, templateName, online, toast, onChanged, onClo
     if (!dirty) setText(letter.body);
   }, [letter.body]);
 
+  useEffect(() => {
+    if (!wait || letter.updated_at === wait.at) return;
+    if (wait.phase === 'save') setWait({ phase: 'render', at: letter.updated_at });
+    else setWait(null);
+  }, [letter.updated_at]);
+
   async function save() {
     setBusy(true);
+    const before = letter.updated_at;
     try {
-      await saveCoverLetter(letter.job_id, text);
-      toast({ tone: 'ok', title: 'Letter saved' });
+      await actions.saveLetter(letter.job_id, text);
+      // The agent renders the PDF again from the edited text; no AI call.
+      await actions.sendLetters([letter.job_id], false);
+      setWait({ phase: 'save', at: before });
+      toast({ tone: 'ok', title: 'Letter saved', detail: online ? 'Updating the PDF' : 'PDF updates when the agent is online' });
       onChanged();
     } catch (error) {
       toast({ tone: 'error', title: 'Could not save letter', detail: errorText(error) });
@@ -262,10 +341,23 @@ function LetterView({ letter, job, templateName, online, toast, onChanged, onClo
     }
   }
 
+  async function makePdf() {
+    setBusy(true);
+    try {
+      await actions.sendLetters([letter.job_id], false);
+      setWait({ phase: 'render', at: letter.updated_at });
+      onChanged();
+    } catch (error) {
+      toast({ tone: 'error', title: 'Could not ask for the PDF', detail: errorText(error) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function again() {
     setBusy(true);
     try {
-      await sendCoverLetters([letter.job_id], true);
+      await actions.sendLetters([letter.job_id], true);
       toast({ tone: 'ok', title: online ? 'Rewriting letter' : 'Rewrite queued' });
       onChanged();
       onClose();
@@ -280,25 +372,42 @@ function LetterView({ letter, job, templateName, online, toast, onChanged, onClo
   return (
     <>
       <header className="letterview__head">
-        <CompanyLogo name={name} domain={job?.company_domain} size={36} />
+        <CompanyLogo name={name} domain={job?.company_domain} size={38} />
         <div className="letterview__who">
           <h2 id="letter-title">{name}</h2>
           <span>{job ? job.title : ''}</span>
         </div>
-        <span className="tag tag--gray" title="Template">
+        <span className="tag tag--gray hide-sm" title="Template">
           {templateName}
         </span>
         <button type="button" className="icon-btn" onClick={onClose} aria-label="Close letter" title="Close" data-autofocus>
           <IconX size={18} />
         </button>
       </header>
+      <div className="letterview__tabs">
+        <PillGroup<'text' | 'pdf'>
+          label="Show the letter as"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'text', label: 'Text' },
+            { value: 'pdf', label: 'PDF' },
+          ]}
+        />
+        {wait && view === 'text' ? <span className="pdfpane__note">{online ? <Shimmer>Updating the PDF</Shimmer> : 'PDF updates when the agent is online'}</span> : null}
+      </div>
       <div className="letterview__body">
-        <textarea className="input textarea cl-letter__text" value={text} onChange={(e) => setText(e.target.value)} aria-label="Letter text" spellCheck />
-        {letter.problems ? <p className="cl-letter__warn">Review: {letter.problems}</p> : null}
+        {view === 'text' ? (
+          <>
+            <textarea className="input textarea cl-letter__text" value={text} onChange={(e) => setText(e.target.value)} aria-label="Letter text" spellCheck />
+            {letter.problems ? <p className="cl-letter__warn">Review: {letter.problems}</p> : null}
+          </>
+        ) : (
+          <PdfPane letter={letter} name={name} online={online} wait={wait} onMake={() => void makePdf()} busy={busy} />
+        )}
       </div>
       <footer className="letterview__foot">
         <span className="savestate">{dirty ? 'Unsaved changes' : letter.updated_by === 'web' ? 'Edited' : ''}</span>
-        <PdfLink path={letter.pdf_path} version={letter.updated_at} />
         <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy} title="Replace with a new letter">
           Rewrite
         </button>
@@ -311,7 +420,7 @@ function LetterView({ letter, job, templateName, online, toast, onChanged, onClo
 }
 
 /** A letter at reading width over the page; the rail stays the list. */
-function LetterDialog({ view, onClose }: { view: Omit<LetterViewProps, 'onClose'> | null; onClose: () => void }) {
+function LetterDialog({ view, onClose }: { view: LetterViewProps | null; onClose: () => void }) {
   // Keep showing the last letter while the dialog animates out.
   const last = useRef(view);
   if (view) last.current = view;
@@ -323,14 +432,10 @@ function LetterDialog({ view, onClose }: { view: Omit<LetterViewProps, 'onClose'
   );
 }
 
-export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLettersPageProps) {
-  const templatesT = useCoverTemplates(userId);
-  const settingsT = useCoverSettings(userId);
-  const lettersT = useCoverLetters(userId);
-  const templates = useMemo(
-    () => [...templatesT.rows].sort((a, b) => Number(b.builtin) - Number(a.builtin) || a.name.localeCompare(b.name)),
-    [templatesT.rows],
-  );
+/** The page's content: the templates on the left, the letters in the rail. */
+export function LettersView({ data, actions, jobs, online, now, toast }: LettersViewProps) {
+  const { templates: templatesT, settings: settingsT, letters: lettersT } = data;
+  const templates = useMemo(() => [...templatesT.rows].sort((a, b) => Number(b.builtin) - Number(a.builtin) || a.name.localeCompare(b.name)), [templatesT.rows]);
   const letters = useMemo(() => [...lettersT.rows].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)), [lettersT.rows]);
   const enabled = settingsT.settings?.enabled ?? true;
   const inUse = settingsT.settings?.template_id ?? DEFAULT_TEMPLATE;
@@ -353,7 +458,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
 
   async function choose(templateId: string, on: boolean) {
     try {
-      await saveCoverSettings(on, templateId);
+      await actions.saveSettings(on, templateId);
       settingsT.reload();
       toast({ tone: 'ok', title: on ? `Using "${names.get(templateId) ?? templateId}"` : 'Cover letters off' });
     } catch (error) {
@@ -365,7 +470,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
     if (!draft) return;
     setSaving(true);
     try {
-      await saveCoverTemplate({ id: draft.id, name: draft.name.trim(), description: draft.description.trim(), body: draft.body });
+      await actions.saveTemplate({ id: draft.id, name: draft.name.trim(), description: draft.description.trim(), body: draft.body });
       setFocusId(draft.id);
       setDraft(null);
       templatesT.reload();
@@ -380,8 +485,8 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
   async function remove(template: CoverTemplate) {
     if (!window.confirm(`Delete "${template.name}"?`)) return;
     try {
-      await deleteCoverTemplate(template.id);
-      if (template.id === inUse) await saveCoverSettings(enabled, DEFAULT_TEMPLATE);
+      await actions.deleteTemplate(template.id);
+      if (template.id === inUse) await actions.saveSettings(enabled, DEFAULT_TEMPLATE);
       setFocusId(null);
       reloadAll();
     } catch (error) {
@@ -396,23 +501,20 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
     <div className="page page--letters">
       <div className="cl-main">
         <section className="cl-card" aria-label="Cover letter templates">
-          <label className="row-switch row-switch--card">
-            <span className="row-switch__text">
-              <strong>Attach letters</strong>
-              <span>{enabled ? `Template: ${names.get(inUse) ?? inUse}` : 'Off'}</span>
+          <label className="card srow srow--toggle cl-attach">
+            <span className="srow__text">
+              <span className="srow__title">Attach letters</span>
+              <span className="srow__desc">{enabled ? `Every application gets a letter from "${names.get(inUse) ?? inUse}".` : 'Off. Applications go without a letter.'}</span>
             </span>
-            <input type="checkbox" role="switch" checked={enabled} onChange={(e) => void choose(inUse, e.target.checked)} />
-            <span className="switch" aria-hidden="true">
-              <span className="switch__thumb" />
+            <span className="srow__control">
+              <Switch checked={enabled} onChange={(on) => void choose(inUse, on)} label="Attach letters" />
             </span>
           </label>
 
-          {templatesT.loading && templates.length === 0 ? <SkeletonCards count={2} /> : null}
-          {!templatesT.loading && templates.length === 0 ? (
-            <p className="cl-empty">No templates yet.</p>
-          ) : null}
+          {templatesT.loading && templates.length === 0 ? <SkeletonCards count={2} check={false} /> : null}
+          {!templatesT.loading && templates.length === 0 ? <p className="cl-empty">No templates yet.</p> : null}
 
-          <div className="cl-gallery" role="list">
+          <div className="cl-gallery stagger" role="list">
             {templates.map((t) => {
               const on = t.id === focused?.id && !draft;
               return (
@@ -420,7 +522,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                   key={t.id}
                   type="button"
                   role="listitem"
-                  className={`cl-tile ${on ? 'is-focus' : ''} ${t.id === inUse ? 'is-used' : ''}`}
+                  className={`card cl-tile press ${on ? 'is-focus' : ''} ${t.id === inUse ? 'is-used' : ''}`}
                   aria-pressed={on}
                   onClick={() => {
                     setDraft(null);
@@ -429,7 +531,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                 >
                   <span className="cl-tile__top">
                     <span className="cl-tile__name">{t.name}</span>
-                    {t.id === inUse ? <span className="tag tag--blue">{enabled ? 'In use' : 'Selected'}</span> : null}
+                    {t.id === inUse ? <span className="tag tag--violet">{enabled ? 'In use' : 'Selected'}</span> : null}
                   </span>
                   <span className="cl-tile__desc">{t.description || 'Custom template'}</span>
                   <span className="cl-tile__foot" title="Generated parts">
@@ -440,7 +542,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
             })}
             <button
               type="button"
-              className="cl-tile cl-tile--new"
+              className="cl-tile cl-tile--new press"
               onClick={() => setDraft({ id: newTemplateId('mine'), name: '', description: '', body: STARTER_BODY, isNew: true })}
             >
               <IconPlus size={18} />
@@ -449,7 +551,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
           </div>
         </section>
 
-        <section className="cl-card" aria-label={draft ? 'Edit template' : 'Template preview'}>
+        <section className="card cl-card cl-card--paper" aria-label={draft ? 'Edit template' : 'Template preview'}>
           {draft ? (
             <Editor draft={draft} onChange={setDraft} onSave={saveDraft} onCancel={() => setDraft(null)} saving={saving} />
           ) : focused ? (
@@ -473,18 +575,11 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                   <button
                     type="button"
                     className="btn btn--secondary btn--sm"
-                    onClick={() =>
-                      setDraft({ id: newTemplateId(focused.name), name: `${focused.name} (mine)`, description: focused.description, body: focused.body, isNew: true })
-                    }
+                    onClick={() => setDraft({ id: newTemplateId(focused.name), name: `${focused.name} (mine)`, description: focused.description, body: focused.body, isNew: true })}
                   >
                     <IconCopy size={14} /> Duplicate
                   </button>
-                  <button
-                    type="button"
-                    className="btn btn--primary btn--sm"
-                    disabled={focused.id === inUse && enabled}
-                    onClick={() => void choose(focused.id, true)}
-                  >
+                  <button type="button" className="btn btn--primary btn--sm" disabled={focused.id === inUse && enabled} onClick={() => void choose(focused.id, true)}>
                     <IconCheck size={14} /> {focused.id === inUse && enabled ? 'In use' : 'Use template'}
                   </button>
                 </div>
@@ -502,24 +597,23 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
         </section>
       </div>
 
-      <aside className="prefs-side">
-        <section className="cl-letters" aria-labelledby="letters-title">
+      <aside className="cl-rail">
+        <section className="card cl-letters" aria-labelledby="letters-title">
           <div className="card__head">
             <h2 className="card__title" id="letters-title">
               Letters
             </h2>
-            <span className="num cl-count">{letters.length}</span>
+            <span className="chip chip--count num">{letters.length}</span>
           </div>
-          {lettersT.loading && letters.length === 0 ? <SkeletonCards count={2} /> : null}
+          {lettersT.loading && letters.length === 0 ? <SkeletonCards count={3} check={false} zebra /> : null}
           {!lettersT.loading && letters.length === 0 ? (
-            <EmptyState icon={<IconLetter size={20} />} title="No letters yet.">
-              Select jobs, then Write letters.
-            </EmptyState>
+            <EmptyState compact wolf="reading" title="No letters yet" text="Select jobs, then Write letters." />
           ) : (
             <ul className="cl-letter-list">
-              {letters.map((letter) => (
+              {letters.map((letter, i) => (
                 <LetterItem
                   key={letter.job_id}
+                  index={i}
                   letter={letter}
                   job={jobsById.get(letter.job_id)}
                   templateName={names.get(letter.template_id) ?? letter.template_id}
@@ -542,6 +636,7 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
                 templateName: names.get(opened.template_id) ?? opened.template_id,
                 online,
                 toast,
+                actions,
                 onChanged: lettersT.reload,
               }
             : null
@@ -551,3 +646,21 @@ export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLett
     </div>
   );
 }
+
+interface CoverLettersPageProps {
+  userId: string;
+  jobs: JobRow[];
+  online: boolean;
+  now: number;
+  toast: Toast;
+}
+
+/** The page wired to Supabase. */
+export function CoverLettersPage({ userId, jobs, online, now, toast }: CoverLettersPageProps) {
+  const templates = useCoverTemplates(userId);
+  const settings = useCoverSettings(userId);
+  const letters = useCoverLetters(userId);
+  return <LettersView data={{ templates, settings, letters }} actions={LIVE_ACTIONS} jobs={jobs} online={online} now={now} toast={toast} />;
+}
+
+export default CoverLettersPage;

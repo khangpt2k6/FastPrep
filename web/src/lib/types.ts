@@ -9,6 +9,7 @@ export type AgentState =
   | 'writing'
   | 'applied'
   | 'error'
+  | 'paused'
   | 'offline';
 
 export interface AgentRow {
@@ -20,6 +21,42 @@ export interface AgentRow {
   jobs_found: number;
   jobs_scored: number;
   last_seen: string;
+  /** When the agent last brought new postings; missing until the agent and schema have it. */
+  fetched_at?: string | null;
+  /** When it will bring postings next. */
+  next_fetch_at?: string | null;
+  /** How many new jobs the last round found. */
+  fetched_new?: number | null;
+}
+
+/** The agent's switches, one row per user. A missing row means the defaults. */
+export interface AgentSettings {
+  paused: boolean;
+  auto_fetch: boolean;
+  /** 1 to 48 hours between rounds. */
+  fetch_hours: number;
+  /** New jobs scored per round, 0 to 200. */
+  fetch_limit: number;
+}
+
+export interface AgentSettingsRow extends AgentSettings {
+  user_id: string;
+  updated_at: string;
+}
+
+export type ResumeStatus = 'uploaded' | 'reading' | 'active' | 'failed' | 'old';
+
+export interface ResumeRow {
+  id: number;
+  name: string;
+  path: string;
+  size: number;
+  status: ResumeStatus | string;
+  error: string;
+  /** What the agent read, as {search, profile}; see lib/resume.ts. */
+  data: unknown;
+  created_at: string;
+  updated_at: string;
 }
 
 export type JobStatus =
@@ -51,13 +88,15 @@ export interface JobRow {
   screenshot_path: string;
   dry_run: boolean;
   updated_at: string;
+  /** When the agent first found the job; rows from before the column have none. */
+  found_at?: string | null;
 }
 
 export type CommandStatus = 'pending' | 'running' | 'done' | 'failed';
 
 export interface CommandRow {
   id: number;
-  kind: 'apply' | 'search' | 'cover_letter';
+  kind: 'apply' | 'search' | 'cover_letter' | 'resume';
   job_ids: string[];
   dry_run: boolean;
   status: CommandStatus;

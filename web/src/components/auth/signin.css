@@ -1,12 +1,22 @@
-/* The sign-in screen. Tokens and the .splash, .field, .input and .btn rules come from styles.css. */
+/* The sign-in screen and the sign-out control. Tokens and the .splash, .field, .input and .btn rules come from styles.css. */
 
 .signin {
-  width: 100%;
-  max-width: 340px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  width: 100%;
+  max-width: 380px;
+  padding: 28px 26px 22px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+.signin .splash__title {
+  margin-bottom: 4px;
+  text-align: center;
 }
 
 .signin__field {
@@ -14,13 +24,17 @@
   text-align: left;
 }
 
-.signin .input {
-  height: 36px;
+.signin .btn {
+  height: 40px;
+  margin-top: 4px;
 }
 
-.signin .btn {
-  height: 36px;
-  margin-top: 4px;
+.signin .btn--primary {
+  background: var(--brand);
+}
+
+.signin .btn--primary:hover:not(:disabled) {
+  background: var(--brand-dark);
 }
 
 .signin__error {
@@ -32,7 +46,7 @@
 .signin__note {
   width: 100%;
   padding: 8px 12px;
-  border-radius: var(--r);
+  border-radius: 12px;
   background: var(--yellow-bg);
   color: var(--yellow);
   font-size: 13px;
@@ -40,59 +54,49 @@
 }
 
 .signin__hint {
+  color: var(--muted);
   font-size: 12px;
-  color: var(--text-2);
 }
 
-/* Sign out, at the foot of the sidebar. */
+/* Sign out: a full-width row inside the account menu and the phone's More menu. */
 
 .signout {
-  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 30px;
-  padding: 0 8px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
   border: 0;
-  border-radius: var(--r);
+  border-radius: 10px;
   background: none;
-  color: var(--text-2);
-  font-size: 13px;
+  color: var(--red);
+  font-size: 13.5px;
+  font-weight: 700;
   text-align: left;
   cursor: pointer;
 }
 
-.signout:hover {
-  background: var(--hover);
-  color: var(--text);
+.signout:hover:not(:disabled) {
+  background: var(--red-bg);
+}
+
+.signout:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 .signout__who {
-  min-width: 0;
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--muted);
+  font-weight: 500;
 }
 
-/* Until the sidebar has a place for it, the button sits in the top right corner of the page. */
-.signout--floating {
-  position: fixed;
-  top: 10px;
-  right: 12px;
-  z-index: 40;
-  width: auto;
-  max-width: min(320px, 60vw);
-  border: 1px solid var(--line);
-  background: var(--bg);
-}
-
-.signout--floating:hover {
-  background: var(--side);
-}
-
-@media (max-width: 720px) {
-  .signout--floating .signout__who {
-    display: none;
-  }
+.acct__signout .signout__who,
+.more__signout .signout__who {
+  display: none;
 }

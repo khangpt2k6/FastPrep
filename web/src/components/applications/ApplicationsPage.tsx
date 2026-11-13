@@ -6,7 +6,7 @@ import type { JobRow, LoadError } from '../../lib/types';
 import { displayName, reasonWords, stopReason, timeAgo } from '../../lib/format';
 import { useSignedUrl } from '../../hooks/useSignedUrl';
 import { CompanyLogo } from '../CompanyLogo';
-import { EmptyState, PillGroup, SkeletonCards, Tag } from '../common';
+import { EmptyState, PillGroup, SkeletonPanel, Tag } from '../common';
 import { IconAlert, IconChevronDown, IconImage, IconLink, IconMemory, IconRepeat, IconSend } from '../Icons';
 import { StatusChip } from '../StatusChip';
 
@@ -187,39 +187,51 @@ export function ApplicationsPage({
   if (error) {
     state = 'error';
     body = (
-      <EmptyState
-        icon={<IconAlert size={20} />}
-        title="Could not load applications."
-        action={
-          <button type="button" className="btn btn--secondary btn--sm" onClick={onRetry}>
-            Retry
-          </button>
-        }
-      >
-        {error.message}
-      </EmptyState>
+      <div className="panel">
+        <EmptyState
+          icon={<IconAlert size={20} />}
+          title="Could not load applications."
+          action={
+            <button type="button" className="btn btn--secondary btn--sm" onClick={onRetry}>
+              Retry
+            </button>
+          }
+        >
+          {error.message}
+        </EmptyState>
+      </div>
     );
   } else if (loading) {
     state = 'loading';
-    body = <SkeletonCards count={4} />;
+    body = <SkeletonPanel count={5} />;
   } else if (items.length === 0) {
     state = 'none';
-    body = <EmptyState icon={<IconSend size={20} />} title="No applications yet." />;
+    body = (
+      <div className="panel">
+        <EmptyState icon={<IconSend size={20} />} title="No applications yet.">
+          Select jobs on the Jobs page, then Apply.
+        </EmptyState>
+      </div>
+    );
   } else if (shown.length === 0) {
     state = 'filtered';
-    body = <p className="empty-line">None in this view.</p>;
+    body = (
+      <div className="panel">
+        <p className="empty-line">None in this view.</p>
+      </div>
+    );
   } else {
     body = (
-      <div className="dblist dbtable">
-        <div className="dblist__head approw__grid" aria-hidden="true">
-          <span className="dblist__col">Company</span>
-          <span className="dblist__col">Role</span>
-          <span className="dblist__col">Status</span>
-          <span className="dblist__col">Updated</span>
+      <div className="panel listcard dbtable">
+        <div className="listhead approw__grid" aria-hidden="true">
+          <span className="listhead__col">Company</span>
+          <span className="listhead__col">Role</span>
+          <span className="listhead__col">Status</span>
+          <span className="listhead__col">Updated</span>
           <span />
         </div>
         <ul className="dblist__rows">
-          <AnimatePresence>
+          <AnimatePresence initial={true}>
             {shown.map((job, index) => (
               <AppRow
                 key={job.id}
@@ -245,7 +257,7 @@ export function ApplicationsPage({
     <div className="page page--apps">
       {notices}
       {items.length > 0 ? (
-        <div className="dbbar">
+        <div className="toolbar">
           <PillGroup<Group>
             label="Show"
             value={group}

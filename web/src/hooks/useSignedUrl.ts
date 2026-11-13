@@ -3,12 +3,15 @@ import { PROOFS_BUCKET, supabase } from '../lib/supabase';
 
 const cache = new Map<string, { url: string; expires: number }>();
 
-/** A path that is already a URL (the dev preview's mock screenshots) is used as it is. */
-const isDirect = (path: string) => /^(data:|https?:)/.test(path);
+/** A path that is already a URL (the dev preview's mock screenshots and PDFs) is used as it is. */
+export const isDirect = (path: string) => /^(data:|blob:|https?:)/.test(path);
 
-/** A one-hour signed link to a screenshot in the private proofs bucket. `version` busts the cache on re-apply. */
-export function useSignedUrl(path: string, version: string): { url: string | null; failed: boolean } {
-  const key = `${path}@${version}`;
+/**
+ * A one-hour signed link to a file in the private proofs bucket. `version` busts the cache on re-apply.
+ * With `download` the link saves the file under that name instead of opening it.
+ */
+export function useSignedUrl(path: string, version: string, download?: string): { url: string | null; failed: boolean } {
+  const key = `${path}@${version}${download ? `#${download}` : ''}`;
   const [state, setState] = useState<{ key: string; url: string | null; failed: boolean }>(() => {
     const hit = cache.get(key);
     return { key, url: hit && hit.expires > Date.now() ? hit.url : null, failed: false };
@@ -24,7 +27,7 @@ export function useSignedUrl(path: string, version: string): { url: string | nul
     let alive = true;
     supabase.storage
       .from(PROOFS_BUCKET)
-      .createSignedUrl(path, 3600)
+      .createSignedUrl(path, 3600, download ? { download } : undefined)
       .then(({ data, error }) => {
         if (!alive) return;
         if (error || !data?.signedUrl) {
@@ -37,7 +40,7 @@ export function useSignedUrl(path: string, version: string): { url: string | nul
     return () => {
       alive = false;
     };
-  }, [key, path]);
+  }, [key, path, download]);
 
   if (!path) return { url: null, failed: false };
   if (isDirect(path)) return { url: path, failed: false };

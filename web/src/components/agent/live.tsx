@@ -19,15 +19,18 @@ export const logItem = {
   transition: { layout: SPRING },
 };
 
-/** States where the agent is doing work: its status dot turns blue and pulses. */
+/** States where the agent is doing work: its orb swirls faster and its words shimmer. */
 export const BUSY_STATES = ['starting', 'reading', 'searching', 'scoring', 'applying', 'writing'];
 export const START_COMMAND = 'agent-automation';
+/** The shortcut on the person's desktop that starts the agent. Keep the name exactly. */
+export const START_SHORTCUT = 'Bật Agent';
 
-export type AgentTone = 'off' | 'bad' | 'busy' | 'calm';
+export type AgentTone = 'off' | 'bad' | 'busy' | 'calm' | 'paused';
 
 export function agentTone(online: boolean, state: string): AgentTone {
   if (!online) return 'off';
   if (state === 'error') return 'bad';
+  if (state === 'paused') return 'paused';
   return BUSY_STATES.includes(state) ? 'busy' : 'calm';
 }
 

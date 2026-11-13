@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { dockVariants } from '../../lib/motion';
-import { AnimatedNumber } from '../motion';
-import { IconLetter, IconPlay } from '../Icons';
+import { AnimatedNumber, Shimmer } from '../motion';
+import { IconLetter, IconPlay, IconX } from '../Icons';
 
 interface ActionBarProps {
   count: number;
@@ -16,7 +16,7 @@ interface ActionBarProps {
   onClear: () => void;
 }
 
-/** A slim white bar that sticks to the bottom once jobs are selected. Live mode gives it a red top edge. */
+/** A floating pill that rises once jobs are selected. Live mode gives it a red edge. */
 export function ActionBar(props: ActionBarProps) {
   // Keep the last non-zero count so the bar does not read "0" while it leaves.
   const last = useRef(props.count);
@@ -44,12 +44,12 @@ export function ActionBar(props: ActionBarProps) {
 function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, onClear }: ActionBarProps) {
   return (
     <>
+      <button type="button" className="icon-btn dock__clear" onClick={onClear} aria-label="Clear selection" title="Clear selection">
+        <IconX size={15} />
+      </button>
       <span className="dock__count">
         <AnimatedNumber className="num" value={count} from={count} duration={0.3} /> selected
       </span>
-      <button type="button" className="btn btn--ghost btn--sm" onClick={onClear}>
-        Clear
-      </button>
       <span className="dock__spacer" />
       {!online ? (
         <span className="dock__note" title="Start the agent to apply">
@@ -60,8 +60,8 @@ function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, on
         {dryRun ? 'Dry run' : 'Live'}
       </span>
       <button type="button" className="btn btn--secondary btn--sm" onClick={onLetters} disabled={writing} title="Write cover letters for these jobs">
-        {writing ? <span className="spinner" aria-hidden="true" /> : <IconLetter size={14} />}
-        Write letters
+        <IconLetter size={14} />
+        {writing ? <Shimmer>Writing letters</Shimmer> : 'Write letters'}
       </button>
       <button
         type="button"
@@ -71,7 +71,13 @@ function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, on
         title={dryRun ? 'Fill the forms, send nothing' : 'Fill and send the applications'}
       >
         {applying ? <span className="spinner" aria-hidden="true" /> : <IconPlay size={12} />}
-        Apply <AnimatedNumber className="num" value={count} from={count} duration={0.3} />
+        {applying ? (
+          <Shimmer tone="inverse">Queuing</Shimmer>
+        ) : (
+          <>
+            Apply <AnimatedNumber className="num" value={count} from={count} duration={0.3} />
+          </>
+        )}
       </button>
     </>
   );

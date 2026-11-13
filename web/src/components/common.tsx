@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { SPRING } from '../lib/motion';
 import { AnimatedNumber } from './motion/AnimatedNumber';
 import { matchInfo, scoreColor, type TagColor } from '../lib/format';
+import { Wolf, type WolfMood } from './mascot/Wolf';
 
 /** A Notion-style tag: a pastel fill with matching text. */
 export function Tag({ color = 'gray', children, title, className = '' }: { color?: TagColor; children: ReactNode; title?: string; className?: string }) {
@@ -30,8 +31,18 @@ export function ScoreTag({ score }: { score: number | null }) {
   );
 }
 
+/** A small "New" tag with a soft pulsing dot, for jobs found in the last day. */
+export function NewTag() {
+  return (
+    <span className="newtag" title="Found in the last 24 hours">
+      <span className="newtag__dot" aria-hidden="true" />
+      New
+    </span>
+  );
+}
+
 /** A Notion-style callout: a tinted block with an icon, for the few notices that must stay. */
-export function Callout({ tone = 'gray', icon, children, action }: { tone?: 'gray' | 'yellow' | 'red'; icon: ReactNode; children: ReactNode; action?: ReactNode }) {
+export function Callout({ tone = 'gray', icon, children, action }: { tone?: 'gray' | 'yellow' | 'red' | 'blue'; icon: ReactNode; children: ReactNode; action?: ReactNode }) {
   return (
     <div className={`callout callout--${tone}`}>
       <span className="callout__icon" aria-hidden="true">
@@ -54,36 +65,85 @@ export function CheckBox() {
   );
 }
 
-/** One short line, an icon and at most one button. */
-export function EmptyState({ icon, title, children, action }: { icon: ReactNode; title: string; children?: ReactNode; action?: ReactNode }) {
+/**
+ * An empty screen after Arena's: the wolf (or an icon) inside a slowly turning dotted orbit, a short title, one gray
+ * line at most, and one button.
+ */
+export function EmptyState({ icon, wolf, title, children, text, action, compact = false }: {
+  icon?: ReactNode;
+  wolf?: WolfMood;
+  title: string;
+  children?: ReactNode;
+  text?: ReactNode;
+  action?: ReactNode;
+  compact?: boolean;
+}) {
+  const line = text ?? children;
   return (
-    <div className="emptystate">
-      <span className="emptystate__icon" aria-hidden="true">
-        {icon}
-      </span>
+    <div className={`emptystate ${compact ? 'emptystate--compact' : ''}`}>
+      <div className="emptystate__stage" aria-hidden="true">
+        <span className="emptystate__glow" />
+        <span className="emptystate__orbit">
+          <svg viewBox="0 0 240 150" className="emptystate__ring">
+            <ellipse cx="120" cy="82" rx="108" ry="40" pathLength={100} />
+          </svg>
+          <span className="emptystate__moon" />
+        </span>
+        <span className="emptystate__spark emptystate__spark--a" />
+        <span className="emptystate__spark emptystate__spark--b" />
+        <span className="emptystate__art">
+          {wolf ? <Wolf mood={wolf} size={compact ? 84 : 112} motion="idle" /> : <span className="emptystate__icon">{icon}</span>}
+        </span>
+      </div>
       <p className="emptystate__title">{title}</p>
-      {children ? <p className="emptystate__text">{children}</p> : null}
+      {line ? <p className="emptystate__text">{line}</p> : null}
       {action ? <div className="emptystate__action">{action}</div> : null}
     </div>
   );
 }
 
-/** Placeholder rows in the shape of a list row while data loads. */
-export function SkeletonCards({ count = 4 }: { count?: number }) {
+/** Placeholder rows in the shape of a list row while data loads, with a light sweep. */
+export function SkeletonCards({ count = 4, ring = false, check = true, zebra = false }: { count?: number; ring?: boolean; check?: boolean; zebra?: boolean }) {
   return (
-    <ul className="skellist" aria-hidden="true">
+    <ul className={`skellist ${zebra ? 'skellist--zebra' : ''}`} aria-hidden="true">
       {Array.from({ length: count }, (_, i) => (
         <li className="skelrow" key={i}>
-          <span className="skeleton skeleton--box" />
+          {check ? <span className="skeleton skeleton--box" /> : null}
           <span className="skeleton skeleton--tile" />
           <span className="skelrow__lines">
-            <span className="skeleton skeleton--line" style={{ width: `${62 - i * 7}%` }} />
-            <span className="skeleton skeleton--line skeleton--thin" style={{ width: `${34 - i * 3}%` }} />
+            <span className="skeleton skeleton--line" style={{ width: `${62 - ((i * 7) % 28)}%` }} />
+            <span className="skeleton skeleton--line skeleton--thin" style={{ width: `${34 - ((i * 3) % 14)}%` }} />
           </span>
-          <span className="skeleton skeleton--tag" />
+          {ring ? <span className="skeleton skeleton--ring" /> : <span className="skeleton skeleton--tag" />}
         </li>
       ))}
     </ul>
+  );
+}
+
+/** A white card of skeleton rows, for lists that live in a card. */
+export function SkeletonPanel({ count = 4, ring = false, check = false }: { count?: number; ring?: boolean; check?: boolean }) {
+  return (
+    <div className="panel" aria-busy="true" aria-label="Loading">
+      <SkeletonCards count={count} ring={ring} check={check} />
+    </div>
+  );
+}
+
+/** Settings rows while they load: a title and a gray line, a control on the right. */
+export function SkeletonRows({ count = 3 }: { count?: number }) {
+  return (
+    <div className="panel" aria-busy="true" aria-label="Loading">
+      {Array.from({ length: count }, (_, i) => (
+        <div className="srow srow--skel" key={i} aria-hidden="true">
+          <span className="srow__text">
+            <span className="skeleton skeleton--line" style={{ width: `${38 - i * 6}%` }} />
+            <span className="skeleton skeleton--line skeleton--thin" style={{ width: `${64 - i * 9}%` }} />
+          </span>
+          <span className={`skeleton ${i % 2 ? 'skeleton--pill' : 'skeleton--switch'}`} />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -111,7 +171,10 @@ function useScrollEdges<T extends HTMLElement>() {
   return [ref, edges] as const;
 }
 
-/** View tabs, like a Notion database: exactly one is on and it carries a sliding underline. Scrolls sideways when narrow. */
+/**
+ * A segmented pill: exactly one option is on and a white pill slides under it. Counts count up.
+ * Scrolls sideways when narrow, fading at the hidden end.
+ */
 export function PillGroup<T extends string | number>({ label, options, value, onChange }: {
   label: string;
   options: { value: T; label: string; count?: number; title?: string }[];
@@ -124,24 +187,27 @@ export function PillGroup<T extends string | number>({ label, options, value, on
     <motion.div
       ref={ref}
       layoutScroll
-      className={`viewtabs ${edges.start ? 'fade-start' : ''} ${edges.end ? 'fade-end' : ''}`}
+      className={`segmented ${edges.start ? 'fade-start' : ''} ${edges.end ? 'fade-end' : ''}`}
       role="group"
       aria-label={label}
     >
-      {options.map((o) => (
-        <button
-          type="button"
-          key={String(o.value)}
-          className={`viewtab ${value === o.value ? 'is-on' : ''}`}
-          aria-pressed={value === o.value}
-          title={o.title}
-          onClick={() => onChange(o.value)}
-        >
-          <span>{o.label}</span>
-          {o.count !== undefined ? <AnimatedNumber className="viewtab__count num" id={`tab-${label}-${String(o.value)}`} value={o.count} /> : null}
-          {value === o.value ? <motion.span className="viewtab__bar" layoutId={`tab-${group}`} transition={SPRING} aria-hidden="true" /> : null}
-        </button>
-      ))}
+      {options.map((o) => {
+        const on = value === o.value;
+        return (
+          <button
+            type="button"
+            key={String(o.value)}
+            className={`segmented__btn ${on ? 'is-on' : ''}`}
+            aria-pressed={on}
+            title={o.title}
+            onClick={() => onChange(o.value)}
+          >
+            {on ? <motion.span className="segmented__pill" layoutId={`seg-${group}`} transition={SPRING} aria-hidden="true" /> : null}
+            <span className="segmented__label">{o.label}</span>
+            {o.count !== undefined ? <AnimatedNumber className="segmented__count num" id={`seg-${label}-${String(o.value)}`} value={o.count} /> : null}
+          </button>
+        );
+      })}
     </motion.div>
   );
 }
