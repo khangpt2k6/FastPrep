@@ -29,12 +29,14 @@ MESSAGE_BYTES = 60_000
 BATCH = 40
 SNIPPET_CHARS = 220
 # The version of the rules below. A sync under another version reads the mailbox again from the start.
-RULES = 2
+RULES = 3
 
-# What Gmail is asked for: mail that speaks of an application, not chats, spam or what the person sent.
+# What Gmail is asked for: mail that speaks of an application, not chats, spam or what the person sent. A calendar
+# booking for a first call says none of the usual words, only "appointment booked" or "meet and greet" and the role.
 QUERY = (
     "newer_than:{days}d -in:chats -in:spam -in:trash -from:me "
-    '{{application applying applied candidacy interview assessment "coding challenge" "next steps" "offer letter"}}'
+    '{{application applying applied candidacy interview assessment "coding challenge" "next steps" "offer letter" '
+    '"appointment booked" "meet and greet" "meet & greet" "intern role" "internship role" "phone screen"}}'
 )
 
 # The stages, the furthest last. A rejection, or the person's own withdrawal, ends an application whatever came before it.
@@ -297,7 +299,7 @@ INTERVIEW = _any(
     r"(?:like|love) to (?:schedule|set up|arrange|invite|speak|chat|talk|meet)", r"phone screen", r"recruiter (?:screen|call|chat)",
     r"(?:schedule|book|pick|select|choose) a time", r"share your availability", r"(?:send|provide) (?:us |me )?your availability",
     r"move(?:d)? (?:you )?(?:forward )?to the (?:next|interview) (?:round|stage|step)", r"next (?:round|stage) of (?:the |our )?interview",
-    r"\bsuperday\b", r"\bcalendly\.com\b", r"\bgoodtime\.io\b",
+    r"\bsuperday\b", r"\bcalendly\.com\b", r"\bgoodtime\.io\b", r"meet (?:and|&) greet", r"(?:like|love) to connect\b",
 )
 APPLIED = _any(
     r"thank(?:s| you) for (?:applying|your application|your interest|submitting|taking the time to apply)", r"thank(?:s| you) from\b",
@@ -733,9 +735,11 @@ def applications(events: Iterable[Event], sent_by_agent: Iterable[str] = ()) -> 
         # An offer after a no is the news; a no, or a withdrawal, after anything else ends it.
         ended = closed and (furthest is None or furthest.kind != "offer" or closed[-1].at > furthest.at)
         named = max(items, key=lambda item: (len(item.role) > 0, item.at))
+        # The message that says where it stands: its subject is what the person reads beside the status.
+        deciding = closed[-1] if ended else furthest
         found.append(Application(
-            company=min((item.company for item in items), key=len), role=named.role, status=closed[-1].kind if ended else furthest.kind,
-            applied_at=items[0].at, updated_at=last.at, subject=last.subject, mails=len(items), by_agent=company in agent,
+            company=min((item.company for item in items), key=len), role=named.role, status=deciding.kind,
+            applied_at=items[0].at, updated_at=last.at, subject=deciding.subject, mails=len(items), by_agent=company in agent,
         ))
     return sorted(found, key=lambda item: item.updated_at, reverse=True)
 

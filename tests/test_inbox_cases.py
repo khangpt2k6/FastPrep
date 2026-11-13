@@ -128,6 +128,22 @@ def test_an_invitation_after_a_refusal_is_another_application_and_a_refusal_clos
     assert sorted((item.status, item.role) for item in closing) == [("rejected", "Analyst (Alpharetta)"), ("rejected", "Analyst (New York)")]
 
 
+def test_a_calendar_booking_for_a_first_call_is_an_interview_and_gmail_is_asked_for_it() -> None:
+    from agent_automation.tools.inbox import QUERY
+
+    booking = mail("b.egan@fedcon.com", "Appointment booked: FEDCON Meet & Greet - Ai Marketing (Khang Phan) @ Mon Nov 16, 2026 4pm - 4:30pm (EST)",
+                   "Thank you for your interest in the AI Marketing Intern role. We'd love to connect for a brief 10-15 minute meet and greet.", "Brad Egan")
+    assert read_as(booking, me="Khang Phan") == ("interview", "FEDCON")
+    assert '"appointment booked"' in QUERY and '"meet and greet"' in QUERY
+
+
+def test_the_subject_shown_is_the_message_that_decided_the_status() -> None:
+    invite = Event("m1", "t1", "2026-10-01", "interview", "ServiceNow", "", "a@b.c", "your application with ServiceNow - let's chat!", "")
+    receipt = Event("m2", "t2", "2026-10-03", "applied", "ServiceNow", "", "a@b.c", "ServiceNow - Thank you for your application", "")
+    (found,) = applications([invite, receipt])
+    assert (found.status, found.subject, found.updated_at) == ("interview", "your application with ServiceNow - let's chat!", "2026-10-03")
+
+
 def test_a_message_sent_to_a_list_says_so_in_its_headers() -> None:
     def raw(listed: bool) -> bytes:
         message = EmailMessage()
