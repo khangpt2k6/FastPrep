@@ -1,0 +1,287 @@
+/* Tampa Bay employers on the Companies page. */
+
+.nb {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.nb__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nb__intro {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nb__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.nb__title svg {
+  color: var(--ember-600);
+}
+
+.nb__sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.nb__steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 12px 14px;
+  list-style: none;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--frost);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.nb__step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nb__step.is-now {
+  color: var(--ink);
+}
+
+.nb__step.is-done {
+  color: var(--ink-2);
+}
+
+.nb__dot {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: #fff;
+}
+
+.nb__step.is-now .nb__dot {
+  border-color: var(--ember-500);
+  animation: nb-pulse 1s var(--ease) infinite;
+}
+
+.nb__step.is-done .nb__dot {
+  border-color: var(--pine-500);
+  background: var(--pine-500);
+}
+
+.nb__found {
+  margin-left: auto;
+  color: var(--pine-700);
+}
+
+@keyframes nb-pulse {
+  50% {
+    box-shadow: 0 0 0 4px var(--ember-100);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb__step.is-now .nb__dot {
+    animation: none;
+  }
+}
+
+.nb__body {
+  display: grid;
+  gap: 10px;
+}
+
+.nb__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nb__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nb__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.nb__chip .num {
+  color: var(--ink-3);
+}
+
+.nb__chip.is-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.nb__chip.is-on .num {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.nb__chip:focus-visible {
+  outline: 2px solid var(--ember-500);
+  outline-offset: 2px;
+}
+
+.nb__meta {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.nb__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nb__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 2px;
+  border-top: 1px solid var(--line);
+}
+
+.nb__logo {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.nb__main {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nb__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.nb__industry {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.nb__what,
+.nb__note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.nb__note {
+  color: var(--pine-700);
+}
+
+.nb__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 3px 0 0;
+}
+
+.nb__tag {
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.nb__tag--pine {
+  border-color: transparent;
+  background: var(--pine-50);
+  color: var(--pine-700);
+}
+
+.nb__tag--sky {
+  border-color: transparent;
+  background: var(--sky-50);
+  color: var(--sky-700);
+}
+
+.nb__tag--rose {
+  border-color: transparent;
+  background: var(--rose-50);
+  color: var(--rose-700);
+}
+
+.nb__links {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+@media (max-width: 640px) {
+  .nb {
+    padding: 14px;
+  }
+
+  .nb__row {
+    flex-wrap: wrap;
+  }
+
+  .nb__links {
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: 48px;
+  }
+}
