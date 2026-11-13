@@ -2,11 +2,12 @@ import research from './research.json'
 
 /**
  * What SWE intern and new-grad postings ask for, per company, next to what the
- * company runs. Researched from the official postings and engineering blogs;
+ * company runs. Researched from the official postings and engineering blogs, and
+ * (evidence B or C) counted from the intern postings in the agent's job database;
  * `research.json` is the record, including the postings each entry came from.
  */
 
-export const CATEGORIES = ['Big Tech', 'AI', 'Quant', 'Fintech', 'Data & Infra', 'Consumer', 'Hardware & Defense'] as const
+export const CATEGORIES = ['Big Tech', 'AI', 'Quant', 'Fintech', 'Finance', 'Data & Infra', 'Enterprise', 'Consumer', 'Health', 'Hardware & Defense'] as const
 export type CompanyCategory = (typeof CATEGORIES)[number]
 
 export interface Posting {
@@ -36,6 +37,8 @@ export interface Company {
 interface Row {
   company: string
   domain: string
+  /** Set on entries added from the job database; older entries take theirs from CATEGORY. */
+  category?: CompanyCategory
   intern: Posting
   new_grad: Posting
   need: string[]
@@ -84,8 +87,10 @@ export const companies: Company[] = (research as Row[])
     name: row.company,
     slug: slugOf(row.company),
     domain: row.domain,
-    category: CATEGORY[row.company] ?? 'Big Tech',
-    logo: LOGO[row.company] ? `/logos/company/${LOGO[row.company]}` : null,
+    category: row.category ?? CATEGORY[row.company] ?? 'Big Tech',
+    logo: LOGO[row.company]
+      ? `/logos/company/${LOGO[row.company]}`
+      : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(row.domain)}&sz=128`,
     need: row.need,
     stack: row.core_stack.filter((tech) => !row.need.includes(tech)),
     niche: row.niche,

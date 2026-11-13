@@ -1,2375 +1,4743 @@
 [
- {
-  "company": "Amazon",
-  "domain": "amazon.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "one of: Java, Python, C++, C#, Go, Rust, TypeScript",
-    "data structures and algorithms",
-    "AI-assisted development tools"
-   ],
-   "preferred": [
-    "AWS",
-    "SQL and NoSQL databases",
-    "software development lifecycle",
-    "prior internship or project experience"
-   ],
-   "url": "https://www.amazon.jobs/en/jobs/10552937/software-development-engineer-intern-summer-2027-usa"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026",
-   "required": [
-    "one of: Java, Python, C++, C#, Go, Rust, TypeScript",
-    "data structures, algorithms or OO design"
-   ],
-   "preferred": [
-    "AWS",
-    "SQL and NoSQL databases",
-    "Git",
-    "AI tools for development",
-    "open-source contributions"
-   ],
-   "url": "https://www.amazon.jobs/en/jobs/10491309/2026-graduate-software-dev-engineer"
-  },
-  "need": [
-   "Java",
-   "Python",
-   "C++"
-  ],
-  "core_stack": [
-   "Java",
-   "Python",
-   "TypeScript",
-   "AWS",
-   "DynamoDB",
-   "React",
-   "SQL"
-  ],
-  "niche": [
-   "Brazil build system",
-   "Smithy",
-   "Coral"
-  ],
-  "summary": "Any one mainstream language plus DSA; Java dominates teams, AWS knowledge is a plus.",
-  "evidence": "A",
-  "sources": [
-   "https://www.amazon.jobs/en/jobs/10552937/software-development-engineer-intern-summer-2027-usa",
-   "https://www.amazon.jobs/en/jobs/10491309/2026-graduate-software-dev-engineer",
-   "https://aws.amazon.com/builders-library/",
-   "https://smithy.io/"
-  ]
- },
- {
-  "company": "Nvidia",
-  "domain": "nvidia.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "role dependent, could include: C, C++, Python, CUDA, Java, JavaScript, Go, SQL, OOP, Git"
-   ],
-   "preferred": [
-    "Linux",
-    "Kubernetes",
-    "Docker",
-    "Perforce",
-    "LSF / SLURM",
-    "Ansible",
-    "React",
-    "Node.js"
-   ],
-   "url": "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/NVIDIA-2027-Internships--Software-Engineering_JR2023495"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026",
-   "required": [
-    "Python",
-    "C++",
-    "CUDA",
-    "PyTorch",
-    "TensorFlow",
-    "an agentic framework (LangChain, LangGraph, CrewAI)"
-   ],
-   "preferred": [
-    "deployed LLM agents",
-    "open-source AI or GPU library contributions"
-   ],
-   "url": "https://jobs.nvidia.com/careers/job/893394324690"
-  },
-  "need": [
-   "C++",
-   "Python",
-   "CUDA",
-   "Linux"
-  ],
-  "core_stack": [
-   "C++",
-   "CUDA",
-   "Python",
-   "PyTorch",
-   "Linux",
-   "Docker",
-   "Kubernetes",
-   "Git"
-  ],
-  "niche": [
-   "Perforce",
-   "TensorRT",
-   "cuDNN / NCCL",
-   "LSF / SLURM"
-  ],
-  "summary": "C++ and Python with CUDA exposure; postings are team specific and many new grad roles want an MS.",
-  "evidence": "A",
-  "sources": [
-   "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/NVIDIA-2027-Internships--Software-Engineering_JR2023495",
-   "https://jobs.nvidia.com/careers/job/893394324690",
-   "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/US-CA-Santa-Clara/Software-Engineer--Hardware-Tools-and-Methodology---New-College-Grad-2026_JR2018659",
-   "https://github.com/NVIDIA",
-   "https://developer.nvidia.com/blog/"
-  ]
- },
- {
-  "company": "Cloudflare",
-  "domain": "cloudflare.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2026",
-   "required": [
-    "no specific language",
-    "pursuing CS, Engineering, Math or Stats degree"
-   ],
-   "preferred": [
-    "TypeScript",
-    "JavaScript",
-    "Go",
-    "Rust",
-    "C++",
-    "Python",
-    "Cloudflare Workers developer platform",
-    "personal or open-source projects"
-   ],
-   "url": "https://job-boards.greenhouse.io/cloudflare/jobs/7296923"
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": null,
-   "required": [],
-   "preferred": [],
-   "url": null
-  },
-  "need": [
-   "Go",
-   "Rust",
-   "TypeScript"
-  ],
-  "core_stack": [
-   "Go",
-   "Rust",
-   "TypeScript",
-   "C++",
-   "Kafka",
-   "ClickHouse",
-   "PostgreSQL",
-   "Kubernetes"
-  ],
-  "niche": [
-   "Pingora",
-   "workerd (V8 isolates)",
-   "Quicksilver"
-  ],
-  "summary": "No required language; Go, Rust and TypeScript dominate, and Workers experience helps.",
-  "evidence": "B",
-  "sources": [
-   "https://job-boards.greenhouse.io/cloudflare/jobs/7296923",
-   "https://builtin.com/job/software-engineer-intern-summer-2026/7009302",
-   "https://blog.cloudflare.com/pingora-open-source/",
-   "https://blog.cloudflare.com/using-apache-kafka-to-process-1-trillion-messages/"
-  ]
- },
- {
-  "company": "Gusto",
-  "domain": "gusto.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2026",
-   "required": [
-    "no specific language",
-    "BS/MS in CS or related field"
-   ],
-   "preferred": [
-    "Ruby",
-    "Rails",
-    "TypeScript",
-    "React",
-    "GraphQL",
-    "Python",
-    "Go",
-    "Java",
-    "JavaScript",
-    "Kotlin",
-    "Swift",
-    "test-driven development and pair programming"
-   ],
-   "url": "https://job-boards.greenhouse.io/gusto/jobs/7238671"
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": null,
-   "required": [],
-   "preferred": [],
-   "url": null
-  },
-  "need": [
-   "Ruby",
-   "TypeScript",
-   "Rails",
-   "React"
-  ],
-  "core_stack": [
-   "Ruby",
-   "Rails",
-   "TypeScript",
-   "React",
-   "GraphQL",
-   "Kafka",
-   "Sidekiq"
-  ],
-  "niche": [
-   "Packwerk / pks packs",
-   "Sorbet"
-  ],
-  "summary": "Any language accepted; Ruby on Rails and TypeScript with React run most product work.",
-  "evidence": "B",
-  "sources": [
-   "https://builtin.com/job/software-engineering-intern-summer-2026/7188760",
-   "https://engineering.gusto.com/the-current-state-of-gustos-modularity-tooling-c99f345fd0a7",
-   "https://engineering.gusto.com/breaking-down-the-graphql-monolith-and-automating-developer-workflows-through-rails-generators-f1c6fc6c67bd",
-   "https://github.com/rubyatscale"
-  ]
- },
- {
-  "company": "Adobe",
-  "domain": "adobe.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "one of: Java, Python, C++, JavaScript",
-    "data structures and algorithms",
-    "software development lifecycle"
-   ],
-   "preferred": [
-    "AI-assisted development tools",
-    "projects or internships building apps or systems"
-   ],
-   "url": "https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-Intern---Software-Engineer_R171666"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027",
-   "required": [
-    "one of: Java, Python, C++, JavaScript",
-    "data structures and algorithms",
-    "software development lifecycle"
-   ],
-   "preferred": [
-    "AI-assisted development tools",
-    "0 to 1 years of internship or project experience"
-   ],
-   "url": "https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-University-Graduate---Software-Engineer_R172083"
-  },
-  "need": [
-   "Java",
-   "Python",
-   "C++",
-   "JavaScript"
-  ],
-  "core_stack": [
-   "Java",
-   "C++",
-   "TypeScript",
-   "React",
-   "Python",
-   "Kubernetes",
-   "Docker",
-   "Spark"
-  ],
-  "niche": [
-   "Ethos (internal Kubernetes platform)",
-   "React Spectrum",
-   "Adobe Experience Manager"
-  ],
-  "summary": "Any of Java, Python, C++ or JavaScript plus DSA; the team decides the rest.",
-  "evidence": "A",
-  "sources": [
-   "https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-Intern---Software-Engineer_R171666",
-   "https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-University-Graduate---Software-Engineer_R172083",
-   "https://blog.developer.adobe.com/how-ethos-powers-a-cloud-native-transformation-at-adobe-16c1a2e2f67a",
-   "https://github.com/adobe"
-  ]
- },
- {
-  "company": "Salesforce",
-  "domain": "salesforce.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "OOP, algorithms and data structures",
-    "AI-assisted development tools (Copilot, Cursor, Claude Code)"
-   ],
-   "preferred": [
-    "Java",
-    "JavaScript",
-    "SQL",
-    "HTML and web technologies",
-    "front end and back end languages"
-   ],
-   "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/Futureforce_Internships/job/Summer-2027-Intern---Software-Engineer_JR340771"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 (AMTS College Grad, posted Sep 2026)",
-   "required": [
-    "one of: Java, Python, JavaScript, HTML, SQL, C++",
-    "OOP fluency",
-    "internship or professional coding experience"
-   ],
-   "preferred": [
-    "LLM coding assistants and agentic tools",
-    "telemetry and metrics"
-   ],
-   "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/Futureforce_NewGradRoles/job/Software-Engineering-AMTS--College-Grad-_JR355250"
-  },
-  "need": [
-   "Java",
-   "JavaScript",
-   "SQL"
-  ],
-  "core_stack": [
-   "Java",
-   "JavaScript",
-   "SQL",
-   "Kubernetes",
-   "AWS",
-   "Kafka"
-  ],
-  "niche": [
-   "Apex",
-   "SOQL",
-   "Lightning Web Components",
-   "Hyperforce"
-  ],
-  "summary": "Java or JavaScript with solid OOP; Apex and platform internals are taught on the job.",
-  "evidence": "A",
-  "sources": [
-   "https://salesforce.wd12.myworkdayjobs.com/en-US/Futureforce_Internships/job/Summer-2027-Intern---Software-Engineer_JR340771",
-   "https://salesforce.wd12.myworkdayjobs.com/en-US/Futureforce_NewGradRoles/job/Software-Engineering-AMTS--College-Grad-_JR355250",
-   "https://engineering.salesforce.com/7-ways-we-put-kubernetes-to-work-at-salesforce-e658de98ef2d/",
-   "https://engineering.salesforce.com/behind-the-scenes-of-hyperforce-salesforces-infrastructure-for-the-public-cloud-429309542d8e/"
-  ]
- },
- {
-  "company": "Coinbase",
-  "domain": "coinbase.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "any language",
-    "familiarity with web, mobile, backend or infrastructure",
-    "generative AI tools used responsibly"
-   ],
-   "preferred": [],
-   "url": "https://www.coinbase.com/careers/positions/8168315"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2025 (Software Engineer, Emerging Talent; no 2026 or 2027 new grad posting)",
-   "required": [
-    "1+ years of software engineering experience",
-    "well tested code"
-   ],
-   "preferred": [
-    "Go",
-    "Ruby",
-    "Python",
-    "GraphQL",
-    "MongoDB",
-    "AWS",
-    "Docker",
-    "React",
-    "React Native",
-    "JavaScript",
-    "TypeScript"
-   ],
-   "url": "https://www.coinbase.com/careers/positions/7015173"
-  },
-  "need": [
-   "Go",
-   "TypeScript",
-   "React"
-  ],
-  "core_stack": [
-   "Go",
-   "Ruby",
-   "Rails",
-   "TypeScript",
-   "React",
-   "MongoDB",
-   "Kafka",
-   "AWS"
-  ],
-  "niche": [
-   "Solidity",
-   "Base (Ethereum L2)",
-   "blockchain node infrastructure"
-  ],
-  "summary": "Any language for interns; Go backend and TypeScript with React front end are the main paths.",
-  "evidence": "B",
-  "sources": [
-   "https://www.coinbase.com/careers/positions/8168315",
-   "https://jobs.theblockchainassociation.org/companies/coinbase/jobs/53242844-software-engineer-emerging-talent",
-   "https://www.coinbase.com/blog/kafka-infrastructure-renovation",
-   "https://www.coinbase.com/blog/scaling-connections-with-ruby-and-mongodb"
-  ]
- },
- {
-  "company": "Datadog",
-  "domain": "datadoghq.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "any language",
-    "data structures, algorithms and software design",
-    "AI coding tools"
-   ],
-   "preferred": [],
-   "url": "https://careers.datadoghq.com/detail/8052118/"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2025 start (Software Engineer, Early Career; newer text not retrievable)",
-   "required": [
-    "one or more languages",
-    "prior SWE internship or related experience"
-   ],
-   "preferred": [
-    "Go",
-    "Python"
-   ],
-   "url": "https://simplify.jobs/p/9a6f5b77-ab04-40be-9380-b9b8b7fa7b18/Software-Engineer--Early-Career"
-  },
-  "need": [
-   "Go",
-   "Python",
-   "Java"
-  ],
-  "core_stack": [
-   "Go",
-   "Python",
-   "Java",
-   "TypeScript",
-   "React",
-   "Kafka",
-   "Kubernetes",
-   "AWS"
-  ],
-  "niche": [
-   "Husky event store",
-   "Rust"
-  ],
-  "summary": "Any language plus strong fundamentals; Go and Python are the most useful to bring.",
-  "evidence": "B",
-  "sources": [
-   "https://careers.datadoghq.com/detail/8052118/",
-   "https://simplify.jobs/p/9a6f5b77-ab04-40be-9380-b9b8b7fa7b18/Software-Engineer--Early-Career",
-   "https://www.datadoghq.com/blog/engineering/introducing-husky/",
-   "https://github.com/DataDog/datadog-agent"
-  ]
- },
- {
-  "company": "Tesla",
-  "domain": "tesla.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "Experience with a backend language",
-    "JavaScript/TypeScript and a frontend framework such as React, Vue or Svelte",
-    "Fundamental CS concepts and design patterns"
-   ],
-   "preferred": [
-    "Python or Go as the backend language",
-    "Shipping web applications"
-   ],
-   "url": "https://www.tesla.com/careers/search/job/internship-software-engineering-people-products-summer-2027-284004"
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": "",
-   "required": [],
-   "preferred": [],
-   "url": ""
-  },
-  "need": [
-   "Python",
-   "C++",
-   "Go",
-   "JavaScript",
-   "React"
-  ],
-  "core_stack": [
-   "Python",
-   "C++",
-   "Go",
-   "TypeScript",
-   "React",
-   "Kubernetes",
-   "Kafka",
-   "Linux"
-  ],
-  "niche": [],
-  "summary": "Language depends on team; web teams want Python or Go plus React, vehicle teams want C++.",
-  "evidence": "B",
-  "sources": [
-   "https://www.tesla.com/careers/search/job/internship-software-engineering-people-products-summer-2027-284004",
-   "https://www.tesla.com/careers/search/job/next-gen-internship-software-engineer-vehicle-software-summer-2027-281097",
-   "https://www.tesla.com/careers/search/job/internship-software-engineer-ai-data-infrastructure-fall-2026-269829"
-  ]
- },
- {
-  "company": "Roblox",
-  "domain": "roblox.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "Working towards proficiency in one or more of Go, Node.js, Ruby, Python, C++, Lua, Swift, C#, Java",
-    "Pursuing a CS or engineering degree"
-   ],
-   "preferred": [],
-   "url": "https://careers.roblox.com/jobs/8072713"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027",
-   "required": [
-    "Proficient in one or more of C#, Lua, Java, Go, Node.js, Ruby, Python, C++, Swift",
-    "Software engineering concepts via coursework, internships or projects"
-   ],
-   "preferred": [],
-   "url": "https://careers.roblox.com/jobs/8072244"
-  },
-  "need": [
-   "C++",
-   "C#",
-   "Go",
-   "Lua"
-  ],
-  "core_stack": [
-   "C++",
-   "Lua",
-   "C#",
-   "Go",
-   "Python",
-   "Kafka",
-   "Docker"
-  ],
-  "niche": [
-   "Luau",
-   "HashiCorp Nomad",
-   "Consul",
-   "Vault"
-  ],
-  "summary": "Any language from a broad list; engine work is C++ and Luau, backend mostly C# and Go.",
-  "evidence": "A",
-  "sources": [
-   "https://careers.roblox.com/jobs/8072713",
-   "https://careers.roblox.com/jobs/8072244",
-   "https://about.roblox.com/newsroom/2026/09/how-roblox-scaled-kafka-platform-over-18-trillion-messages-a-day",
-   "https://blog.roblox.com/2022/01/roblox-return-to-service-10-28-10-31-2021/"
-  ]
- },
- {
-  "company": "Ramp",
-  "domain": "ramp.com",
-  "intern": {
-   "found": true,
-   "cycle": "2027 (grads Dec 2027 or later, rolling)",
-   "required": [
-    "Strong CS and programming fundamentals (backend)",
-    "Strong JavaScript fundamentals (frontend)",
-    "Track record of shipping products or side projects"
-   ],
-   "preferred": [
-    "Python and backend development",
-    "Flask, PostgreSQL, Temporal, Elixir, AWS",
-    "React",
-    "TypeScript"
-   ],
-   "url": "https://jobs.ashbyhq.com/ramp/acf6b28d-767f-483f-8ff2-114620cd7e04"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026 (closed)",
-   "required": [
-    "B.S. or higher in CS, May 2026 grad",
-    "Track record of shipping high quality products at scale"
-   ],
-   "preferred": [
-    "Flask (Python)",
-    "AWS",
-    "RabbitMQ",
-    "PostgreSQL"
-   ],
-   "url": "https://jobs.ashbyhq.com/ramp/83075cf0-9c22-4475-9c6b-e21923a96df8"
-  },
-  "need": [
-   "Python",
-   "JavaScript",
-   "TypeScript",
-   "React"
-  ],
-  "core_stack": [
-   "Python",
-   "Flask",
-   "PostgreSQL",
-   "TypeScript",
-   "React",
-   "AWS",
-   "Temporal",
-   "Celery"
-  ],
-  "niche": [
-   "Elixir",
-   "Ryu design system",
-   "RabbitMQ"
-  ],
-  "summary": "Backend interns need fundamentals, ideally Python; frontend interns need JavaScript, with React and TypeScript preferred.",
-  "evidence": "A",
-  "sources": [
-   "https://jobs.ashbyhq.com/ramp/acf6b28d-767f-483f-8ff2-114620cd7e04",
-   "https://jobs.ashbyhq.com/ramp/a13ae586-f4cb-4385-8822-c42b9b54ed74",
-   "https://jobs.technyc.org/companies/ramp-2/jobs/55723314-university-grad-2026-software-engineer-backend",
-   "https://builders.ramp.com/post/why-we-built-our-background-agent"
-  ]
- },
- {
-  "company": "Rippling",
-  "domain": "rippling.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "Prior internship using Python (backend)",
-    "Full stack: backend Python and frontend JavaScript, HTML/CSS",
-    "Solid backend programming skills"
-   ],
-   "preferred": [],
-   "url": "https://ats.rippling.com/rippling/jobs/f64b6158-9534-4bab-9457-45556166b262"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026",
-   "required": [
-    "Strong coding in at least one of Python, Go, Java or JavaScript",
-    "At least one internship",
-    "Familiarity with web applications or API development"
-   ],
-   "preferred": [
-    "Experience using AI coding tools (Claude, Codex)"
-   ],
-   "url": "https://www.linkedin.com/jobs/view/software-engineer-new-grad-at-rippling-3239675349"
-  },
-  "need": [
-   "Python",
-   "JavaScript",
-   "Django"
-  ],
-  "core_stack": [
-   "Python",
-   "Django",
-   "MongoDB",
-   "Redis",
-   "Kafka",
-   "React",
-   "TypeScript",
-   "AWS"
-  ],
-  "niche": [
-   "MongoEngine",
-   "uWSGI"
-  ],
-  "summary": "Python is the must-have, plus JavaScript for full stack roles; backend is Django on MongoDB.",
-  "evidence": "A",
-  "sources": [
-   "https://ats.rippling.com/rippling/jobs/f64b6158-9534-4bab-9457-45556166b262",
-   "https://ats.rippling.com/rippling/jobs/a07e4e46-3721-4934-b57b-0d58412e22ba",
-   "https://www.linkedin.com/jobs/view/software-engineer-new-grad-at-rippling-3239675349",
-   "https://www.rippling.com/blog/10-lessons-containerizing-our-django-backend",
-   "https://www.rippling.com/blog/rippling-gunicorn-pre-fork-journey-memory-savings-and-cost-reduction"
-  ]
- },
- {
-  "company": "Robinhood",
-  "domain": "robinhood.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "Strong CS fundamentals",
-    "Familiarity with Python/Django or Go (backend)",
-    "Understanding of relational databases and transactions (backend)",
-    "Fluency in JavaScript and/or React Native (web)"
-   ],
-   "preferred": [
-    "Python/Django and Go (web track)",
-    "Stack named: PostgreSQL, Kafka, Redis, Memcached, AWS, Kubernetes, React, TypeScript"
-   ],
-   "url": "https://boards.greenhouse.io/robinhood/jobs/8123225"
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": "",
-   "required": [],
-   "preferred": [],
-   "url": ""
-  },
-  "need": [
-   "Python",
-   "Go",
-   "SQL",
-   "JavaScript",
-   "React"
-  ],
-  "core_stack": [
-   "Python",
-   "Django",
-   "Go",
-   "PostgreSQL",
-   "Kafka",
-   "Redis",
-   "AWS",
-   "Kubernetes"
-  ],
-  "niche": [
-   "Faust",
-   "Memcached"
-  ],
-  "summary": "Python/Django or Go for backend, JavaScript and React for web; relational database knowledge expected.",
-  "evidence": "B",
-  "sources": [
-   "https://boards.greenhouse.io/robinhood/jobs/8123225",
-   "https://boards.greenhouse.io/robinhood/jobs/8142963",
-   "https://robinhood.com/us/en/newsroom/building-an-application-deployment-platform-on-kubernetes/",
-   "https://robinhood.com/us/en/careers/early-talent/"
-  ]
- },
- {
-  "company": "Snowflake",
-  "domain": "snowflake.com",
-  "intern": {
-   "found": true,
-   "cycle": "2027 (Berlin, Feb 2027 start; US Fall 2026 Core Engineering listed the same C++/Java requirement)",
-   "required": [
-    "Programming experience in C++ or Java",
-    "Algorithms, data structures and operating systems",
-    "Systems concepts such as multi-threading and concurrency"
-   ],
-   "preferred": [
-    "Database, distributed systems, cloud or compilers coursework",
-    "Big data engineering",
-    "Open source or research in databases"
-   ],
-   "url": "https://jobs.ashbyhq.com/snowflake/ab028e3c-c1cf-4455-8915-8e4e6b0cc9e8"
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": "",
-   "required": [],
-   "preferred": [],
-   "url": ""
-  },
-  "need": [
-   "C++",
-   "Java",
-   "SQL"
-  ],
-  "core_stack": [
-   "C++",
-   "Java",
-   "SQL",
-   "Python",
-   "AWS",
-   "Azure",
-   "GCP"
-  ],
-  "niche": [
-   "FoundationDB"
-  ],
-  "summary": "C++ or Java plus systems fundamentals like concurrency; SQL and database coursework help.",
-  "evidence": "B",
-  "sources": [
-   "https://jobs.ashbyhq.com/snowflake/ab028e3c-c1cf-4455-8915-8e4e6b0cc9e8",
-   "https://careers.wing.vc/companies/snowflake/jobs/78108806-software-engineer-intern-core-engineering-fall-2026",
-   "https://www.snowflake.com/en/blog/how-foundationdb-powers-snowflake-metadata-forward/",
-   "https://www.snowflake.com/en/blog/engineering/snowflake-distributed-query-execution-anchors/"
-  ]
- },
- {
-  "company": "Confluent",
-  "domain": "confluent.io",
-  "intern": {
-   "found": true,
-   "cycle": "2026 (grads Dec 2026 to Aug 2027)",
-   "required": [
-    "Proficient in at least one of Java/Scala, C, C++, Go",
-    "Good knowledge of data structures and algorithms"
-   ],
-   "preferred": [
-    "Exposure to Apache Kafka, Apache Flink or Kubernetes"
-   ],
-   "url": "https://builtin.com/job/2026-confluent-software-engineering-intern-opportunity-remote-london/7021427"
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": "",
-   "required": [],
-   "preferred": [],
-   "url": ""
-  },
-  "need": [
-   "Java",
-   "Go",
-   "C++"
-  ],
-  "core_stack": [
-   "Java",
-   "Scala",
-   "Go",
-   "Kafka",
-   "Flink",
-   "Kubernetes",
-   "AWS",
-   "GCP"
-  ],
-  "niche": [
-   "Kora",
-   "WarpStream"
-  ],
-  "summary": "Java is the main language, with Go, Scala, C or C++ accepted; Kafka exposure is a plus.",
-  "evidence": "B",
-  "sources": [
-   "https://builtin.com/job/2026-confluent-software-engineering-intern-opportunity-remote-london/7021427",
-   "https://jobs.ashbyhq.com/confluent/974fa008-7174-4e6f-a89c-8c6cce70ae7e",
-   "https://www.confluent.io/blog/cloud-native-data-streaming-kafka-engine/"
-  ]
- },
- {
-  "company": "MongoDB",
-  "domain": "mongodb.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2026 (closed)",
-   "required": [
-    "Fluency in Java, Python, Go, C++, JavaScript, Node.js or a comparable OO language",
-    "Data structures, algorithms and software design"
-   ],
-   "preferred": [],
-   "url": "https://www.builtinaustin.com/job/2026-software-engineering-intern-amer/7118855"
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": "",
-   "required": [],
-   "preferred": [],
-   "url": ""
-  },
-  "need": [
-   "Java",
-   "Python",
-   "Go",
-   "C++"
-  ],
-  "core_stack": [
-   "C++",
-   "Go",
-   "Java",
-   "Python",
-   "TypeScript",
-   "React",
-   "MongoDB"
-  ],
-  "niche": [
-   "WiredTiger",
-   "Evergreen CI"
-  ],
-  "summary": "Any object-oriented language such as Java, Python, Go or C++; the database server is C++.",
-  "evidence": "B",
-  "sources": [
-   "https://www.builtinaustin.com/job/2026-software-engineering-intern-amer/7118855",
-   "https://jobs.technyc.org/companies/mongodb/jobs/58571316-2026-software-engineering-intern-amer",
-   "https://github.com/evergreen-ci/evergreen",
-   "https://github.com/wiredtiger"
-  ]
- },
- {
-  "company": "DoorDash",
-  "domain": "doordash.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "at least 1 OOP language (e.g. Python, Java, Kotlin)",
-    "databases (e.g. AWS, SQL)",
-    "algorithms and data structures",
-    "clean code, version control, unit testing"
-   ],
-   "preferred": [
-    "1 prior SWE internship",
-    "AI-powered dev tools",
-    "monitoring, live deployments, CI",
-    "service-oriented architecture, APIs, system design"
-   ],
-   "url": "https://careersatdoordash.com/jobs/software-engineer-intern-summer-2027---us/8171041/"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 (grad Fall 2026 to Summer 2027)",
-   "required": [
-    "2 prior SWE internships",
-    "at least 1 OOP language (e.g. Python, Java, Kotlin)",
-    "databases such as SQL",
-    "algorithms and data structures",
-    "version control, unit tests"
-   ],
-   "preferred": [
-    "AI-powered dev tools",
-    "systems monitoring, deployment, CI",
-    "service-oriented architecture, API development, system design"
-   ],
-   "url": "https://careersatdoordash.com/jobs/software-engineer-i-entry-level-graduation-date-fall-2026-summer-2027---us/8163709/"
-  },
-  "need": [
-   "Kotlin",
-   "Python",
-   "Java",
-   "SQL"
-  ],
-  "core_stack": [
-   "Kotlin",
-   "Python",
-   "gRPC",
-   "Kafka",
-   "Cassandra",
-   "CockroachDB",
-   "PostgreSQL",
-   "AWS"
-  ],
-  "niche": [
-   "Cadence",
-   "Envoy"
-  ],
-  "summary": "Any OOP language (Python, Java, Kotlin) plus SQL and DSA; backend services are Kotlin.",
-  "evidence": "A",
-  "sources": [
-   "https://job-boards.greenhouse.io/doordashusa/jobs/8171041",
-   "https://job-boards.greenhouse.io/doordashusa/jobs/8163709",
-   "https://careersatdoordash.com/blog/how-doordash-transitioned-from-a-monolith-to-microservices/",
-   "https://careersatdoordash.com/blog/building-a-more-reliable-checkout-service-with-kotlin/"
-  ]
- },
- {
-  "company": "Uber",
-  "domain": "uber.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027 (Uber Career Prep track)",
-   "required": [
-    "one or more of Go, Python, Java, C/C++",
-    "SWE best practices via projects, contests or internships"
-   ],
-   "preferred": [
-    "building scalable tools or infrastructure",
-    "maintainable, reusable code",
-    "learns new languages quickly",
-    "hackathons, coding competitions"
-   ],
-   "url": "https://www.linkedin.com/jobs/view/2027-software-engineering-internship-uber-career-prep-at-uber-4444740653"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026 (Graduate 2026 SWE I, US)",
-   "required": [
-    "data structures and algorithms",
-    "one or more of Java, Go, C/C++, Python"
-   ],
-   "preferred": [
-    "large-scale distributed systems",
-    "maintainable software"
-   ],
-   "url": "https://www.themuse.com/jobs/uber/graduate-2026-software-engineer-i-us-4dc13b"
-  },
-  "need": [
-   "Go",
-   "Java",
-   "Python"
-  ],
-  "core_stack": [
-   "Go",
-   "Java",
-   "Spring",
-   "Kafka",
-   "Flink",
-   "MySQL",
-   "Bazel",
-   "React"
-  ],
-  "niche": [
-   "Cadence",
-   "Docstore",
-   "M3"
-  ],
-  "summary": "One of Go, Java, Python or C++ plus DSA; backend is mostly Go and Java.",
-  "evidence": "A",
-  "sources": [
-   "https://www.uber.com/us/en/blog/tech-stack-part-one-foundation/",
-   "https://www.uber.com/us/en/blog/go-monorepo-bazel/",
-   "https://www.uber.com/us/en/blog/schemaless-sql-database/"
-  ]
- },
- {
-  "company": "Intuit",
-  "domain": "intuit.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "frontend and backend development",
-    "object-oriented design, programming fundamentals",
-    "Agile, Scrum"
-   ],
-   "preferred": [
-    "Git, Jenkins or Travis",
-    "AI tools"
-   ],
-   "url": "https://jobs.intuit.com/job/mountain-view/summer-2027-software-engineering-intern-full-stack/27595/100620927520"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026 (Software Engineer 1, New College Grad)",
-   "required": [
-    "one or more languages (e.g. Java, Python, JavaScript, C++)",
-    "object-oriented design, Agile"
-   ],
-   "preferred": [
-    "HTML, CSS, JavaScript",
-    "frameworks such as React, Node.js, Spring, Django",
-    "Generative AI basics"
-   ],
-   "url": "https://jobs.intuit.com/job/mountain-view/software-engineer-1/27595/87369448720"
-  },
-  "need": [
-   "Java",
-   "JavaScript",
-   "Python",
-   "React",
-   "Git"
-  ],
-  "core_stack": [
-   "Java",
-   "Spring",
-   "JavaScript",
-   "React",
-   "Node.js",
-   "GraphQL",
-   "AWS",
-   "Kubernetes"
-  ],
-  "niche": [
-   "Argo",
-   "GenOS",
-   "Numaflow"
-  ],
-  "summary": "Any OOP language plus basic web skills; teams lean on Java, React and AWS.",
-  "evidence": "B",
-  "sources": [
-   "https://www.intuit.com/technology/",
-   "https://medium.com/intuit-engineering/turbotax-moves-to-kubernetes-an-intuit-journey-part-2-f5217772fbb6"
-  ]
- },
- {
-  "company": "Google",
-  "domain": "google.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "two or more languages (e.g. C, C++, Java, JavaScript, Python)",
-    "data structures or algorithms"
-   ],
-   "preferred": [
-    "three or more of C, C++, C#, Java, JavaScript, Go, Python",
-    "Unix/Linux, web, mobile, distributed systems, ML"
-   ],
-   "url": "https://www.google.com/about/careers/applications/jobs/results/100648618540573382-software-engineering-intern/"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "Early Career, Campus (live Sep 2026)",
-   "required": [
-    "one or more languages (e.g. Python, C, C++, Java, JavaScript)",
-    "data structures or algorithms",
-    "AI productivity tools"
-   ],
-   "preferred": [
-    "web or mobile dev, Unix/Linux, distributed systems, ML",
-    "ability to learn other languages"
-   ],
-   "url": "https://www.google.com/about/careers/applications/jobs/results/78703249065943750-software-engineer-early-career-campus"
-  },
-  "need": [
-   "C++",
-   "Java",
-   "Python",
-   "Go"
-  ],
-  "core_stack": [
-   "C++",
-   "Java",
-   "Python",
-   "Go",
-   "TypeScript",
-   "Kotlin",
-   "gRPC",
-   "GCP"
-  ],
-  "niche": [
-   "Borg",
-   "Blaze",
-   "Piper",
-   "Flume"
-  ],
-  "summary": "Two or more mainstream languages plus DSA; teams mostly write C++, Java, Python and Go.",
-  "evidence": "A",
-  "sources": [
-   "https://abseil.io/resources/swe-book",
-   "https://newsletter.pragmaticengineer.com/p/google-part-2"
-  ]
- },
- {
-  "company": "Microsoft",
-  "domain": "microsoft.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "pursuing BS or MS in CS or related field"
-   ],
-   "preferred": [
-    "1+ year programming, DSA",
-    "TypeScript or JavaScript with React or Angular",
-    "backend in C#, Java, Node.js or Python",
-    "REST APIs, testing",
-    "Python with PyTorch or TensorFlow"
-   ],
-   "url": "https://apply.careers.microsoft.com/careers/job/1970393557004819"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2024-2025 (most recent found; no 2026 or 2027 US posting live)",
-   "required": [
-    "BS or MS in CS or related field",
-    "coding in C, C++, C#, Java, JavaScript or Python"
-   ],
-   "preferred": [
-    "CS fundamentals, data structures and algorithms"
-   ],
-   "url": "https://www.linkedin.com/jobs/view/software-engineer-opportunities-for-university-graduates-redmond-at-microsoft-3825586137"
-  },
-  "need": [
-   "C#",
-   "C++",
-   "Java",
-   "Python",
-   "TypeScript"
-  ],
-  "core_stack": [
-   "C#",
-   ".NET",
-   "C++",
-   "TypeScript",
-   "React",
-   "Azure",
-   "Python",
-   "SQL"
-  ],
-  "niche": [
-   "Kusto (KQL)",
-   "Service Fabric",
-   "Cosmos (internal)"
-  ],
-  "summary": "Any OOP language plus DSA; many teams run C#, .NET, TypeScript and C++ on Azure.",
-  "evidence": "A",
-  "sources": [
-   "https://devblogs.microsoft.com/dotnet/microsoft-teams-infrastructure-and-azure-communication-services-journey-to-dotnet-6/",
-   "https://careers.microsoft.com/v2/global/en/universityinternship"
-  ]
- },
- {
-  "company": "Meta",
-  "domain": "meta.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2026 (Intern/Co-op; Summer 2027 SWE posting not up yet)",
-   "required": [
-    "an industry-standard language (Java, Python, C++, Objective-C, JavaScript)"
-   ],
-   "preferred": [
-    "prior internship, work, coding competitions or publications",
-    "returning to degree program"
-   ],
-   "url": "https://www.metacareers.com/v2/jobs/1007975740551656/"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "Software Engineer (University Grad), current evergreen req",
-   "required": [
-    "an industry-standard language (e.g. Java, Python, C++, JavaScript)"
-   ],
-   "preferred": [
-    "prior internship, work, coding competitions or publications",
-    "BS or MS in CS"
-   ],
-   "url": "https://www.metacareers.com/jobs/8187200048015588"
-  },
-  "need": [
-   "Python",
-   "C++",
-   "Java",
-   "JavaScript"
-  ],
-  "core_stack": [
-   "C++",
-   "Python",
-   "JavaScript",
-   "React",
-   "GraphQL",
-   "MySQL",
-   "PyTorch",
-   "Rust"
-  ],
-  "niche": [
-   "Hack",
-   "HHVM",
-   "TAO",
-   "Buck2"
-  ],
-  "summary": "Any mainstream language plus DSA; product code is Hack, which is taught on the job.",
-  "evidence": "A",
-  "sources": [
-   "https://engineering.fb.com/2022/07/27/developer-tools/programming-languages-endorsed-for-server-side-use-at-meta/",
-   "https://engineering.fb.com/2024/06/25/developer-tools/the-key-to-a-happy-rust-c-relationship/"
-  ]
- },
- {
-  "company": "Apple",
-  "domain": "apple.com",
-  "intern": {
-   "found": true,
-   "cycle": "Ongoing (evergreen req posted May 2026)",
-   "required": [
-    "pursuing BS or BA in CS, EE, CE or related field"
-   ],
-   "preferred": [
-    "OOP design, data structures and algorithms",
-    "one or more of Java, C/C++, Python, Swift, JavaScript",
-    "iOS or macOS in Swift, Xcode or Objective-C",
-    "Spark, Hadoop, Go, MongoDB"
-   ],
-   "url": "https://jobs.apple.com/en-us/details/200664785-3810/software-undergrad-engineering-internships"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2025 (IS&T Early Career, Feb 2025; Apple posts per team)",
-   "required": [
-    "Java or Python (server), JavaScript, HTML, CSS (web) or Swift, Objective-C (iOS)",
-    "CS fundamentals",
-    "prior internship"
-   ],
-   "preferred": [
-    "AWS or GCP basics"
-   ],
-   "url": "https://jobs.anitab.org/companies/apple/jobs/45949483-software-engineer-is-t-early-career"
-  },
-  "need": [
-   "Swift",
-   "Python",
-   "Java",
-   "C++"
-  ],
-  "core_stack": [
-   "Swift",
-   "Objective-C",
-   "C++",
-   "Python",
-   "Java",
-   "Kubernetes",
-   "Cassandra",
-   "Spark"
-  ],
-  "niche": [
-   "FoundationDB",
-   "SwiftNIO",
-   "Radar"
-  ],
-  "summary": "Team specific: Swift for platform teams, Java or Python for services, plus DSA.",
-  "evidence": "A",
-  "sources": [
-   "https://www.swift.org/blog/swift-at-apple-migrating-the-password-monitoring-service-from-java/",
-   "https://jobs.apple.com/en-us/details/200627852-3956/software-engineer-is-t-early-career"
-  ]
- },
- {
-  "company": "Netflix",
-  "domain": "netflix.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2026 (Summer 2027 SWE posting not up yet)",
-   "required": [
-    "fluent in one of C, Java, Kotlin, C++, C#, JavaScript, TypeScript, Python, Go, Rust",
-    "data structures, algorithms, debugging"
-   ],
-   "preferred": [
-    "coursework in distributed systems, web, mobile, security, ML or AI"
-   ],
-   "url": "https://www.builtinsf.com/job/software-engineer-intern-summer-2026/7313601"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026 (New Grad Software Engineer 2026)",
-   "required": [
-    "fluent in one of Java, Kotlin, C++, C#, JavaScript, TypeScript, Python, Go, Rust",
-    "1 internship or school project",
-    "data structures, algorithms, debugging"
-   ],
-   "preferred": [
-    "coursework in distributed systems, web, mobile, security, ML or AI"
-   ],
-   "url": "https://explore.jobs.netflix.net/careers/job/790313102199"
-  },
-  "need": [
-   "Java",
-   "Python",
-   "TypeScript"
-  ],
-  "core_stack": [
-   "Java",
-   "Spring",
-   "GraphQL",
-   "gRPC",
-   "Kafka",
-   "Cassandra",
-   "AWS",
-   "React"
-  ],
-  "niche": [
-   "DGS",
-   "Spinnaker",
-   "Titus",
-   "EVCache"
-  ],
-  "summary": "Fluency in any one mainstream language; backend is mostly Java on Spring Boot, hosted on AWS.",
-  "evidence": "A",
-  "sources": [
-   "https://netflixtechblog.com/open-sourcing-the-netflix-domain-graph-service-framework-graphql-for-spring-boot-92b9dcecda18",
-   "https://github.com/Netflix/dgs-framework"
-  ]
- },
- {
-  "company": "Databricks",
-  "domain": "databricks.com",
-  "intern": {
-   "found": true,
-   "cycle": "Winter 2027 (no Summer 2027 SWE intern posting live yet)",
-   "required": [
-    "one of: Python, Java, C++",
-    "algorithms, data structures, OOP principles"
-   ],
-   "preferred": [],
-   "url": "https://www.databricks.com/company/careers/university-recruiting/software-engineering-intern-2027-start---winter-8732364002"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026 (2027 new grad SWE posting not up yet)",
-   "required": [
-    "one of: Python, Java, C++",
-    "algorithms, data structures, OOP principles",
-    "end-to-end project experience"
-   ],
-   "preferred": [],
-   "url": "https://www.builtinsf.com/job/software-engineer-new-grad-2026-start/6846071"
-  },
-  "need": [
-   "Python",
-   "Java",
-   "C++"
-  ],
-  "core_stack": [
-   "Scala",
-   "Python",
-   "Java",
-   "Spark",
-   "Kubernetes",
-   "Bazel",
-   "React",
-   "TypeScript"
-  ],
-  "niche": [
-   "Jsonnet",
-   "Photon"
-  ],
-  "summary": "Any of Python, Java or C++ plus DSA and OOP; most backend services are Scala.",
-  "evidence": "A",
-  "sources": [
-   "https://www.databricks.com/company/careers/university-recruiting/software-engineering-intern-2027-start---winter-8732364002",
-   "https://www.builtinsf.com/job/software-engineer-new-grad-2026-start/6846071",
-   "https://www.databricks.com/blog/2021/12/03/scala-at-scale-at-databricks.html",
-   "https://www.databricks.com/blog/2019/07/23/fast-parallel-testing-at-databricks-with-bazel.html"
-  ]
- },
- {
-  "company": "Stripe",
-  "domain": "stripe.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027 (posting open, year not stated)",
-   "required": [
-    "projects or classwork in one of: Ruby, Java, JavaScript, Go, Scala",
-    "prior internship or multi-person project",
-    "using AI coding tools with judgment"
-   ],
-   "preferred": [
-    "frontend, backend or infrastructure specialty",
-    "pull requests with good test coverage",
-    "navigating multi-language codebases"
-   ],
-   "url": "https://stripe.com/careers/listing/software-engineer-intern/8031833"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 (degree by summer 2027)",
-   "required": [
-    "projects or classwork in one of: Java, Ruby, JavaScript, Scala, Go",
-    "prior internship or multi-person project",
-    "using AI coding tools with judgment"
-   ],
-   "preferred": [
-    "frontend, backend or infrastructure specialty",
-    "code review and production deploy experience",
-    "navigating large codebases"
-   ],
-   "url": "https://stripe.com/careers/listing/software-engineer-new-grad/8130930"
-  },
-  "need": [
-   "Java",
-   "Ruby",
-   "Go",
-   "JavaScript"
-  ],
-  "core_stack": [
-   "Ruby",
-   "Java",
-   "Go",
-   "Scala",
-   "TypeScript",
-   "React",
-   "MongoDB",
-   "AWS"
-  ],
-  "niche": [
-   "Sorbet",
-   "DocDB"
-  ],
-  "summary": "Any of Ruby, Java, JavaScript, Go or Scala; the core is a huge typed Ruby monorepo.",
-  "evidence": "A",
-  "sources": [
-   "https://stripe.com/careers/listing/software-engineer-intern/8031833",
-   "https://stripe.com/careers/listing/software-engineer-new-grad/8130930",
-   "https://stripe.dev/blog/sorbet-stripes-type-checker-for-ruby",
-   "https://blog.quastor.org/p/architecture-stripes-document-database"
-  ]
- },
- {
-  "company": "Palantir",
-  "domain": "palantir.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027 (graduating 2028)",
-   "required": [
-    "one of: Java, C++, Python, JavaScript",
-    "data structures, storage systems, cloud infrastructure, front-end frameworks"
-   ],
-   "preferred": [],
-   "url": "https://jobs.lever.co/palantir/e27af7ab-41fc-40c9-b31d-02c6cb1c505c"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026/2027",
-   "required": [
-    "one of: Java, C++, Python, JavaScript",
-    "data structures, storage systems, cloud infrastructure, front-end frameworks"
-   ],
-   "preferred": [
-    "US security clearance or eligibility"
-   ],
-   "url": "https://jobs.lever.co/palantir/94984771-0704-446c-88c6-91ce748f6d92"
-  },
-  "need": [
-   "Java",
-   "Python",
-   "JavaScript",
-   "TypeScript"
-  ],
-  "core_stack": [
-   "Java",
-   "Go",
-   "TypeScript",
-   "React",
-   "Cassandra",
-   "Spark",
-   "Elasticsearch",
-   "Gradle"
-  ],
-  "niche": [
-   "Conjure",
-   "Blueprint",
-   "Foundry",
-   "Gotham"
-  ],
-  "summary": "Any of Java, C++, Python or JavaScript; backend is Java and Go, frontend TypeScript and React.",
-  "evidence": "A",
-  "sources": [
-   "https://jobs.lever.co/palantir/e27af7ab-41fc-40c9-b31d-02c6cb1c505c",
-   "https://jobs.lever.co/palantir/94984771-0704-446c-88c6-91ce748f6d92",
-   "https://github.com/palantir/conjure",
-   "https://palantir.github.io/"
-  ]
- },
- {
-  "company": "LinkedIn",
-  "domain": "linkedin.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2026 (Summer 2027 not posted yet)",
-   "required": [
-    "one or more of: Java, C/C++, C#, Python, Ruby",
-    "OO design, algorithms, data structures, complexity analysis"
-   ],
-   "preferred": [
-    "distributed systems",
-    "operating systems",
-    "cloud computing"
-   ],
-   "url": "https://jobs.smartrecruiters.com/LinkedIn3/744000085237793-software-engineer-intern-undergraduate-summer-2026-mountain-view-ca-"
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": "none posted (entry SWE roles on the board ask for 1+ years)",
-   "required": [],
-   "preferred": [],
-   "url": "https://careers.linkedin.com/pathways-programs/entry-level/technical"
-  },
-  "need": [
-   "Java",
-   "Python",
-   "C++"
-  ],
-  "core_stack": [
-   "Java",
-   "Scala",
-   "Python",
-   "Kafka",
-   "Spark",
-   "Kotlin",
-   "Swift",
-   "JavaScript"
-  ],
-  "niche": [
-   "Rest.li",
-   "Espresso",
-   "Venice",
-   "Pinot"
-  ],
-  "summary": "Any of Java, C++, C#, Python or Ruby; backend is mostly Java on Kafka-based data infra.",
-  "evidence": "B",
-  "sources": [
-   "https://jobs.smartrecruiters.com/LinkedIn3/744000085237793-software-engineer-intern-undergraduate-summer-2026-mountain-view-ca-",
-   "https://jobs.smartrecruiters.com/LinkedIn3/744000144804759-software-engineer-systems-and-infrastructure-",
-   "https://www.linkedin.com/blog/engineering/open-source/kafka-ecosystem-at-linkedin"
-  ]
- },
- {
-  "company": "Figma",
-  "domain": "figma.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "at least one general-purpose language, e.g. C++, JavaScript, Python, Java",
-    "data structures and algorithms"
-   ],
-   "preferred": [
-    "AI-assisted dev tools (Copilot, ChatGPT, Claude)"
-   ],
-   "url": "https://job-boards.greenhouse.io/figma/jobs/6143238004"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026 (closed; 2027 SWE posting not up yet)",
-   "required": [
-    "at least one general-purpose language, e.g. C++, JavaScript, Python, Java",
-    "CS fundamentals and data structures"
-   ],
-   "preferred": [],
-   "url": "https://job-boards.greenhouse.io/figma/jobs/5616603004"
-  },
-  "need": [
-   "TypeScript",
-   "React",
-   "C++"
-  ],
-  "core_stack": [
-   "TypeScript",
-   "React",
-   "C++",
-   "WebAssembly",
-   "Ruby",
-   "Rust",
-   "PostgreSQL",
-   "AWS"
-  ],
-  "niche": [
-   "LiveGraph",
-   "DBProxy",
-   "Sorbet"
-  ],
-  "summary": "Any language plus DSA; teams mostly write TypeScript and React, with C++ for the canvas.",
-  "evidence": "A",
-  "sources": [
-   "https://job-boards.greenhouse.io/figma/jobs/6143238004",
-   "https://www.theladders.com/job/early-career-software-engineer-2026-figma-new-york-ny_83499154",
-   "https://newsletter.pragmaticengineer.com/p/inside-figmas-engineering-culture",
-   "https://www.figma.com/blog/rust-in-production-at-figma/"
-  ]
- },
- {
-  "company": "Airbnb",
-  "domain": "airbnb.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2026 (closed; Summer 2027 not posted yet)",
-   "required": [
-    "at least one language, e.g. Java, Scala, Ruby/Rails, C++, SQL, HTML/CSS, JavaScript, Objective-C, Swift, Kotlin",
-    "CS fundamentals"
-   ],
-   "preferred": [],
-   "url": "https://www.builtinnyc.com/job/software-engineering-intern/7916098"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026 (closed; 2027 not posted yet)",
-   "required": [
-    "one or more of: Java, Scala, Ruby/Rails, C++, SQL, HTML/CSS, JavaScript, Objective-C, Swift, Kotlin",
-    "data structures, algorithms, design patterns"
-   ],
-   "preferred": [
-    "Python and common AI/ML libraries"
-   ],
-   "url": "https://job-boards.greenhouse.io/airbnb/jobs/7773838"
-  },
-  "need": [
-   "Java",
-   "Kotlin",
-   "JavaScript",
-   "SQL"
-  ],
-  "core_stack": [
-   "Java",
-   "Kotlin",
-   "TypeScript",
-   "React",
-   "GraphQL",
-   "Kubernetes",
-   "MySQL",
-   "Swift"
-  ],
-  "niche": [
-   "Viaduct",
-   "Ghost Platform"
-  ],
-  "summary": "Any one language plus CS fundamentals; backend is Java and Kotlin, web is TypeScript and React.",
-  "evidence": "A",
-  "sources": [
-   "https://www.builtinnyc.com/job/software-engineering-intern/7916098",
-   "https://job-boards.greenhouse.io/airbnb/jobs/7773838",
-   "https://medium.com/airbnb-engineering/viaduct-five-years-on-modernizing-the-data-oriented-service-mesh-e66397c9e9a9",
-   "https://medium.com/airbnb-engineering/a-deep-dive-into-airbnbs-server-driven-ui-system-842244c5f5"
-  ]
- },
- {
-  "company": "BlackRock",
-  "domain": "blackrock.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "intermediate skill in an OO language, e.g. Java, Python or JavaScript (per SWE function page)"
-   ],
-   "preferred": [
-    "interest in finance",
-    "interest in AI and emerging tech"
-   ],
-   "url": "https://careers.blackrock.com/job/new-york/2027-summer-internship-program-amers/45831/90628276544"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 Full-Time Analyst Program",
-   "required": [
-    "intermediate skill in an OO language, e.g. Java, Python or JavaScript (per SWE function page)"
-   ],
-   "preferred": [
-    "interest in finance",
-    "interest in AI and emerging tech"
-   ],
-   "url": "https://careers.blackrock.com/job/new-york/2027-full-time-analyst-program-amrs/45831/97843197536"
-  },
-  "need": [
-   "Java",
-   "Python",
-   "JavaScript"
-  ],
-  "core_stack": [
-   "Java",
-   "Python",
-   "Spring",
-   "Angular",
-   "React",
-   "Kafka",
-   "Snowflake",
-   "Azure"
-  ],
-  "niche": [
-   "Aladdin",
-   "Apache Ignite",
-   "Storm",
-   "Solr"
-  ],
-  "summary": "Intermediate Java, Python or JavaScript; postings are generic and Aladdin is mostly Java.",
-  "evidence": "B",
-  "sources": [
-   "https://careers.blackrock.com/job/new-york/2027-summer-internship-program-amers/45831/90628276544",
-   "https://careers.blackrock.com/job/new-york/2027-full-time-analyst-program-amrs/45831/97843197536",
-   "https://careers.blackrock.com/students-and-graduates-functions-software-engineering",
-   "https://blackrock-eng.medium.com/"
-  ]
- },
- {
-  "company": "SpaceX",
-  "domain": "spacex.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "one or more of: C, C++, C#, Java, JavaScript, Python",
-    "3+ months of programming experience"
-   ],
-   "preferred": [
-    "computer architecture and networks",
-    "debugging, performance optimization, unit testing"
-   ],
-   "url": "https://boards.greenhouse.io/spacex/jobs/8621757002"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2026/2027",
-   "required": [
-    "experience (internships count) in C, C++, Python, C# or another OO language"
-   ],
-   "preferred": [
-    "networking protocols (UDP, TCP/IP)",
-    "distributed systems",
-    "C++ or Rust on Starship/flight roles"
-   ],
-   "url": "https://boards.greenhouse.io/spacex/jobs/8696080002"
-  },
-  "need": [
-   "C++",
-   "Python",
-   "C",
-   "C#"
-  ],
-  "core_stack": [
-   "C++",
-   "Python",
-   "C#",
-   ".NET",
-   "Linux",
-   "Rust",
-   "Angular",
-   "PostgreSQL"
-  ],
-  "niche": [
-   "WARP Drive"
-  ],
-  "summary": "C++ or Python plus shipped projects; flight code leans C++, internal apps are C# and Angular.",
-  "evidence": "A",
-  "sources": [
-   "https://boards.greenhouse.io/spacex/jobs/8621757002",
-   "https://boards.greenhouse.io/spacex/jobs/8696080002",
-   "https://boards.greenhouse.io/spacex/jobs/8493079002",
-   "https://stackoverflow.blog/2021/05/13/building-the-software-that-helps-build-spacex/"
-  ]
- },
- {
-  "company": "Anduril",
-  "domain": "anduril.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "CS or related degree in progress",
-    "US Person"
-   ],
-   "preferred": [
-    "C++, Go, Rust, Java, Python",
-    "algorithms, data structures, storage systems, cloud infrastructure, front-end frameworks"
-   ],
-   "url": "https://job-boards.greenhouse.io/andurilindustries/jobs/5148079007"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027",
-   "required": [
-    "CS or related degree",
-    "US Person"
-   ],
-   "preferred": [
-    "C++, Go, Rust, Java, Python",
-    "algorithms, data structures, storage systems, cloud infrastructure, front-end frameworks"
-   ],
-   "url": "https://job-boards.greenhouse.io/andurilindustries/jobs/5162263007"
-  },
-  "need": [
-   "C++",
-   "Python",
-   "Go",
-   "Rust"
-  ],
-  "core_stack": [
-   "C++",
-   "Rust",
-   "Go",
-   "Python",
-   "TypeScript",
-   "React",
-   "gRPC",
-   "Kubernetes"
-  ],
-  "niche": [
-   "Lattice OS",
-   "Nix",
-   "Bazel"
-  ],
-  "summary": "No hard language requirement; C++, Go, Rust and Python preferred, services speak gRPC.",
-  "evidence": "A",
-  "sources": [
-   "https://job-boards.greenhouse.io/andurilindustries/jobs/5148079007",
-   "https://job-boards.greenhouse.io/andurilindustries/jobs/5162263007",
-   "https://builtinlondon.uk/job/software-engineer-full-stack/8507135",
-   "https://github.com/anduril/lattice-sdk-cpp"
-  ]
- },
- {
-  "company": "Jane Street",
-  "domain": "janestreet.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027 (year not stated on posting)",
-   "required": [
-    "Top-notch programmer in any language"
-   ],
-   "preferred": [
-    "OCaml taught on the job (primary language)",
-    "Python used by some teams"
-   ],
-   "url": "https://www.janestreet.com/join-jane-street/position/8599644002/"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 (year not stated on posting)",
-   "required": [
-    "Top-notch programmer, experience in any language"
-   ],
-   "preferred": [
-    "No OCaml, functional programming, Python or finance background expected"
-   ],
-   "url": "https://www.janestreet.com/join-jane-street/position/8594541002/"
-  },
-  "need": [
-   "Any language"
-  ],
-  "core_stack": [
-   "OCaml",
-   "Python",
-   "Linux"
-  ],
-  "niche": [
-   "OxCaml",
-   "Hardcaml",
-   "Dune, Core, Async",
-   "Iron"
-  ],
-  "summary": "Any language is fine; OCaml is the main language and is taught on the job.",
-  "evidence": "A",
-  "sources": [
-   "https://www.janestreet.com/join-jane-street/position/8599644002/",
-   "https://www.janestreet.com/join-jane-street/position/8594541002/",
-   "https://www.janestreet.com/technology/",
-   "https://blog.janestreet.com/why-ocaml/"
-  ]
- },
- {
-  "company": "Citadel / Citadel Securities",
-  "domain": "citadel.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027 (year not stated on posting)",
-   "required": [
-    "Exceptional programming and design skills (no language named)",
-    "Probability and statistics familiarity"
-   ],
-   "preferred": [],
-   "url": "https://www.citadel.com/careers/details/software-engineer-intern-us/"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 (year not stated on posting)",
-   "required": [
-    "Exceptional programming and design skills",
-    "Probability and statistics familiarity"
-   ],
-   "preferred": [
-    "C++",
-    "Python"
-   ],
-   "url": "https://www.builtinnyc.com/job/software-engineer-university-graduate-us/10064246"
-  },
-  "need": [
-   "C++",
-   "Python"
-  ],
-  "core_stack": [
-   "C++",
-   "Python",
-   "Linux",
-   "Java",
-   "React",
-   "TypeScript"
-  ],
-  "niche": [
-   "kdb+/q",
-   "FPGA"
-  ],
-  "summary": "Strong programming in any language; C++ and Python are preferred and dominate trading teams.",
-  "evidence": "B",
-  "sources": [
-   "https://www.citadel.com/careers/details/software-engineer-intern-us/",
-   "https://www.citadelsecurities.com/careers/details/software-engineer-intern-us/",
-   "https://www.builtinnyc.com/job/software-engineer-university-graduate-us/10064246",
-   "https://www.citadelsecurities.com/careers/details/full-stack-software-engineer/",
-   "https://www.citadelsecurities.com/careers/details/c-software-engineer/"
-  ]
- },
- {
-  "company": "Two Sigma",
-  "domain": "twosigma.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "One of: Java, C, C++, Python, Ruby, Perl, or other JVM languages",
-    "Experience in large-scale systems"
-   ],
-   "preferred": [
-    "No finance experience needed"
-   ],
-   "url": "https://careers.twosigma.com/careers/JobDetail/New-York-New-York-United-States-Software-Engineering-Internship-Summer-2027/14016"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 (year not stated on posting)",
-   "required": [
-    "One of: Java, C, C++, Python, Ruby, Perl, or other JVM languages",
-    "Experience in large-scale systems"
-   ],
-   "preferred": [
-    "No finance experience needed"
-   ],
-   "url": "https://careers.twosigma.com/careers/JobDetail/Houston-Texas-United-States-Software-Engineering-Full-Time-Campus-Hire-Houston/14018"
-  },
-  "need": [
-   "Java",
-   "Python",
-   "C++"
-  ],
-  "core_stack": [
-   "Java",
-   "Python",
-   "C++",
-   "Kubernetes",
-   "GCP",
-   "Spark",
-   "pandas"
-  ],
-  "niche": [
-   "Mesos",
-   "Cook",
-   "Waiter"
-  ],
-  "summary": "Any mainstream language, usually Java, C++ or Python, plus large-scale systems experience.",
-  "evidence": "A",
-  "sources": [
-   "https://careers.twosigma.com/careers/JobDetail/New-York-New-York-United-States-Software-Engineering-Internship-Summer-2027/14016",
-   "https://careers.twosigma.com/careers/JobDetail/Houston-Texas-United-States-Software-Engineering-Full-Time-Campus-Hire-Houston/14018",
-   "https://www.twosigma.com/careers/engineering/",
-   "https://github.com/twosigma"
-  ]
- },
- {
-  "company": "Hudson River Trading",
-  "domain": "hudsonrivertrading.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "Programming experience in Python, C or C++"
-   ],
-   "preferred": [
-    "No trading or finance knowledge needed"
-   ],
-   "url": "https://www.hudsonrivertrading.com/hrt-job/software-engineering-internship-c-or-python-summer-2027/"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027",
-   "required": [
-    "C/C++ or Python",
-    "UNIX knowledge (Linux)",
-    "System/processor performance and network communication"
-   ],
-   "preferred": [
-    "Interest in low-level architecture, logic design or verification"
-   ],
-   "url": "https://www.hudsonrivertrading.com/hrt-job/software-engineer-c-or-python-2027-grads/"
-  },
-  "need": [
-   "C++",
-   "Python",
-   "Linux"
-  ],
-  "core_stack": [
-   "C++",
-   "Python",
-   "Linux",
-   "TypeScript",
-   "Go"
-  ],
-  "niche": [
-   "FPGA",
-   "SystemVerilog"
-  ],
-  "summary": "Python, C or C++ required; new grads also need Linux and systems fundamentals.",
-  "evidence": "A",
-  "sources": [
-   "https://www.hudsonrivertrading.com/hrt-job/software-engineering-internship-c-or-python-summer-2027/",
-   "https://www.hudsonrivertrading.com/hrt-job/software-engineer-c-or-python-2027-grads/",
-   "https://www.hudsonrivertrading.com/hrtbeat/engineering-and-interviewing-at-hrt/",
-   "https://www.hudsonrivertrading.com/hrtbeat/hrtworker-a-sharedworker-framework/"
-  ]
- },
- {
-  "company": "Optiver",
-  "domain": "optiver.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "Proficient in a language such as C++, Python, or Java",
-    "Solid CS fundamentals"
-   ],
-   "preferred": [],
-   "url": "https://www.optiver.com/join-us/jobs/technology/chicago/software-engineer-intern-summer-2027-chicago/"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 start",
-   "required": [
-    "Proficient in a language such as C++, Python, or Java",
-    "Solid CS fundamentals"
-   ],
-   "preferred": [],
-   "url": "https://www.optiver.com/join-us/jobs/technology/austin/graduate-software-engineer-2027-start/"
-  },
-  "need": [
-   "C++",
-   "Python",
-   "Java"
-  ],
-  "core_stack": [
-   "C++",
-   "Python",
-   "Rust",
-   "C#",
-   "Linux",
-   "PostgreSQL",
-   "Kafka",
-   "Kubernetes"
-  ],
-  "niche": [
-   "FPGA",
-   "VHDL",
-   "SystemVerilog",
-   "Custom Linux kernels"
-  ],
-  "summary": "Proficiency in C++, Python or Java; C++ runs the low latency trading core.",
-  "evidence": "A",
-  "sources": [
-   "https://www.optiver.com/join-us/jobs/technology/chicago/software-engineer-intern-summer-2027-chicago/",
-   "https://www.optiver.com/join-us/jobs/technology/austin/graduate-software-engineer-2027-start/",
-   "https://newsletter.pragmaticengineer.com/p/optiver",
-   "https://www.optiver.com/what-we-do/technology/"
-  ]
- },
- {
-  "company": "IMC Trading",
-  "domain": "imc.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "Proficient in a programming language",
-    "Algorithms and data structures"
-   ],
-   "preferred": [
-    "Java",
-    "C++"
-   ],
-   "url": "https://www.imc.com/us/careers/jobs/4823924101"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027",
-   "required": [
-    "C++ or Java",
-    "Algorithms and data structures"
-   ],
-   "preferred": [
-    "Python"
-   ],
-   "url": "https://www.imc.com/us/careers/jobs/4667814101"
-  },
-  "need": [
-   "Java",
-   "C++",
-   "Python"
-  ],
-  "core_stack": [
-   "Java",
-   "C++",
-   "Python",
-   "Kafka",
-   "Kubernetes",
-   "Docker",
-   "Linux"
-  ],
-  "niche": [
-   "FPGA"
-  ],
-  "summary": "Java or C++ required for new grads and preferred for interns; Python is a plus.",
-  "evidence": "A",
-  "sources": [
-   "https://www.imc.com/us/careers/jobs/4823924101",
-   "https://www.imc.com/us/careers/jobs/4667814101",
-   "https://www.imc.com/us/careers/jobs/4855354101"
-  ]
- },
- {
-  "company": "Scale AI",
-  "domain": "scale.com",
-  "intern": {
-   "found": true,
-   "cycle": "Summer 2027",
-   "required": [
-    "Python, TypeScript, React and/or MongoDB",
-    "Full-stack web product engineering",
-    "Prior CS/SWE internship"
-   ],
-   "preferred": [
-    "LLMs, evaluations or agentic systems",
-    "Open source or shipped side projects"
-   ],
-   "url": "https://job-boards.greenhouse.io/scaleai/jobs/4730845005"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027 (Fall 2026 or Spring 2027 grads)",
-   "required": [
-    "Python, TypeScript, React and/or MongoDB",
-    "Full-stack web product engineering",
-    "Prior product/SWE internship"
-   ],
-   "preferred": [
-    "LLMs, evaluations or agentic systems",
-    "Open source or shipped side projects"
-   ],
-   "url": "https://job-boards.greenhouse.io/scaleai/jobs/4730836005"
-  },
-  "need": [
-   "Python",
-   "TypeScript",
-   "React",
-   "MongoDB"
-  ],
-  "core_stack": [
-   "Python",
-   "TypeScript",
-   "React",
-   "Node.js",
-   "MongoDB",
-   "AWS",
-   "Kubernetes",
-   "Temporal"
-  ],
-  "niche": [],
-  "summary": "Full-stack product work in Python, TypeScript, React and MongoDB, plus a prior internship.",
-  "evidence": "A",
-  "sources": [
-   "https://job-boards.greenhouse.io/scaleai/jobs/4730845005",
-   "https://job-boards.greenhouse.io/scaleai/jobs/4730836005",
-   "https://job-boards.greenhouse.io/scaleai/jobs/4594879005",
-   "https://job-boards.greenhouse.io/scaleai/jobs/4717101005"
-  ]
- },
- {
-  "company": "OpenAI",
-  "domain": "openai.com",
-  "intern": {
-   "found": true,
-   "cycle": "Fall 2026 (no Summer 2027 posting yet)",
-   "required": [
-    "JavaScript",
-    "React",
-    "A backend language (Python)",
-    "Relational databases like PostgreSQL/MySQL"
-   ],
-   "preferred": [
-    "Interest in AI/ML, experience not required"
-   ],
-   "url": "https://jobs.ashbyhq.com/openai/1f3353ed-78eb-4a01-b783-c44b1c086711"
-  },
-  "new_grad": {
-   "found": true,
-   "cycle": "2027",
-   "required": [
-    "JavaScript",
-    "React",
-    "A backend language (Python)",
-    "Relational databases like PostgreSQL/MySQL"
-   ],
-   "preferred": [
-    "Interest in AI/ML, experience not required"
-   ],
-   "url": "https://jobs.ashbyhq.com/openai/55150071-fce8-48f5-aea4-14ed78b83511"
-  },
-  "need": [
-   "Python",
-   "JavaScript",
-   "React",
-   "PostgreSQL"
-  ],
-  "core_stack": [
-   "Python",
-   "TypeScript",
-   "JavaScript",
-   "React",
-   "PostgreSQL",
-   "Kubernetes",
-   "Azure"
-  ],
-  "niche": [
-   "Triton",
-   "Azure Cosmos DB"
-  ],
-  "summary": "JavaScript and React on the front, Python on the back, plus Postgres or MySQL basics.",
-  "evidence": "A",
-  "sources": [
-   "https://jobs.ashbyhq.com/openai/1f3353ed-78eb-4a01-b783-c44b1c086711",
-   "https://jobs.ashbyhq.com/openai/55150071-fce8-48f5-aea4-14ed78b83511",
-   "https://openai.com/index/scaling-postgresql/",
-   "https://openai.com/index/scaling-kubernetes-to-7500-nodes/"
-  ]
- },
- {
-  "company": "Anthropic",
-  "domain": "anthropic.com",
-  "intern": {
-   "found": false,
-   "cycle": null,
-   "required": [],
-   "preferred": [],
-   "url": null
-  },
-  "new_grad": {
-   "found": false,
-   "cycle": null,
-   "required": [],
-   "preferred": [],
-   "url": null
-  },
-  "need": [
-   "Python",
-   "TypeScript",
-   "Rust"
-  ],
-  "core_stack": [
-   "Python",
-   "TypeScript",
-   "React",
-   "Rust",
-   "Go",
-   "Kubernetes",
-   "GCP",
-   "AWS"
-  ],
-  "niche": [
-   "Trainium",
-   "TPU",
-   "JAX"
-  ],
-  "summary": "No SWE intern or new grad program; engineering roles center on Python, plus Rust, Go and TypeScript.",
-  "evidence": "C",
-  "sources": [
-   "https://www.anthropic.com/careers/jobs",
-   "https://job-boards.greenhouse.io/anthropic/jobs/5400160008",
-   "https://job-boards.greenhouse.io/anthropic/jobs/5186067008",
-   "https://job-boards.greenhouse.io/anthropic/jobs/5183051008"
-  ]
- }
+  {
+    "company": "Amazon",
+    "domain": "amazon.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "one of: Java, Python, C++, C#, Go, Rust, TypeScript",
+        "data structures and algorithms",
+        "AI-assisted development tools"
+      ],
+      "preferred": [
+        "AWS",
+        "SQL and NoSQL databases",
+        "software development lifecycle",
+        "prior internship or project experience"
+      ],
+      "url": "https://www.amazon.jobs/en/jobs/10552937/software-development-engineer-intern-summer-2027-usa"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026",
+      "required": [
+        "one of: Java, Python, C++, C#, Go, Rust, TypeScript",
+        "data structures, algorithms or OO design"
+      ],
+      "preferred": [
+        "AWS",
+        "SQL and NoSQL databases",
+        "Git",
+        "AI tools for development",
+        "open-source contributions"
+      ],
+      "url": "https://www.amazon.jobs/en/jobs/10491309/2026-graduate-software-dev-engineer"
+    },
+    "need": [
+      "Java",
+      "Python",
+      "C++"
+    ],
+    "core_stack": [
+      "Java",
+      "Python",
+      "TypeScript",
+      "AWS",
+      "DynamoDB",
+      "React",
+      "SQL"
+    ],
+    "niche": [
+      "Brazil build system",
+      "Smithy",
+      "Coral"
+    ],
+    "summary": "Any one mainstream language plus DSA; Java dominates teams, AWS knowledge is a plus.",
+    "evidence": "A",
+    "sources": [
+      "https://www.amazon.jobs/en/jobs/10552937/software-development-engineer-intern-summer-2027-usa",
+      "https://www.amazon.jobs/en/jobs/10491309/2026-graduate-software-dev-engineer",
+      "https://aws.amazon.com/builders-library/",
+      "https://smithy.io/"
+    ]
+  },
+  {
+    "company": "Nvidia",
+    "domain": "nvidia.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "role dependent, could include: C, C++, Python, CUDA, Java, JavaScript, Go, SQL, OOP, Git"
+      ],
+      "preferred": [
+        "Linux",
+        "Kubernetes",
+        "Docker",
+        "Perforce",
+        "LSF / SLURM",
+        "Ansible",
+        "React",
+        "Node.js"
+      ],
+      "url": "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/NVIDIA-2027-Internships--Software-Engineering_JR2023495"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026",
+      "required": [
+        "Python",
+        "C++",
+        "CUDA",
+        "PyTorch",
+        "TensorFlow",
+        "an agentic framework (LangChain, LangGraph, CrewAI)"
+      ],
+      "preferred": [
+        "deployed LLM agents",
+        "open-source AI or GPU library contributions"
+      ],
+      "url": "https://jobs.nvidia.com/careers/job/893394324690"
+    },
+    "need": [
+      "C++",
+      "Python",
+      "CUDA",
+      "Linux"
+    ],
+    "core_stack": [
+      "C++",
+      "CUDA",
+      "Python",
+      "PyTorch",
+      "Linux",
+      "Docker",
+      "Kubernetes",
+      "Git"
+    ],
+    "niche": [
+      "Perforce",
+      "TensorRT",
+      "cuDNN / NCCL",
+      "LSF / SLURM"
+    ],
+    "summary": "C++ and Python with CUDA exposure; postings are team specific and many new grad roles want an MS.",
+    "evidence": "A",
+    "sources": [
+      "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/NVIDIA-2027-Internships--Software-Engineering_JR2023495",
+      "https://jobs.nvidia.com/careers/job/893394324690",
+      "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/US-CA-Santa-Clara/Software-Engineer--Hardware-Tools-and-Methodology---New-College-Grad-2026_JR2018659",
+      "https://github.com/NVIDIA",
+      "https://developer.nvidia.com/blog/"
+    ]
+  },
+  {
+    "company": "Cloudflare",
+    "domain": "cloudflare.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2026",
+      "required": [
+        "no specific language",
+        "pursuing CS, Engineering, Math or Stats degree"
+      ],
+      "preferred": [
+        "TypeScript",
+        "JavaScript",
+        "Go",
+        "Rust",
+        "C++",
+        "Python",
+        "Cloudflare Workers developer platform",
+        "personal or open-source projects"
+      ],
+      "url": "https://job-boards.greenhouse.io/cloudflare/jobs/7296923"
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": null,
+      "required": [],
+      "preferred": [],
+      "url": null
+    },
+    "need": [
+      "Go",
+      "Rust",
+      "TypeScript"
+    ],
+    "core_stack": [
+      "Go",
+      "Rust",
+      "TypeScript",
+      "C++",
+      "Kafka",
+      "ClickHouse",
+      "PostgreSQL",
+      "Kubernetes"
+    ],
+    "niche": [
+      "Pingora",
+      "workerd (V8 isolates)",
+      "Quicksilver"
+    ],
+    "summary": "No required language; Go, Rust and TypeScript dominate, and Workers experience helps.",
+    "evidence": "B",
+    "sources": [
+      "https://job-boards.greenhouse.io/cloudflare/jobs/7296923",
+      "https://builtin.com/job/software-engineer-intern-summer-2026/7009302",
+      "https://blog.cloudflare.com/pingora-open-source/",
+      "https://blog.cloudflare.com/using-apache-kafka-to-process-1-trillion-messages/"
+    ]
+  },
+  {
+    "company": "Gusto",
+    "domain": "gusto.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2026",
+      "required": [
+        "no specific language",
+        "BS/MS in CS or related field"
+      ],
+      "preferred": [
+        "Ruby",
+        "Rails",
+        "TypeScript",
+        "React",
+        "GraphQL",
+        "Python",
+        "Go",
+        "Java",
+        "JavaScript",
+        "Kotlin",
+        "Swift",
+        "test-driven development and pair programming"
+      ],
+      "url": "https://job-boards.greenhouse.io/gusto/jobs/7238671"
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": null,
+      "required": [],
+      "preferred": [],
+      "url": null
+    },
+    "need": [
+      "Ruby",
+      "TypeScript",
+      "Rails",
+      "React"
+    ],
+    "core_stack": [
+      "Ruby",
+      "Rails",
+      "TypeScript",
+      "React",
+      "GraphQL",
+      "Kafka",
+      "Sidekiq"
+    ],
+    "niche": [
+      "Packwerk / pks packs",
+      "Sorbet"
+    ],
+    "summary": "Any language accepted; Ruby on Rails and TypeScript with React run most product work.",
+    "evidence": "B",
+    "sources": [
+      "https://builtin.com/job/software-engineering-intern-summer-2026/7188760",
+      "https://engineering.gusto.com/the-current-state-of-gustos-modularity-tooling-c99f345fd0a7",
+      "https://engineering.gusto.com/breaking-down-the-graphql-monolith-and-automating-developer-workflows-through-rails-generators-f1c6fc6c67bd",
+      "https://github.com/rubyatscale"
+    ]
+  },
+  {
+    "company": "Adobe",
+    "domain": "adobe.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "one of: Java, Python, C++, JavaScript",
+        "data structures and algorithms",
+        "software development lifecycle"
+      ],
+      "preferred": [
+        "AI-assisted development tools",
+        "projects or internships building apps or systems"
+      ],
+      "url": "https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-Intern---Software-Engineer_R171666"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027",
+      "required": [
+        "one of: Java, Python, C++, JavaScript",
+        "data structures and algorithms",
+        "software development lifecycle"
+      ],
+      "preferred": [
+        "AI-assisted development tools",
+        "0 to 1 years of internship or project experience"
+      ],
+      "url": "https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-University-Graduate---Software-Engineer_R172083"
+    },
+    "need": [
+      "Java",
+      "Python",
+      "C++",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "Java",
+      "C++",
+      "TypeScript",
+      "React",
+      "Python",
+      "Kubernetes",
+      "Docker",
+      "Spark"
+    ],
+    "niche": [
+      "Ethos (internal Kubernetes platform)",
+      "React Spectrum",
+      "Adobe Experience Manager"
+    ],
+    "summary": "Any of Java, Python, C++ or JavaScript plus DSA; the team decides the rest.",
+    "evidence": "A",
+    "sources": [
+      "https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-Intern---Software-Engineer_R171666",
+      "https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-University-Graduate---Software-Engineer_R172083",
+      "https://blog.developer.adobe.com/how-ethos-powers-a-cloud-native-transformation-at-adobe-16c1a2e2f67a",
+      "https://github.com/adobe"
+    ]
+  },
+  {
+    "company": "Salesforce",
+    "domain": "salesforce.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "OOP, algorithms and data structures",
+        "AI-assisted development tools (Copilot, Cursor, Claude Code)"
+      ],
+      "preferred": [
+        "Java",
+        "JavaScript",
+        "SQL",
+        "HTML and web technologies",
+        "front end and back end languages"
+      ],
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/Futureforce_Internships/job/Summer-2027-Intern---Software-Engineer_JR340771"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 (AMTS College Grad, posted Sep 2026)",
+      "required": [
+        "one of: Java, Python, JavaScript, HTML, SQL, C++",
+        "OOP fluency",
+        "internship or professional coding experience"
+      ],
+      "preferred": [
+        "LLM coding assistants and agentic tools",
+        "telemetry and metrics"
+      ],
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/Futureforce_NewGradRoles/job/Software-Engineering-AMTS--College-Grad-_JR355250"
+    },
+    "need": [
+      "Java",
+      "JavaScript",
+      "SQL"
+    ],
+    "core_stack": [
+      "Java",
+      "JavaScript",
+      "SQL",
+      "Kubernetes",
+      "AWS",
+      "Kafka"
+    ],
+    "niche": [
+      "Apex",
+      "SOQL",
+      "Lightning Web Components",
+      "Hyperforce"
+    ],
+    "summary": "Java or JavaScript with solid OOP; Apex and platform internals are taught on the job.",
+    "evidence": "A",
+    "sources": [
+      "https://salesforce.wd12.myworkdayjobs.com/en-US/Futureforce_Internships/job/Summer-2027-Intern---Software-Engineer_JR340771",
+      "https://salesforce.wd12.myworkdayjobs.com/en-US/Futureforce_NewGradRoles/job/Software-Engineering-AMTS--College-Grad-_JR355250",
+      "https://engineering.salesforce.com/7-ways-we-put-kubernetes-to-work-at-salesforce-e658de98ef2d/",
+      "https://engineering.salesforce.com/behind-the-scenes-of-hyperforce-salesforces-infrastructure-for-the-public-cloud-429309542d8e/"
+    ]
+  },
+  {
+    "company": "Coinbase",
+    "domain": "coinbase.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "any language",
+        "familiarity with web, mobile, backend or infrastructure",
+        "generative AI tools used responsibly"
+      ],
+      "preferred": [],
+      "url": "https://www.coinbase.com/careers/positions/8168315"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2025 (Software Engineer, Emerging Talent; no 2026 or 2027 new grad posting)",
+      "required": [
+        "1+ years of software engineering experience",
+        "well tested code"
+      ],
+      "preferred": [
+        "Go",
+        "Ruby",
+        "Python",
+        "GraphQL",
+        "MongoDB",
+        "AWS",
+        "Docker",
+        "React",
+        "React Native",
+        "JavaScript",
+        "TypeScript"
+      ],
+      "url": "https://www.coinbase.com/careers/positions/7015173"
+    },
+    "need": [
+      "Go",
+      "TypeScript",
+      "React"
+    ],
+    "core_stack": [
+      "Go",
+      "Ruby",
+      "Rails",
+      "TypeScript",
+      "React",
+      "MongoDB",
+      "Kafka",
+      "AWS"
+    ],
+    "niche": [
+      "Solidity",
+      "Base (Ethereum L2)",
+      "blockchain node infrastructure"
+    ],
+    "summary": "Any language for interns; Go backend and TypeScript with React front end are the main paths.",
+    "evidence": "B",
+    "sources": [
+      "https://www.coinbase.com/careers/positions/8168315",
+      "https://jobs.theblockchainassociation.org/companies/coinbase/jobs/53242844-software-engineer-emerging-talent",
+      "https://www.coinbase.com/blog/kafka-infrastructure-renovation",
+      "https://www.coinbase.com/blog/scaling-connections-with-ruby-and-mongodb"
+    ]
+  },
+  {
+    "company": "Datadog",
+    "domain": "datadoghq.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "any language",
+        "data structures, algorithms and software design",
+        "AI coding tools"
+      ],
+      "preferred": [],
+      "url": "https://careers.datadoghq.com/detail/8052118/"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2025 start (Software Engineer, Early Career; newer text not retrievable)",
+      "required": [
+        "one or more languages",
+        "prior SWE internship or related experience"
+      ],
+      "preferred": [
+        "Go",
+        "Python"
+      ],
+      "url": "https://simplify.jobs/p/9a6f5b77-ab04-40be-9380-b9b8b7fa7b18/Software-Engineer--Early-Career"
+    },
+    "need": [
+      "Go",
+      "Python",
+      "Java"
+    ],
+    "core_stack": [
+      "Go",
+      "Python",
+      "Java",
+      "TypeScript",
+      "React",
+      "Kafka",
+      "Kubernetes",
+      "AWS"
+    ],
+    "niche": [
+      "Husky event store",
+      "Rust"
+    ],
+    "summary": "Any language plus strong fundamentals; Go and Python are the most useful to bring.",
+    "evidence": "B",
+    "sources": [
+      "https://careers.datadoghq.com/detail/8052118/",
+      "https://simplify.jobs/p/9a6f5b77-ab04-40be-9380-b9b8b7fa7b18/Software-Engineer--Early-Career",
+      "https://www.datadoghq.com/blog/engineering/introducing-husky/",
+      "https://github.com/DataDog/datadog-agent"
+    ]
+  },
+  {
+    "company": "Tesla",
+    "domain": "tesla.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Experience with a backend language",
+        "JavaScript/TypeScript and a frontend framework such as React, Vue or Svelte",
+        "Fundamental CS concepts and design patterns"
+      ],
+      "preferred": [
+        "Python or Go as the backend language",
+        "Shipping web applications"
+      ],
+      "url": "https://www.tesla.com/careers/search/job/internship-software-engineering-people-products-summer-2027-284004"
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": "",
+      "required": [],
+      "preferred": [],
+      "url": ""
+    },
+    "need": [
+      "Python",
+      "C++",
+      "Go",
+      "JavaScript",
+      "React"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "Go",
+      "TypeScript",
+      "React",
+      "Kubernetes",
+      "Kafka",
+      "Linux"
+    ],
+    "niche": [],
+    "summary": "Language depends on team; web teams want Python or Go plus React, vehicle teams want C++.",
+    "evidence": "B",
+    "sources": [
+      "https://www.tesla.com/careers/search/job/internship-software-engineering-people-products-summer-2027-284004",
+      "https://www.tesla.com/careers/search/job/next-gen-internship-software-engineer-vehicle-software-summer-2027-281097",
+      "https://www.tesla.com/careers/search/job/internship-software-engineer-ai-data-infrastructure-fall-2026-269829"
+    ]
+  },
+  {
+    "company": "Roblox",
+    "domain": "roblox.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Working towards proficiency in one or more of Go, Node.js, Ruby, Python, C++, Lua, Swift, C#, Java",
+        "Pursuing a CS or engineering degree"
+      ],
+      "preferred": [],
+      "url": "https://careers.roblox.com/jobs/8072713"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027",
+      "required": [
+        "Proficient in one or more of C#, Lua, Java, Go, Node.js, Ruby, Python, C++, Swift",
+        "Software engineering concepts via coursework, internships or projects"
+      ],
+      "preferred": [],
+      "url": "https://careers.roblox.com/jobs/8072244"
+    },
+    "need": [
+      "C++",
+      "C#",
+      "Go",
+      "Lua"
+    ],
+    "core_stack": [
+      "C++",
+      "Lua",
+      "C#",
+      "Go",
+      "Python",
+      "Kafka",
+      "Docker"
+    ],
+    "niche": [
+      "Luau",
+      "HashiCorp Nomad",
+      "Consul",
+      "Vault"
+    ],
+    "summary": "Any language from a broad list; engine work is C++ and Luau, backend mostly C# and Go.",
+    "evidence": "A",
+    "sources": [
+      "https://careers.roblox.com/jobs/8072713",
+      "https://careers.roblox.com/jobs/8072244",
+      "https://about.roblox.com/newsroom/2026/09/how-roblox-scaled-kafka-platform-over-18-trillion-messages-a-day",
+      "https://blog.roblox.com/2022/01/roblox-return-to-service-10-28-10-31-2021/"
+    ]
+  },
+  {
+    "company": "Ramp",
+    "domain": "ramp.com",
+    "intern": {
+      "found": true,
+      "cycle": "2027 (grads Dec 2027 or later, rolling)",
+      "required": [
+        "Strong CS and programming fundamentals (backend)",
+        "Strong JavaScript fundamentals (frontend)",
+        "Track record of shipping products or side projects"
+      ],
+      "preferred": [
+        "Python and backend development",
+        "Flask, PostgreSQL, Temporal, Elixir, AWS",
+        "React",
+        "TypeScript"
+      ],
+      "url": "https://jobs.ashbyhq.com/ramp/acf6b28d-767f-483f-8ff2-114620cd7e04"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026 (closed)",
+      "required": [
+        "B.S. or higher in CS, May 2026 grad",
+        "Track record of shipping high quality products at scale"
+      ],
+      "preferred": [
+        "Flask (Python)",
+        "AWS",
+        "RabbitMQ",
+        "PostgreSQL"
+      ],
+      "url": "https://jobs.ashbyhq.com/ramp/83075cf0-9c22-4475-9c6b-e21923a96df8"
+    },
+    "need": [
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "React"
+    ],
+    "core_stack": [
+      "Python",
+      "Flask",
+      "PostgreSQL",
+      "TypeScript",
+      "React",
+      "AWS",
+      "Temporal",
+      "Celery"
+    ],
+    "niche": [
+      "Elixir",
+      "Ryu design system",
+      "RabbitMQ"
+    ],
+    "summary": "Backend interns need fundamentals, ideally Python; frontend interns need JavaScript, with React and TypeScript preferred.",
+    "evidence": "A",
+    "sources": [
+      "https://jobs.ashbyhq.com/ramp/acf6b28d-767f-483f-8ff2-114620cd7e04",
+      "https://jobs.ashbyhq.com/ramp/a13ae586-f4cb-4385-8822-c42b9b54ed74",
+      "https://jobs.technyc.org/companies/ramp-2/jobs/55723314-university-grad-2026-software-engineer-backend",
+      "https://builders.ramp.com/post/why-we-built-our-background-agent"
+    ]
+  },
+  {
+    "company": "Rippling",
+    "domain": "rippling.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Prior internship using Python (backend)",
+        "Full stack: backend Python and frontend JavaScript, HTML/CSS",
+        "Solid backend programming skills"
+      ],
+      "preferred": [],
+      "url": "https://ats.rippling.com/rippling/jobs/f64b6158-9534-4bab-9457-45556166b262"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026",
+      "required": [
+        "Strong coding in at least one of Python, Go, Java or JavaScript",
+        "At least one internship",
+        "Familiarity with web applications or API development"
+      ],
+      "preferred": [
+        "Experience using AI coding tools (Claude, Codex)"
+      ],
+      "url": "https://www.linkedin.com/jobs/view/software-engineer-new-grad-at-rippling-3239675349"
+    },
+    "need": [
+      "Python",
+      "JavaScript",
+      "Django"
+    ],
+    "core_stack": [
+      "Python",
+      "Django",
+      "MongoDB",
+      "Redis",
+      "Kafka",
+      "React",
+      "TypeScript",
+      "AWS"
+    ],
+    "niche": [
+      "MongoEngine",
+      "uWSGI"
+    ],
+    "summary": "Python is the must-have, plus JavaScript for full stack roles; backend is Django on MongoDB.",
+    "evidence": "A",
+    "sources": [
+      "https://ats.rippling.com/rippling/jobs/f64b6158-9534-4bab-9457-45556166b262",
+      "https://ats.rippling.com/rippling/jobs/a07e4e46-3721-4934-b57b-0d58412e22ba",
+      "https://www.linkedin.com/jobs/view/software-engineer-new-grad-at-rippling-3239675349",
+      "https://www.rippling.com/blog/10-lessons-containerizing-our-django-backend",
+      "https://www.rippling.com/blog/rippling-gunicorn-pre-fork-journey-memory-savings-and-cost-reduction"
+    ]
+  },
+  {
+    "company": "Robinhood",
+    "domain": "robinhood.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Strong CS fundamentals",
+        "Familiarity with Python/Django or Go (backend)",
+        "Understanding of relational databases and transactions (backend)",
+        "Fluency in JavaScript and/or React Native (web)"
+      ],
+      "preferred": [
+        "Python/Django and Go (web track)",
+        "Stack named: PostgreSQL, Kafka, Redis, Memcached, AWS, Kubernetes, React, TypeScript"
+      ],
+      "url": "https://boards.greenhouse.io/robinhood/jobs/8123225"
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": "",
+      "required": [],
+      "preferred": [],
+      "url": ""
+    },
+    "need": [
+      "Python",
+      "Go",
+      "SQL",
+      "JavaScript",
+      "React"
+    ],
+    "core_stack": [
+      "Python",
+      "Django",
+      "Go",
+      "PostgreSQL",
+      "Kafka",
+      "Redis",
+      "AWS",
+      "Kubernetes"
+    ],
+    "niche": [
+      "Faust",
+      "Memcached"
+    ],
+    "summary": "Python/Django or Go for backend, JavaScript and React for web; relational database knowledge expected.",
+    "evidence": "B",
+    "sources": [
+      "https://boards.greenhouse.io/robinhood/jobs/8123225",
+      "https://boards.greenhouse.io/robinhood/jobs/8142963",
+      "https://robinhood.com/us/en/newsroom/building-an-application-deployment-platform-on-kubernetes/",
+      "https://robinhood.com/us/en/careers/early-talent/"
+    ]
+  },
+  {
+    "company": "Snowflake",
+    "domain": "snowflake.com",
+    "intern": {
+      "found": true,
+      "cycle": "2027 (Berlin, Feb 2027 start; US Fall 2026 Core Engineering listed the same C++/Java requirement)",
+      "required": [
+        "Programming experience in C++ or Java",
+        "Algorithms, data structures and operating systems",
+        "Systems concepts such as multi-threading and concurrency"
+      ],
+      "preferred": [
+        "Database, distributed systems, cloud or compilers coursework",
+        "Big data engineering",
+        "Open source or research in databases"
+      ],
+      "url": "https://jobs.ashbyhq.com/snowflake/ab028e3c-c1cf-4455-8915-8e4e6b0cc9e8"
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": "",
+      "required": [],
+      "preferred": [],
+      "url": ""
+    },
+    "need": [
+      "C++",
+      "Java",
+      "SQL"
+    ],
+    "core_stack": [
+      "C++",
+      "Java",
+      "SQL",
+      "Python",
+      "AWS",
+      "Azure",
+      "GCP"
+    ],
+    "niche": [
+      "FoundationDB"
+    ],
+    "summary": "C++ or Java plus systems fundamentals like concurrency; SQL and database coursework help.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.ashbyhq.com/snowflake/ab028e3c-c1cf-4455-8915-8e4e6b0cc9e8",
+      "https://careers.wing.vc/companies/snowflake/jobs/78108806-software-engineer-intern-core-engineering-fall-2026",
+      "https://www.snowflake.com/en/blog/how-foundationdb-powers-snowflake-metadata-forward/",
+      "https://www.snowflake.com/en/blog/engineering/snowflake-distributed-query-execution-anchors/"
+    ]
+  },
+  {
+    "company": "Confluent",
+    "domain": "confluent.io",
+    "intern": {
+      "found": true,
+      "cycle": "2026 (grads Dec 2026 to Aug 2027)",
+      "required": [
+        "Proficient in at least one of Java/Scala, C, C++, Go",
+        "Good knowledge of data structures and algorithms"
+      ],
+      "preferred": [
+        "Exposure to Apache Kafka, Apache Flink or Kubernetes"
+      ],
+      "url": "https://builtin.com/job/2026-confluent-software-engineering-intern-opportunity-remote-london/7021427"
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": "",
+      "required": [],
+      "preferred": [],
+      "url": ""
+    },
+    "need": [
+      "Java",
+      "Go",
+      "C++"
+    ],
+    "core_stack": [
+      "Java",
+      "Scala",
+      "Go",
+      "Kafka",
+      "Flink",
+      "Kubernetes",
+      "AWS",
+      "GCP"
+    ],
+    "niche": [
+      "Kora",
+      "WarpStream"
+    ],
+    "summary": "Java is the main language, with Go, Scala, C or C++ accepted; Kafka exposure is a plus.",
+    "evidence": "B",
+    "sources": [
+      "https://builtin.com/job/2026-confluent-software-engineering-intern-opportunity-remote-london/7021427",
+      "https://jobs.ashbyhq.com/confluent/974fa008-7174-4e6f-a89c-8c6cce70ae7e",
+      "https://www.confluent.io/blog/cloud-native-data-streaming-kafka-engine/"
+    ]
+  },
+  {
+    "company": "MongoDB",
+    "domain": "mongodb.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2026 (closed)",
+      "required": [
+        "Fluency in Java, Python, Go, C++, JavaScript, Node.js or a comparable OO language",
+        "Data structures, algorithms and software design"
+      ],
+      "preferred": [],
+      "url": "https://www.builtinaustin.com/job/2026-software-engineering-intern-amer/7118855"
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": "",
+      "required": [],
+      "preferred": [],
+      "url": ""
+    },
+    "need": [
+      "Java",
+      "Python",
+      "Go",
+      "C++"
+    ],
+    "core_stack": [
+      "C++",
+      "Go",
+      "Java",
+      "Python",
+      "TypeScript",
+      "React",
+      "MongoDB"
+    ],
+    "niche": [
+      "WiredTiger",
+      "Evergreen CI"
+    ],
+    "summary": "Any object-oriented language such as Java, Python, Go or C++; the database server is C++.",
+    "evidence": "B",
+    "sources": [
+      "https://www.builtinaustin.com/job/2026-software-engineering-intern-amer/7118855",
+      "https://jobs.technyc.org/companies/mongodb/jobs/58571316-2026-software-engineering-intern-amer",
+      "https://github.com/evergreen-ci/evergreen",
+      "https://github.com/wiredtiger"
+    ]
+  },
+  {
+    "company": "DoorDash",
+    "domain": "doordash.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "at least 1 OOP language (e.g. Python, Java, Kotlin)",
+        "databases (e.g. AWS, SQL)",
+        "algorithms and data structures",
+        "clean code, version control, unit testing"
+      ],
+      "preferred": [
+        "1 prior SWE internship",
+        "AI-powered dev tools",
+        "monitoring, live deployments, CI",
+        "service-oriented architecture, APIs, system design"
+      ],
+      "url": "https://careersatdoordash.com/jobs/software-engineer-intern-summer-2027---us/8171041/"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 (grad Fall 2026 to Summer 2027)",
+      "required": [
+        "2 prior SWE internships",
+        "at least 1 OOP language (e.g. Python, Java, Kotlin)",
+        "databases such as SQL",
+        "algorithms and data structures",
+        "version control, unit tests"
+      ],
+      "preferred": [
+        "AI-powered dev tools",
+        "systems monitoring, deployment, CI",
+        "service-oriented architecture, API development, system design"
+      ],
+      "url": "https://careersatdoordash.com/jobs/software-engineer-i-entry-level-graduation-date-fall-2026-summer-2027---us/8163709/"
+    },
+    "need": [
+      "Kotlin",
+      "Python",
+      "Java",
+      "SQL"
+    ],
+    "core_stack": [
+      "Kotlin",
+      "Python",
+      "gRPC",
+      "Kafka",
+      "Cassandra",
+      "CockroachDB",
+      "PostgreSQL",
+      "AWS"
+    ],
+    "niche": [
+      "Cadence",
+      "Envoy"
+    ],
+    "summary": "Any OOP language (Python, Java, Kotlin) plus SQL and DSA; backend services are Kotlin.",
+    "evidence": "A",
+    "sources": [
+      "https://job-boards.greenhouse.io/doordashusa/jobs/8171041",
+      "https://job-boards.greenhouse.io/doordashusa/jobs/8163709",
+      "https://careersatdoordash.com/blog/how-doordash-transitioned-from-a-monolith-to-microservices/",
+      "https://careersatdoordash.com/blog/building-a-more-reliable-checkout-service-with-kotlin/"
+    ]
+  },
+  {
+    "company": "Uber",
+    "domain": "uber.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027 (Uber Career Prep track)",
+      "required": [
+        "one or more of Go, Python, Java, C/C++",
+        "SWE best practices via projects, contests or internships"
+      ],
+      "preferred": [
+        "building scalable tools or infrastructure",
+        "maintainable, reusable code",
+        "learns new languages quickly",
+        "hackathons, coding competitions"
+      ],
+      "url": "https://www.linkedin.com/jobs/view/2027-software-engineering-internship-uber-career-prep-at-uber-4444740653"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026 (Graduate 2026 SWE I, US)",
+      "required": [
+        "data structures and algorithms",
+        "one or more of Java, Go, C/C++, Python"
+      ],
+      "preferred": [
+        "large-scale distributed systems",
+        "maintainable software"
+      ],
+      "url": "https://www.themuse.com/jobs/uber/graduate-2026-software-engineer-i-us-4dc13b"
+    },
+    "need": [
+      "Go",
+      "Java",
+      "Python"
+    ],
+    "core_stack": [
+      "Go",
+      "Java",
+      "Spring",
+      "Kafka",
+      "Flink",
+      "MySQL",
+      "Bazel",
+      "React"
+    ],
+    "niche": [
+      "Cadence",
+      "Docstore",
+      "M3"
+    ],
+    "summary": "One of Go, Java, Python or C++ plus DSA; backend is mostly Go and Java.",
+    "evidence": "A",
+    "sources": [
+      "https://www.uber.com/us/en/blog/tech-stack-part-one-foundation/",
+      "https://www.uber.com/us/en/blog/go-monorepo-bazel/",
+      "https://www.uber.com/us/en/blog/schemaless-sql-database/"
+    ]
+  },
+  {
+    "company": "Intuit",
+    "domain": "intuit.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "frontend and backend development",
+        "object-oriented design, programming fundamentals",
+        "Agile, Scrum"
+      ],
+      "preferred": [
+        "Git, Jenkins or Travis",
+        "AI tools"
+      ],
+      "url": "https://jobs.intuit.com/job/mountain-view/summer-2027-software-engineering-intern-full-stack/27595/100620927520"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026 (Software Engineer 1, New College Grad)",
+      "required": [
+        "one or more languages (e.g. Java, Python, JavaScript, C++)",
+        "object-oriented design, Agile"
+      ],
+      "preferred": [
+        "HTML, CSS, JavaScript",
+        "frameworks such as React, Node.js, Spring, Django",
+        "Generative AI basics"
+      ],
+      "url": "https://jobs.intuit.com/job/mountain-view/software-engineer-1/27595/87369448720"
+    },
+    "need": [
+      "Java",
+      "JavaScript",
+      "Python",
+      "React",
+      "Git"
+    ],
+    "core_stack": [
+      "Java",
+      "Spring",
+      "JavaScript",
+      "React",
+      "Node.js",
+      "GraphQL",
+      "AWS",
+      "Kubernetes"
+    ],
+    "niche": [
+      "Argo",
+      "GenOS",
+      "Numaflow"
+    ],
+    "summary": "Any OOP language plus basic web skills; teams lean on Java, React and AWS.",
+    "evidence": "B",
+    "sources": [
+      "https://www.intuit.com/technology/",
+      "https://medium.com/intuit-engineering/turbotax-moves-to-kubernetes-an-intuit-journey-part-2-f5217772fbb6"
+    ]
+  },
+  {
+    "company": "Google",
+    "domain": "google.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "two or more languages (e.g. C, C++, Java, JavaScript, Python)",
+        "data structures or algorithms"
+      ],
+      "preferred": [
+        "three or more of C, C++, C#, Java, JavaScript, Go, Python",
+        "Unix/Linux, web, mobile, distributed systems, ML"
+      ],
+      "url": "https://www.google.com/about/careers/applications/jobs/results/100648618540573382-software-engineering-intern/"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "Early Career, Campus (live Sep 2026)",
+      "required": [
+        "one or more languages (e.g. Python, C, C++, Java, JavaScript)",
+        "data structures or algorithms",
+        "AI productivity tools"
+      ],
+      "preferred": [
+        "web or mobile dev, Unix/Linux, distributed systems, ML",
+        "ability to learn other languages"
+      ],
+      "url": "https://www.google.com/about/careers/applications/jobs/results/78703249065943750-software-engineer-early-career-campus"
+    },
+    "need": [
+      "C++",
+      "Java",
+      "Python",
+      "Go"
+    ],
+    "core_stack": [
+      "C++",
+      "Java",
+      "Python",
+      "Go",
+      "TypeScript",
+      "Kotlin",
+      "gRPC",
+      "GCP"
+    ],
+    "niche": [
+      "Borg",
+      "Blaze",
+      "Piper",
+      "Flume"
+    ],
+    "summary": "Two or more mainstream languages plus DSA; teams mostly write C++, Java, Python and Go.",
+    "evidence": "A",
+    "sources": [
+      "https://abseil.io/resources/swe-book",
+      "https://newsletter.pragmaticengineer.com/p/google-part-2"
+    ]
+  },
+  {
+    "company": "Microsoft",
+    "domain": "microsoft.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "pursuing BS or MS in CS or related field"
+      ],
+      "preferred": [
+        "1+ year programming, DSA",
+        "TypeScript or JavaScript with React or Angular",
+        "backend in C#, Java, Node.js or Python",
+        "REST APIs, testing",
+        "Python with PyTorch or TensorFlow"
+      ],
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557004819"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2024-2025 (most recent found; no 2026 or 2027 US posting live)",
+      "required": [
+        "BS or MS in CS or related field",
+        "coding in C, C++, C#, Java, JavaScript or Python"
+      ],
+      "preferred": [
+        "CS fundamentals, data structures and algorithms"
+      ],
+      "url": "https://www.linkedin.com/jobs/view/software-engineer-opportunities-for-university-graduates-redmond-at-microsoft-3825586137"
+    },
+    "need": [
+      "C#",
+      "C++",
+      "Java",
+      "Python",
+      "TypeScript"
+    ],
+    "core_stack": [
+      "C#",
+      ".NET",
+      "C++",
+      "TypeScript",
+      "React",
+      "Azure",
+      "Python",
+      "SQL"
+    ],
+    "niche": [
+      "Kusto (KQL)",
+      "Service Fabric",
+      "Cosmos (internal)"
+    ],
+    "summary": "Any OOP language plus DSA; many teams run C#, .NET, TypeScript and C++ on Azure.",
+    "evidence": "A",
+    "sources": [
+      "https://devblogs.microsoft.com/dotnet/microsoft-teams-infrastructure-and-azure-communication-services-journey-to-dotnet-6/",
+      "https://careers.microsoft.com/v2/global/en/universityinternship"
+    ]
+  },
+  {
+    "company": "Meta",
+    "domain": "meta.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2026 (Intern/Co-op; Summer 2027 SWE posting not up yet)",
+      "required": [
+        "an industry-standard language (Java, Python, C++, Objective-C, JavaScript)"
+      ],
+      "preferred": [
+        "prior internship, work, coding competitions or publications",
+        "returning to degree program"
+      ],
+      "url": "https://www.metacareers.com/v2/jobs/1007975740551656/"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "Software Engineer (University Grad), current evergreen req",
+      "required": [
+        "an industry-standard language (e.g. Java, Python, C++, JavaScript)"
+      ],
+      "preferred": [
+        "prior internship, work, coding competitions or publications",
+        "BS or MS in CS"
+      ],
+      "url": "https://www.metacareers.com/jobs/8187200048015588"
+    },
+    "need": [
+      "Python",
+      "C++",
+      "Java",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "C++",
+      "Python",
+      "JavaScript",
+      "React",
+      "GraphQL",
+      "MySQL",
+      "PyTorch",
+      "Rust"
+    ],
+    "niche": [
+      "Hack",
+      "HHVM",
+      "TAO",
+      "Buck2"
+    ],
+    "summary": "Any mainstream language plus DSA; product code is Hack, which is taught on the job.",
+    "evidence": "A",
+    "sources": [
+      "https://engineering.fb.com/2022/07/27/developer-tools/programming-languages-endorsed-for-server-side-use-at-meta/",
+      "https://engineering.fb.com/2024/06/25/developer-tools/the-key-to-a-happy-rust-c-relationship/"
+    ]
+  },
+  {
+    "company": "Apple",
+    "domain": "apple.com",
+    "intern": {
+      "found": true,
+      "cycle": "Ongoing (evergreen req posted May 2026)",
+      "required": [
+        "pursuing BS or BA in CS, EE, CE or related field"
+      ],
+      "preferred": [
+        "OOP design, data structures and algorithms",
+        "one or more of Java, C/C++, Python, Swift, JavaScript",
+        "iOS or macOS in Swift, Xcode or Objective-C",
+        "Spark, Hadoop, Go, MongoDB"
+      ],
+      "url": "https://jobs.apple.com/en-us/details/200664785-3810/software-undergrad-engineering-internships"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2025 (IS&T Early Career, Feb 2025; Apple posts per team)",
+      "required": [
+        "Java or Python (server), JavaScript, HTML, CSS (web) or Swift, Objective-C (iOS)",
+        "CS fundamentals",
+        "prior internship"
+      ],
+      "preferred": [
+        "AWS or GCP basics"
+      ],
+      "url": "https://jobs.anitab.org/companies/apple/jobs/45949483-software-engineer-is-t-early-career"
+    },
+    "need": [
+      "Swift",
+      "Python",
+      "Java",
+      "C++"
+    ],
+    "core_stack": [
+      "Swift",
+      "Objective-C",
+      "C++",
+      "Python",
+      "Java",
+      "Kubernetes",
+      "Cassandra",
+      "Spark"
+    ],
+    "niche": [
+      "FoundationDB",
+      "SwiftNIO",
+      "Radar"
+    ],
+    "summary": "Team specific: Swift for platform teams, Java or Python for services, plus DSA.",
+    "evidence": "A",
+    "sources": [
+      "https://www.swift.org/blog/swift-at-apple-migrating-the-password-monitoring-service-from-java/",
+      "https://jobs.apple.com/en-us/details/200627852-3956/software-engineer-is-t-early-career"
+    ]
+  },
+  {
+    "company": "Netflix",
+    "domain": "netflix.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2026 (Summer 2027 SWE posting not up yet)",
+      "required": [
+        "fluent in one of C, Java, Kotlin, C++, C#, JavaScript, TypeScript, Python, Go, Rust",
+        "data structures, algorithms, debugging"
+      ],
+      "preferred": [
+        "coursework in distributed systems, web, mobile, security, ML or AI"
+      ],
+      "url": "https://www.builtinsf.com/job/software-engineer-intern-summer-2026/7313601"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026 (New Grad Software Engineer 2026)",
+      "required": [
+        "fluent in one of Java, Kotlin, C++, C#, JavaScript, TypeScript, Python, Go, Rust",
+        "1 internship or school project",
+        "data structures, algorithms, debugging"
+      ],
+      "preferred": [
+        "coursework in distributed systems, web, mobile, security, ML or AI"
+      ],
+      "url": "https://explore.jobs.netflix.net/careers/job/790313102199"
+    },
+    "need": [
+      "Java",
+      "Python",
+      "TypeScript"
+    ],
+    "core_stack": [
+      "Java",
+      "Spring",
+      "GraphQL",
+      "gRPC",
+      "Kafka",
+      "Cassandra",
+      "AWS",
+      "React"
+    ],
+    "niche": [
+      "DGS",
+      "Spinnaker",
+      "Titus",
+      "EVCache"
+    ],
+    "summary": "Fluency in any one mainstream language; backend is mostly Java on Spring Boot, hosted on AWS.",
+    "evidence": "A",
+    "sources": [
+      "https://netflixtechblog.com/open-sourcing-the-netflix-domain-graph-service-framework-graphql-for-spring-boot-92b9dcecda18",
+      "https://github.com/Netflix/dgs-framework"
+    ]
+  },
+  {
+    "company": "Databricks",
+    "domain": "databricks.com",
+    "intern": {
+      "found": true,
+      "cycle": "Winter 2027 (no Summer 2027 SWE intern posting live yet)",
+      "required": [
+        "one of: Python, Java, C++",
+        "algorithms, data structures, OOP principles"
+      ],
+      "preferred": [],
+      "url": "https://www.databricks.com/company/careers/university-recruiting/software-engineering-intern-2027-start---winter-8732364002"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026 (2027 new grad SWE posting not up yet)",
+      "required": [
+        "one of: Python, Java, C++",
+        "algorithms, data structures, OOP principles",
+        "end-to-end project experience"
+      ],
+      "preferred": [],
+      "url": "https://www.builtinsf.com/job/software-engineer-new-grad-2026-start/6846071"
+    },
+    "need": [
+      "Python",
+      "Java",
+      "C++"
+    ],
+    "core_stack": [
+      "Scala",
+      "Python",
+      "Java",
+      "Spark",
+      "Kubernetes",
+      "Bazel",
+      "React",
+      "TypeScript"
+    ],
+    "niche": [
+      "Jsonnet",
+      "Photon"
+    ],
+    "summary": "Any of Python, Java or C++ plus DSA and OOP; most backend services are Scala.",
+    "evidence": "A",
+    "sources": [
+      "https://www.databricks.com/company/careers/university-recruiting/software-engineering-intern-2027-start---winter-8732364002",
+      "https://www.builtinsf.com/job/software-engineer-new-grad-2026-start/6846071",
+      "https://www.databricks.com/blog/2021/12/03/scala-at-scale-at-databricks.html",
+      "https://www.databricks.com/blog/2019/07/23/fast-parallel-testing-at-databricks-with-bazel.html"
+    ]
+  },
+  {
+    "company": "Stripe",
+    "domain": "stripe.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027 (posting open, year not stated)",
+      "required": [
+        "projects or classwork in one of: Ruby, Java, JavaScript, Go, Scala",
+        "prior internship or multi-person project",
+        "using AI coding tools with judgment"
+      ],
+      "preferred": [
+        "frontend, backend or infrastructure specialty",
+        "pull requests with good test coverage",
+        "navigating multi-language codebases"
+      ],
+      "url": "https://stripe.com/careers/listing/software-engineer-intern/8031833"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 (degree by summer 2027)",
+      "required": [
+        "projects or classwork in one of: Java, Ruby, JavaScript, Scala, Go",
+        "prior internship or multi-person project",
+        "using AI coding tools with judgment"
+      ],
+      "preferred": [
+        "frontend, backend or infrastructure specialty",
+        "code review and production deploy experience",
+        "navigating large codebases"
+      ],
+      "url": "https://stripe.com/careers/listing/software-engineer-new-grad/8130930"
+    },
+    "need": [
+      "Java",
+      "Ruby",
+      "Go",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "Ruby",
+      "Java",
+      "Go",
+      "Scala",
+      "TypeScript",
+      "React",
+      "MongoDB",
+      "AWS"
+    ],
+    "niche": [
+      "Sorbet",
+      "DocDB"
+    ],
+    "summary": "Any of Ruby, Java, JavaScript, Go or Scala; the core is a huge typed Ruby monorepo.",
+    "evidence": "A",
+    "sources": [
+      "https://stripe.com/careers/listing/software-engineer-intern/8031833",
+      "https://stripe.com/careers/listing/software-engineer-new-grad/8130930",
+      "https://stripe.dev/blog/sorbet-stripes-type-checker-for-ruby",
+      "https://blog.quastor.org/p/architecture-stripes-document-database"
+    ]
+  },
+  {
+    "company": "Palantir",
+    "domain": "palantir.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027 (graduating 2028)",
+      "required": [
+        "one of: Java, C++, Python, JavaScript",
+        "data structures, storage systems, cloud infrastructure, front-end frameworks"
+      ],
+      "preferred": [],
+      "url": "https://jobs.lever.co/palantir/e27af7ab-41fc-40c9-b31d-02c6cb1c505c"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026/2027",
+      "required": [
+        "one of: Java, C++, Python, JavaScript",
+        "data structures, storage systems, cloud infrastructure, front-end frameworks"
+      ],
+      "preferred": [
+        "US security clearance or eligibility"
+      ],
+      "url": "https://jobs.lever.co/palantir/94984771-0704-446c-88c6-91ce748f6d92"
+    },
+    "need": [
+      "Java",
+      "Python",
+      "JavaScript",
+      "TypeScript"
+    ],
+    "core_stack": [
+      "Java",
+      "Go",
+      "TypeScript",
+      "React",
+      "Cassandra",
+      "Spark",
+      "Elasticsearch",
+      "Gradle"
+    ],
+    "niche": [
+      "Conjure",
+      "Blueprint",
+      "Foundry",
+      "Gotham"
+    ],
+    "summary": "Any of Java, C++, Python or JavaScript; backend is Java and Go, frontend TypeScript and React.",
+    "evidence": "A",
+    "sources": [
+      "https://jobs.lever.co/palantir/e27af7ab-41fc-40c9-b31d-02c6cb1c505c",
+      "https://jobs.lever.co/palantir/94984771-0704-446c-88c6-91ce748f6d92",
+      "https://github.com/palantir/conjure",
+      "https://palantir.github.io/"
+    ]
+  },
+  {
+    "company": "LinkedIn",
+    "domain": "linkedin.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2026 (Summer 2027 not posted yet)",
+      "required": [
+        "one or more of: Java, C/C++, C#, Python, Ruby",
+        "OO design, algorithms, data structures, complexity analysis"
+      ],
+      "preferred": [
+        "distributed systems",
+        "operating systems",
+        "cloud computing"
+      ],
+      "url": "https://jobs.smartrecruiters.com/LinkedIn3/744000085237793-software-engineer-intern-undergraduate-summer-2026-mountain-view-ca-"
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": "none posted (entry SWE roles on the board ask for 1+ years)",
+      "required": [],
+      "preferred": [],
+      "url": "https://careers.linkedin.com/pathways-programs/entry-level/technical"
+    },
+    "need": [
+      "Java",
+      "Python",
+      "C++"
+    ],
+    "core_stack": [
+      "Java",
+      "Scala",
+      "Python",
+      "Kafka",
+      "Spark",
+      "Kotlin",
+      "Swift",
+      "JavaScript"
+    ],
+    "niche": [
+      "Rest.li",
+      "Espresso",
+      "Venice",
+      "Pinot"
+    ],
+    "summary": "Any of Java, C++, C#, Python or Ruby; backend is mostly Java on Kafka-based data infra.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.smartrecruiters.com/LinkedIn3/744000085237793-software-engineer-intern-undergraduate-summer-2026-mountain-view-ca-",
+      "https://jobs.smartrecruiters.com/LinkedIn3/744000144804759-software-engineer-systems-and-infrastructure-",
+      "https://www.linkedin.com/blog/engineering/open-source/kafka-ecosystem-at-linkedin"
+    ]
+  },
+  {
+    "company": "Figma",
+    "domain": "figma.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "at least one general-purpose language, e.g. C++, JavaScript, Python, Java",
+        "data structures and algorithms"
+      ],
+      "preferred": [
+        "AI-assisted dev tools (Copilot, ChatGPT, Claude)"
+      ],
+      "url": "https://job-boards.greenhouse.io/figma/jobs/6143238004"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026 (closed; 2027 SWE posting not up yet)",
+      "required": [
+        "at least one general-purpose language, e.g. C++, JavaScript, Python, Java",
+        "CS fundamentals and data structures"
+      ],
+      "preferred": [],
+      "url": "https://job-boards.greenhouse.io/figma/jobs/5616603004"
+    },
+    "need": [
+      "TypeScript",
+      "React",
+      "C++"
+    ],
+    "core_stack": [
+      "TypeScript",
+      "React",
+      "C++",
+      "WebAssembly",
+      "Ruby",
+      "Rust",
+      "PostgreSQL",
+      "AWS"
+    ],
+    "niche": [
+      "LiveGraph",
+      "DBProxy",
+      "Sorbet"
+    ],
+    "summary": "Any language plus DSA; teams mostly write TypeScript and React, with C++ for the canvas.",
+    "evidence": "A",
+    "sources": [
+      "https://job-boards.greenhouse.io/figma/jobs/6143238004",
+      "https://www.theladders.com/job/early-career-software-engineer-2026-figma-new-york-ny_83499154",
+      "https://newsletter.pragmaticengineer.com/p/inside-figmas-engineering-culture",
+      "https://www.figma.com/blog/rust-in-production-at-figma/"
+    ]
+  },
+  {
+    "company": "Airbnb",
+    "domain": "airbnb.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2026 (closed; Summer 2027 not posted yet)",
+      "required": [
+        "at least one language, e.g. Java, Scala, Ruby/Rails, C++, SQL, HTML/CSS, JavaScript, Objective-C, Swift, Kotlin",
+        "CS fundamentals"
+      ],
+      "preferred": [],
+      "url": "https://www.builtinnyc.com/job/software-engineering-intern/7916098"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026 (closed; 2027 not posted yet)",
+      "required": [
+        "one or more of: Java, Scala, Ruby/Rails, C++, SQL, HTML/CSS, JavaScript, Objective-C, Swift, Kotlin",
+        "data structures, algorithms, design patterns"
+      ],
+      "preferred": [
+        "Python and common AI/ML libraries"
+      ],
+      "url": "https://job-boards.greenhouse.io/airbnb/jobs/7773838"
+    },
+    "need": [
+      "Java",
+      "Kotlin",
+      "JavaScript",
+      "SQL"
+    ],
+    "core_stack": [
+      "Java",
+      "Kotlin",
+      "TypeScript",
+      "React",
+      "GraphQL",
+      "Kubernetes",
+      "MySQL",
+      "Swift"
+    ],
+    "niche": [
+      "Viaduct",
+      "Ghost Platform"
+    ],
+    "summary": "Any one language plus CS fundamentals; backend is Java and Kotlin, web is TypeScript and React.",
+    "evidence": "A",
+    "sources": [
+      "https://www.builtinnyc.com/job/software-engineering-intern/7916098",
+      "https://job-boards.greenhouse.io/airbnb/jobs/7773838",
+      "https://medium.com/airbnb-engineering/viaduct-five-years-on-modernizing-the-data-oriented-service-mesh-e66397c9e9a9",
+      "https://medium.com/airbnb-engineering/a-deep-dive-into-airbnbs-server-driven-ui-system-842244c5f5"
+    ]
+  },
+  {
+    "company": "BlackRock",
+    "domain": "blackrock.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "intermediate skill in an OO language, e.g. Java, Python or JavaScript (per SWE function page)"
+      ],
+      "preferred": [
+        "interest in finance",
+        "interest in AI and emerging tech"
+      ],
+      "url": "https://careers.blackrock.com/job/new-york/2027-summer-internship-program-amers/45831/90628276544"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 Full-Time Analyst Program",
+      "required": [
+        "intermediate skill in an OO language, e.g. Java, Python or JavaScript (per SWE function page)"
+      ],
+      "preferred": [
+        "interest in finance",
+        "interest in AI and emerging tech"
+      ],
+      "url": "https://careers.blackrock.com/job/new-york/2027-full-time-analyst-program-amrs/45831/97843197536"
+    },
+    "need": [
+      "Java",
+      "Python",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "Java",
+      "Python",
+      "Spring",
+      "Angular",
+      "React",
+      "Kafka",
+      "Snowflake",
+      "Azure"
+    ],
+    "niche": [
+      "Aladdin",
+      "Apache Ignite",
+      "Storm",
+      "Solr"
+    ],
+    "summary": "Intermediate Java, Python or JavaScript; postings are generic and Aladdin is mostly Java.",
+    "evidence": "B",
+    "sources": [
+      "https://careers.blackrock.com/job/new-york/2027-summer-internship-program-amers/45831/90628276544",
+      "https://careers.blackrock.com/job/new-york/2027-full-time-analyst-program-amrs/45831/97843197536",
+      "https://careers.blackrock.com/students-and-graduates-functions-software-engineering",
+      "https://blackrock-eng.medium.com/"
+    ]
+  },
+  {
+    "company": "SpaceX",
+    "domain": "spacex.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "one or more of: C, C++, C#, Java, JavaScript, Python",
+        "3+ months of programming experience"
+      ],
+      "preferred": [
+        "computer architecture and networks",
+        "debugging, performance optimization, unit testing"
+      ],
+      "url": "https://boards.greenhouse.io/spacex/jobs/8621757002"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2026/2027",
+      "required": [
+        "experience (internships count) in C, C++, Python, C# or another OO language"
+      ],
+      "preferred": [
+        "networking protocols (UDP, TCP/IP)",
+        "distributed systems",
+        "C++ or Rust on Starship/flight roles"
+      ],
+      "url": "https://boards.greenhouse.io/spacex/jobs/8696080002"
+    },
+    "need": [
+      "C++",
+      "Python",
+      "C",
+      "C#"
+    ],
+    "core_stack": [
+      "C++",
+      "Python",
+      "C#",
+      ".NET",
+      "Linux",
+      "Rust",
+      "Angular",
+      "PostgreSQL"
+    ],
+    "niche": [
+      "WARP Drive"
+    ],
+    "summary": "C++ or Python plus shipped projects; flight code leans C++, internal apps are C# and Angular.",
+    "evidence": "A",
+    "sources": [
+      "https://boards.greenhouse.io/spacex/jobs/8621757002",
+      "https://boards.greenhouse.io/spacex/jobs/8696080002",
+      "https://boards.greenhouse.io/spacex/jobs/8493079002",
+      "https://stackoverflow.blog/2021/05/13/building-the-software-that-helps-build-spacex/"
+    ]
+  },
+  {
+    "company": "Anduril",
+    "domain": "anduril.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "CS or related degree in progress",
+        "US Person"
+      ],
+      "preferred": [
+        "C++, Go, Rust, Java, Python",
+        "algorithms, data structures, storage systems, cloud infrastructure, front-end frameworks"
+      ],
+      "url": "https://job-boards.greenhouse.io/andurilindustries/jobs/5148079007"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027",
+      "required": [
+        "CS or related degree",
+        "US Person"
+      ],
+      "preferred": [
+        "C++, Go, Rust, Java, Python",
+        "algorithms, data structures, storage systems, cloud infrastructure, front-end frameworks"
+      ],
+      "url": "https://job-boards.greenhouse.io/andurilindustries/jobs/5162263007"
+    },
+    "need": [
+      "C++",
+      "Python",
+      "Go",
+      "Rust"
+    ],
+    "core_stack": [
+      "C++",
+      "Rust",
+      "Go",
+      "Python",
+      "TypeScript",
+      "React",
+      "gRPC",
+      "Kubernetes"
+    ],
+    "niche": [
+      "Lattice OS",
+      "Nix",
+      "Bazel"
+    ],
+    "summary": "No hard language requirement; C++, Go, Rust and Python preferred, services speak gRPC.",
+    "evidence": "A",
+    "sources": [
+      "https://job-boards.greenhouse.io/andurilindustries/jobs/5148079007",
+      "https://job-boards.greenhouse.io/andurilindustries/jobs/5162263007",
+      "https://builtinlondon.uk/job/software-engineer-full-stack/8507135",
+      "https://github.com/anduril/lattice-sdk-cpp"
+    ]
+  },
+  {
+    "company": "Jane Street",
+    "domain": "janestreet.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027 (year not stated on posting)",
+      "required": [
+        "Top-notch programmer in any language"
+      ],
+      "preferred": [
+        "OCaml taught on the job (primary language)",
+        "Python used by some teams"
+      ],
+      "url": "https://www.janestreet.com/join-jane-street/position/8599644002/"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 (year not stated on posting)",
+      "required": [
+        "Top-notch programmer, experience in any language"
+      ],
+      "preferred": [
+        "No OCaml, functional programming, Python or finance background expected"
+      ],
+      "url": "https://www.janestreet.com/join-jane-street/position/8594541002/"
+    },
+    "need": [
+      "Any language"
+    ],
+    "core_stack": [
+      "OCaml",
+      "Python",
+      "Linux"
+    ],
+    "niche": [
+      "OxCaml",
+      "Hardcaml",
+      "Dune, Core, Async",
+      "Iron"
+    ],
+    "summary": "Any language is fine; OCaml is the main language and is taught on the job.",
+    "evidence": "A",
+    "sources": [
+      "https://www.janestreet.com/join-jane-street/position/8599644002/",
+      "https://www.janestreet.com/join-jane-street/position/8594541002/",
+      "https://www.janestreet.com/technology/",
+      "https://blog.janestreet.com/why-ocaml/"
+    ]
+  },
+  {
+    "company": "Citadel / Citadel Securities",
+    "domain": "citadel.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027 (year not stated on posting)",
+      "required": [
+        "Exceptional programming and design skills (no language named)",
+        "Probability and statistics familiarity"
+      ],
+      "preferred": [],
+      "url": "https://www.citadel.com/careers/details/software-engineer-intern-us/"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 (year not stated on posting)",
+      "required": [
+        "Exceptional programming and design skills",
+        "Probability and statistics familiarity"
+      ],
+      "preferred": [
+        "C++",
+        "Python"
+      ],
+      "url": "https://www.builtinnyc.com/job/software-engineer-university-graduate-us/10064246"
+    },
+    "need": [
+      "C++",
+      "Python"
+    ],
+    "core_stack": [
+      "C++",
+      "Python",
+      "Linux",
+      "Java",
+      "React",
+      "TypeScript"
+    ],
+    "niche": [
+      "kdb+/q",
+      "FPGA"
+    ],
+    "summary": "Strong programming in any language; C++ and Python are preferred and dominate trading teams.",
+    "evidence": "B",
+    "sources": [
+      "https://www.citadel.com/careers/details/software-engineer-intern-us/",
+      "https://www.citadelsecurities.com/careers/details/software-engineer-intern-us/",
+      "https://www.builtinnyc.com/job/software-engineer-university-graduate-us/10064246",
+      "https://www.citadelsecurities.com/careers/details/full-stack-software-engineer/",
+      "https://www.citadelsecurities.com/careers/details/c-software-engineer/"
+    ]
+  },
+  {
+    "company": "Two Sigma",
+    "domain": "twosigma.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "One of: Java, C, C++, Python, Ruby, Perl, or other JVM languages",
+        "Experience in large-scale systems"
+      ],
+      "preferred": [
+        "No finance experience needed"
+      ],
+      "url": "https://careers.twosigma.com/careers/JobDetail/New-York-New-York-United-States-Software-Engineering-Internship-Summer-2027/14016"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 (year not stated on posting)",
+      "required": [
+        "One of: Java, C, C++, Python, Ruby, Perl, or other JVM languages",
+        "Experience in large-scale systems"
+      ],
+      "preferred": [
+        "No finance experience needed"
+      ],
+      "url": "https://careers.twosigma.com/careers/JobDetail/Houston-Texas-United-States-Software-Engineering-Full-Time-Campus-Hire-Houston/14018"
+    },
+    "need": [
+      "Java",
+      "Python",
+      "C++"
+    ],
+    "core_stack": [
+      "Java",
+      "Python",
+      "C++",
+      "Kubernetes",
+      "GCP",
+      "Spark",
+      "pandas"
+    ],
+    "niche": [
+      "Mesos",
+      "Cook",
+      "Waiter"
+    ],
+    "summary": "Any mainstream language, usually Java, C++ or Python, plus large-scale systems experience.",
+    "evidence": "A",
+    "sources": [
+      "https://careers.twosigma.com/careers/JobDetail/New-York-New-York-United-States-Software-Engineering-Internship-Summer-2027/14016",
+      "https://careers.twosigma.com/careers/JobDetail/Houston-Texas-United-States-Software-Engineering-Full-Time-Campus-Hire-Houston/14018",
+      "https://www.twosigma.com/careers/engineering/",
+      "https://github.com/twosigma"
+    ]
+  },
+  {
+    "company": "Hudson River Trading",
+    "domain": "hudsonrivertrading.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Programming experience in Python, C or C++"
+      ],
+      "preferred": [
+        "No trading or finance knowledge needed"
+      ],
+      "url": "https://www.hudsonrivertrading.com/hrt-job/software-engineering-internship-c-or-python-summer-2027/"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027",
+      "required": [
+        "C/C++ or Python",
+        "UNIX knowledge (Linux)",
+        "System/processor performance and network communication"
+      ],
+      "preferred": [
+        "Interest in low-level architecture, logic design or verification"
+      ],
+      "url": "https://www.hudsonrivertrading.com/hrt-job/software-engineer-c-or-python-2027-grads/"
+    },
+    "need": [
+      "C++",
+      "Python",
+      "Linux"
+    ],
+    "core_stack": [
+      "C++",
+      "Python",
+      "Linux",
+      "TypeScript",
+      "Go"
+    ],
+    "niche": [
+      "FPGA",
+      "SystemVerilog"
+    ],
+    "summary": "Python, C or C++ required; new grads also need Linux and systems fundamentals.",
+    "evidence": "A",
+    "sources": [
+      "https://www.hudsonrivertrading.com/hrt-job/software-engineering-internship-c-or-python-summer-2027/",
+      "https://www.hudsonrivertrading.com/hrt-job/software-engineer-c-or-python-2027-grads/",
+      "https://www.hudsonrivertrading.com/hrtbeat/engineering-and-interviewing-at-hrt/",
+      "https://www.hudsonrivertrading.com/hrtbeat/hrtworker-a-sharedworker-framework/"
+    ]
+  },
+  {
+    "company": "Optiver",
+    "domain": "optiver.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Proficient in a language such as C++, Python, or Java",
+        "Solid CS fundamentals"
+      ],
+      "preferred": [],
+      "url": "https://www.optiver.com/join-us/jobs/technology/chicago/software-engineer-intern-summer-2027-chicago/"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 start",
+      "required": [
+        "Proficient in a language such as C++, Python, or Java",
+        "Solid CS fundamentals"
+      ],
+      "preferred": [],
+      "url": "https://www.optiver.com/join-us/jobs/technology/austin/graduate-software-engineer-2027-start/"
+    },
+    "need": [
+      "C++",
+      "Python",
+      "Java"
+    ],
+    "core_stack": [
+      "C++",
+      "Python",
+      "Rust",
+      "C#",
+      "Linux",
+      "PostgreSQL",
+      "Kafka",
+      "Kubernetes"
+    ],
+    "niche": [
+      "FPGA",
+      "VHDL",
+      "SystemVerilog",
+      "Custom Linux kernels"
+    ],
+    "summary": "Proficiency in C++, Python or Java; C++ runs the low latency trading core.",
+    "evidence": "A",
+    "sources": [
+      "https://www.optiver.com/join-us/jobs/technology/chicago/software-engineer-intern-summer-2027-chicago/",
+      "https://www.optiver.com/join-us/jobs/technology/austin/graduate-software-engineer-2027-start/",
+      "https://newsletter.pragmaticengineer.com/p/optiver",
+      "https://www.optiver.com/what-we-do/technology/"
+    ]
+  },
+  {
+    "company": "IMC Trading",
+    "domain": "imc.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Proficient in a programming language",
+        "Algorithms and data structures"
+      ],
+      "preferred": [
+        "Java",
+        "C++"
+      ],
+      "url": "https://www.imc.com/us/careers/jobs/4823924101"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027",
+      "required": [
+        "C++ or Java",
+        "Algorithms and data structures"
+      ],
+      "preferred": [
+        "Python"
+      ],
+      "url": "https://www.imc.com/us/careers/jobs/4667814101"
+    },
+    "need": [
+      "Java",
+      "C++",
+      "Python"
+    ],
+    "core_stack": [
+      "Java",
+      "C++",
+      "Python",
+      "Kafka",
+      "Kubernetes",
+      "Docker",
+      "Linux"
+    ],
+    "niche": [
+      "FPGA"
+    ],
+    "summary": "Java or C++ required for new grads and preferred for interns; Python is a plus.",
+    "evidence": "A",
+    "sources": [
+      "https://www.imc.com/us/careers/jobs/4823924101",
+      "https://www.imc.com/us/careers/jobs/4667814101",
+      "https://www.imc.com/us/careers/jobs/4855354101"
+    ]
+  },
+  {
+    "company": "Scale AI",
+    "domain": "scale.com",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python, TypeScript, React and/or MongoDB",
+        "Full-stack web product engineering",
+        "Prior CS/SWE internship"
+      ],
+      "preferred": [
+        "LLMs, evaluations or agentic systems",
+        "Open source or shipped side projects"
+      ],
+      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4730845005"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027 (Fall 2026 or Spring 2027 grads)",
+      "required": [
+        "Python, TypeScript, React and/or MongoDB",
+        "Full-stack web product engineering",
+        "Prior product/SWE internship"
+      ],
+      "preferred": [
+        "LLMs, evaluations or agentic systems",
+        "Open source or shipped side projects"
+      ],
+      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4730836005"
+    },
+    "need": [
+      "Python",
+      "TypeScript",
+      "React",
+      "MongoDB"
+    ],
+    "core_stack": [
+      "Python",
+      "TypeScript",
+      "React",
+      "Node.js",
+      "MongoDB",
+      "AWS",
+      "Kubernetes",
+      "Temporal"
+    ],
+    "niche": [],
+    "summary": "Full-stack product work in Python, TypeScript, React and MongoDB, plus a prior internship.",
+    "evidence": "A",
+    "sources": [
+      "https://job-boards.greenhouse.io/scaleai/jobs/4730845005",
+      "https://job-boards.greenhouse.io/scaleai/jobs/4730836005",
+      "https://job-boards.greenhouse.io/scaleai/jobs/4594879005",
+      "https://job-boards.greenhouse.io/scaleai/jobs/4717101005"
+    ]
+  },
+  {
+    "company": "OpenAI",
+    "domain": "openai.com",
+    "intern": {
+      "found": true,
+      "cycle": "Fall 2026 (no Summer 2027 posting yet)",
+      "required": [
+        "JavaScript",
+        "React",
+        "A backend language (Python)",
+        "Relational databases like PostgreSQL/MySQL"
+      ],
+      "preferred": [
+        "Interest in AI/ML, experience not required"
+      ],
+      "url": "https://jobs.ashbyhq.com/openai/1f3353ed-78eb-4a01-b783-c44b1c086711"
+    },
+    "new_grad": {
+      "found": true,
+      "cycle": "2027",
+      "required": [
+        "JavaScript",
+        "React",
+        "A backend language (Python)",
+        "Relational databases like PostgreSQL/MySQL"
+      ],
+      "preferred": [
+        "Interest in AI/ML, experience not required"
+      ],
+      "url": "https://jobs.ashbyhq.com/openai/55150071-fce8-48f5-aea4-14ed78b83511"
+    },
+    "need": [
+      "Python",
+      "JavaScript",
+      "React",
+      "PostgreSQL"
+    ],
+    "core_stack": [
+      "Python",
+      "TypeScript",
+      "JavaScript",
+      "React",
+      "PostgreSQL",
+      "Kubernetes",
+      "Azure"
+    ],
+    "niche": [
+      "Triton",
+      "Azure Cosmos DB"
+    ],
+    "summary": "JavaScript and React on the front, Python on the back, plus Postgres or MySQL basics.",
+    "evidence": "A",
+    "sources": [
+      "https://jobs.ashbyhq.com/openai/1f3353ed-78eb-4a01-b783-c44b1c086711",
+      "https://jobs.ashbyhq.com/openai/55150071-fce8-48f5-aea4-14ed78b83511",
+      "https://openai.com/index/scaling-postgresql/",
+      "https://openai.com/index/scaling-kubernetes-to-7500-nodes/"
+    ]
+  },
+  {
+    "company": "Anthropic",
+    "domain": "anthropic.com",
+    "intern": {
+      "found": false,
+      "cycle": null,
+      "required": [],
+      "preferred": [],
+      "url": null
+    },
+    "new_grad": {
+      "found": false,
+      "cycle": null,
+      "required": [],
+      "preferred": [],
+      "url": null
+    },
+    "need": [
+      "Python",
+      "TypeScript",
+      "Rust"
+    ],
+    "core_stack": [
+      "Python",
+      "TypeScript",
+      "React",
+      "Rust",
+      "Go",
+      "Kubernetes",
+      "GCP",
+      "AWS"
+    ],
+    "niche": [
+      "Trainium",
+      "TPU",
+      "JAX"
+    ],
+    "summary": "No SWE intern or new grad program; engineering roles center on Python, plus Rust, Go and TypeScript.",
+    "evidence": "C",
+    "sources": [
+      "https://www.anthropic.com/careers/jobs",
+      "https://job-boards.greenhouse.io/anthropic/jobs/5400160008",
+      "https://job-boards.greenhouse.io/anthropic/jobs/5186067008",
+      "https://job-boards.greenhouse.io/anthropic/jobs/5183051008"
+    ]
+  },
+  {
+    "company": "TikTok",
+    "domain": "tiktok.com",
+    "category": "Consumer",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "Java",
+        "C++",
+        "Go",
+        "Data structures"
+      ],
+      "preferred": [
+        "NLP",
+        "Distributed systems",
+        "Machine learning",
+        "Data pipelines / ETL",
+        "Databases"
+      ],
+      "url": "https://go.vansh.nyc/180"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "C++",
+      "PyTorch",
+      "TensorFlow",
+      "Linux / Unix",
+      "Spark",
+      "Kafka"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "NLP"
+    ],
+    "summary": "27 SWE and AI intern postings; Python, Java and PyTorch most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/180",
+      "https://go.vansh.nyc/183",
+      "https://go.vansh.nyc/186"
+    ]
+  },
+  {
+    "company": "ByteDance",
+    "domain": "bytedance.com",
+    "category": "AI",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "Go",
+        "C++",
+        "Java",
+        "Machine learning"
+      ],
+      "preferred": [
+        "System design",
+        "Debugging",
+        "Spark",
+        "Kafka",
+        "Back-end"
+      ],
+      "url": "https://go.vansh.nyc/1s7"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Go",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "Go",
+      "C++",
+      "Kubernetes",
+      "Linux / Unix",
+      "Spark",
+      "Docker",
+      "Kafka"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "Inference optimization"
+    ],
+    "summary": "17 SWE and AI intern postings; Python, Go and Kubernetes most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1s7",
+      "https://go.vansh.nyc/140",
+      "https://go.vansh.nyc/144"
+    ]
+  },
+  {
+    "company": "General Dynamics Mission Systems",
+    "domain": "gdmissionsystems.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Java",
+        "C++",
+        "JavaScript",
+        "TypeScript",
+        "HTML / CSS"
+      ],
+      "preferred": [
+        "Python",
+        "CI/CD",
+        "APIs",
+        "Testing",
+        "Front-end"
+      ],
+      "url": "https://careers-gdms.icims.com/jobs/76785/intern-engineer---%28systems%2c-software%2c-electrical%2c-mechanical%2c-manufacturing%2c-other%29/job"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "JavaScript",
+      "TypeScript"
+    ],
+    "core_stack": [
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "CI/CD",
+      "AWS",
+      "Docker",
+      "Kubernetes",
+      "Terraform"
+    ],
+    "niche": [],
+    "summary": "17 SWE intern postings; Python, JavaScript and CI/CD most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://careers-gdms.icims.com/jobs/76785/intern-engineer---%28systems%2c-software%2c-electrical%2c-mechanical%2c-manufacturing%2c-other%29/job",
+      "https://careers-gdms.icims.com/jobs/75769/devops-engineer-intern/job",
+      "https://careers-gdms.icims.com/jobs/75520/software-%26-systems-infrastructure-integration-intern/job?in_iframe=1"
+    ]
+  },
+  {
+    "company": "L3Harris",
+    "domain": "l3harris.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "required": [],
+      "preferred": [
+        "Java",
+        "C++",
+        "C#",
+        "Object-oriented",
+        "SQL"
+      ],
+      "url": "https://jobs.l3harris.com/job/Carlsbad-Software-Engineering-Intern-%28Carlsbad%2C-CA%29-CA-92009/1444689600/"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "C++",
+      "Python",
+      "Java"
+    ],
+    "core_stack": [
+      "C++",
+      "Python",
+      "Java",
+      "Linux / Unix",
+      ".NET",
+      "Angular",
+      "Flask",
+      "PostgreSQL"
+    ],
+    "niche": [],
+    "summary": "14 SWE intern postings; C++, Python and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.l3harris.com/job/Carlsbad-Software-Engineering-Intern-%28Carlsbad%2C-CA%29-CA-92009/1444689600/",
+      "https://jobs.l3harris.com/job/Clifton-Intern%2C-Software-Engineer-NJ-07014/1435263700/",
+      "https://jobs.l3harris.com/job/Clifton-Software-Engineering-Intern-NJ-07014/1413358200/"
+    ]
+  },
+  {
+    "company": "NBCUniversal",
+    "domain": "nbcuniversal.com",
+    "category": "Consumer",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "Java",
+        "JavaScript",
+        "Statistics / probability",
+        "Agile / Scrum"
+      ],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1oB"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "JavaScript",
+      "React",
+      "GraphQL",
+      "Snowflake",
+      "GitHub / GitLab",
+      "Tableau / Power BI"
+    ],
+    "niche": [
+      "Statistics / probability",
+      "Machine learning",
+      "NLP"
+    ],
+    "summary": "9 SWE and AI intern postings; Python, Java and React most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1oB",
+      "https://go.vansh.nyc/1os",
+      "https://jobs.smartrecruiters.com/NBCUniversal3/744000160639019-universal-television-entertainment-production-development-programming-internships-summer-2027?oga=true"
+    ]
+  },
+  {
+    "company": "The New York Times",
+    "domain": "nytimes.com",
+    "category": "Consumer",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "Kotlin",
+        "System design",
+        "Concurrency",
+        "Testing"
+      ],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1pn"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "HTML / CSS",
+      "Kotlin"
+    ],
+    "core_stack": [
+      "Python",
+      "HTML / CSS",
+      "Kotlin",
+      "GCP",
+      "React",
+      "GraphQL",
+      "scikit-learn",
+      "Node.js"
+    ],
+    "niche": [
+      "Generative AI",
+      "Machine learning",
+      "Statistics / probability"
+    ],
+    "summary": "13 SWE and AI intern postings; Python, HTML / CSS and GCP most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1pn",
+      "https://go.vansh.nyc/1l5",
+      "https://go.vansh.nyc/1l6"
+    ]
+  },
+  {
+    "company": "Skydio",
+    "domain": "skydio.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [],
+      "preferred": [
+        "TypeScript",
+        "React",
+        "GraphQL",
+        "APIs",
+        "Back-end"
+      ],
+      "url": "https://go.vansh.nyc/1rH"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "TypeScript"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "TypeScript",
+      "Linux / Unix",
+      "CI/CD",
+      "Docker",
+      "React",
+      "GraphQL"
+    ],
+    "niche": [
+      "Deep learning",
+      "Computer vision"
+    ],
+    "summary": "7 SWE and AI intern postings; Python, C++ and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1rH",
+      "https://www.welcometothejungle.com/en/companies/D8cOPy/jobs/frontend-software-engineer-intern-summer-2027_us_ctdbv3ai",
+      "https://jobs.ashbyhq.com/skydio/c85af510-9fe4-4167-a914-c3ab344bef03"
+    ]
+  },
+  {
+    "company": "CACI",
+    "domain": "caci.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Java",
+        "Python",
+        "C++",
+        "JavaScript",
+        "Databases"
+      ],
+      "preferred": [
+        "Docker",
+        "Algorithms",
+        "Agile / Scrum",
+        "React",
+        "Scalability / performance"
+      ],
+      "url": "https://caci.wd1.myworkdayjobs.com/external/job/Ashburn-VA-US/AI-Prompt-Engineer-High-School-Intern---Summer-2027_332816-1"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "C++",
+      "AWS",
+      "Docker",
+      "Git",
+      "Tableau / Power BI",
+      "PyTorch"
+    ],
+    "niche": [
+      "Machine learning",
+      "Prompt engineering",
+      "Linear algebra / calculus"
+    ],
+    "summary": "7 SWE and AI intern postings; Python, Java and AWS most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://caci.wd1.myworkdayjobs.com/external/job/Ashburn-VA-US/AI-Prompt-Engineer-High-School-Intern---Summer-2027_332816-1",
+      "https://caci.wd1.myworkdayjobs.com/external/job/Ashburn-VA-US/Software-Development-Intern---Summer-2027_333051",
+      "https://caci.wd1.myworkdayjobs.com/external/job/Danbury-CT-US/Software-Engineering-Co-op---Summer---Fall-2027_331354"
+    ]
+  },
+  {
+    "company": "AeroVironment",
+    "domain": "avinc.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "C++",
+        "Java",
+        "Git",
+        "Data structures"
+      ],
+      "preferred": [
+        "Back-end",
+        "Linux / Unix",
+        "Agile / Scrum",
+        "Bash / Shell",
+        "Cloud computing"
+      ],
+      "url": "https://avav.wd1.myworkdayjobs.com/avav/job/Centreville-VA/Machine-Learning-Engineering-Intern_8941"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "Java"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "Java",
+      "Linux / Unix",
+      "Git",
+      "CI/CD",
+      "TensorFlow",
+      "scikit-learn"
+    ],
+    "niche": [
+      "Data pipelines / ETL",
+      "Machine learning",
+      "Deep learning"
+    ],
+    "summary": "7 SWE and AI intern postings; Python, C++ and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://avav.wd1.myworkdayjobs.com/avav/job/Centreville-VA/Machine-Learning-Engineering-Intern_8941",
+      "https://avav.wd1.myworkdayjobs.com/avav/job/Centreville-VA/Software-Engineering-Intern_8593",
+      "https://avav.wd1.myworkdayjobs.com/avav/job/Germantown-MD/Hypersonic-RF-Software-Engineering-Intern_8993"
+    ]
+  },
+  {
+    "company": "JM Family",
+    "domain": "jmfamily.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "SQL",
+        "Machine learning",
+        "Azure",
+        "Bash / Shell"
+      ],
+      "preferred": [
+        "Git",
+        "GitHub / GitLab",
+        "LLMs",
+        "RAG",
+        "AI coding tools"
+      ],
+      "url": "https://jmfamily.wd1.myworkdayjobs.com/JMFamily_External/job/Florida---Deerfield-Beach/AI---Decision-Science-Intern_JR105095"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "SQL",
+      "Bash / Shell"
+    ],
+    "core_stack": [
+      "Python",
+      "SQL",
+      "Bash / Shell",
+      "Azure",
+      "Tableau / Power BI",
+      "Git",
+      "GitHub / GitLab",
+      "scikit-learn"
+    ],
+    "niche": [
+      "Machine learning",
+      "Model evaluation",
+      "AI agents"
+    ],
+    "summary": "7 SWE and AI intern postings; Python, SQL and Azure most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jmfamily.wd1.myworkdayjobs.com/JMFamily_External/job/Florida---Deerfield-Beach/AI---Decision-Science-Intern_JR105095",
+      "https://jmfamily.wd1.myworkdayjobs.com/JMFamily_External/job/Florida---Deerfield-Beach/AI-Center-of-Excellence--COE--Delivery-Team-Intern_JR105176",
+      "https://jmfamily.wd1.myworkdayjobs.com/JMFamily_External/job/Florida---Deerfield-Beach/AI-Intern_JR105180"
+    ]
+  },
+  {
+    "company": "Skyworks",
+    "domain": "skyworksinc.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Fall 2027",
+      "required": [],
+      "preferred": [],
+      "url": "https://careers.skyworksinc.com/job/Hillsboro-Embedded-Firmware-Engineer-Co-Op-%28WinterSpring-2027%29-OR-97006/1423710700/"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "SQL",
+      "C"
+    ],
+    "core_stack": [
+      "Python",
+      "SQL",
+      "C",
+      "Git",
+      "PyTorch",
+      "Azure",
+      "LangChain / LlamaIndex",
+      "Databricks"
+    ],
+    "niche": [
+      "Machine learning",
+      "AI agents",
+      "Deep learning"
+    ],
+    "summary": "7 SWE and AI intern postings; Python, SQL and Git most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://careers.skyworksinc.com/job/Hillsboro-Embedded-Firmware-Engineer-Co-Op-%28WinterSpring-2027%29-OR-97006/1423710700/",
+      "https://careers.skyworksinc.com/job/Irvine-AIML-Intern-CA-92617/1433610500/",
+      "https://careers.skyworksinc.com/job/Irvine-Machine-Learning-Modeling-WinterSpring-Co-Op-%28Jan-June-'27%29-CA-92617/1437686100/"
+    ]
+  },
+  {
+    "company": "PACCAR",
+    "domain": "paccar.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [],
+      "preferred": [
+        "Tableau / Power BI",
+        "Python",
+        "REST APIs",
+        "APIs"
+      ],
+      "url": "https://go.vansh.nyc/1dr"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "SQL"
+    ],
+    "core_stack": [
+      "Python",
+      "SQL",
+      "Tableau / Power BI",
+      "Azure",
+      "GitHub / GitLab",
+      "PostgreSQL",
+      "MySQL"
+    ],
+    "niche": [
+      "Data pipelines / ETL"
+    ],
+    "summary": "6 SWE and AI intern postings; Python, SQL and Tableau / Power BI most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1dr",
+      "https://go.vansh.nyc/WV",
+      "https://jobs.paccar.com/job/Denton-2027-Summer-Internship-AI-Driven-Vehicle-Definition-TX-76205-7864/1453573733/?ats=successfactors"
+    ]
+  },
+  {
+    "company": "RTX",
+    "domain": "rtx.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Linux / Unix",
+        "Object-oriented",
+        "Git",
+        "Concurrency",
+        "C"
+      ],
+      "preferred": [],
+      "url": "https://globalhr.wd5.myworkdayjobs.com/REC_RTX_Ext_Gateway/job/US-FL-LARGO-382SR--7887-Bryan-Dairy-Rd--BLDG-600/Software-Engineering-Intern--Summer-2027-_01888045"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "C",
+      "Python",
+      "C++"
+    ],
+    "core_stack": [
+      "C",
+      "Python",
+      "C++",
+      "Git",
+      "Linux / Unix",
+      "Docker",
+      "Jenkins",
+      "CI/CD"
+    ],
+    "niche": [
+      "Machine learning"
+    ],
+    "summary": "10 SWE intern postings; C, Python and Git most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://globalhr.wd5.myworkdayjobs.com/REC_RTX_Ext_Gateway/job/US-FL-LARGO-382SR--7887-Bryan-Dairy-Rd--BLDG-600/Software-Engineering-Intern--Summer-2027-_01888045",
+      "https://globalhr.wd5.myworkdayjobs.com/REC_RTX_Ext_Gateway/job/US-TX-RICHARDSON-C17--1717-Cityline-Dr--CITYLINE-C17/Software-Engineering-Intern--Summer-2027-_01888049",
+      "https://globalhr.wd5.myworkdayjobs.com/Private_Posting_No_TMP/job/US-IA-CEDAR-RAPIDS-121--350-Collins-Rd-NE--BLDG-121/Software-Engineering-Intern--Summer-2027-_01888146"
+    ]
+  },
+  {
+    "company": "HPE",
+    "domain": "hpe.com",
+    "category": "Data & Infra",
+    "intern": {
+      "found": true,
+      "required": [
+        "Linux / Unix"
+      ],
+      "preferred": [
+        "CUDA",
+        "Scalability / performance",
+        "Python",
+        "Bash / Shell",
+        "Git"
+      ],
+      "url": "https://hpe.wd5.myworkdayjobs.com/jobsathpe/job/Roseville-California-United-States-of-America/Embedded-Software-Engineering-Intern_1214088"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "HTML / CSS",
+      "Python",
+      "C++"
+    ],
+    "core_stack": [
+      "HTML / CSS",
+      "Python",
+      "C++",
+      "Linux / Unix",
+      "CI/CD",
+      "scikit-learn",
+      "Spark",
+      "CUDA"
+    ],
+    "niche": [
+      "Inference optimization",
+      "LLMs",
+      "Machine learning"
+    ],
+    "summary": "11 SWE and AI intern postings; HTML / CSS, Python and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://hpe.wd5.myworkdayjobs.com/jobsathpe/job/Roseville-California-United-States-of-America/Embedded-Software-Engineering-Intern_1214088",
+      "https://hpe.wd5.myworkdayjobs.com/jobsathpe/job/Spring-Texas-United-States-of-America/AI---HPC-Performance-Engineering-Intern_1213397",
+      "https://hpe.wd5.myworkdayjobs.com/jobsathpe/job/Fort-Collins-Colorado/HPC---AI-Networking-Intern---Network-Transport_1213416"
+    ]
+  },
+  {
+    "company": "ASML",
+    "domain": "asml.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "C++",
+        "Debugging"
+      ],
+      "preferred": [
+        "LangChain / LlamaIndex",
+        "OpenAI / Anthropic APIs",
+        "Databricks",
+        "Azure",
+        "Git"
+      ],
+      "url": "https://go.vansh.nyc/1pk"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "Java"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "Java",
+      "Databricks",
+      "Azure",
+      "Git",
+      "CI/CD",
+      "LangChain / LlamaIndex"
+    ],
+    "niche": [
+      "Machine learning",
+      "AI agents",
+      "LLMs"
+    ],
+    "summary": "5 SWE and AI intern postings; Python, C++ and Databricks most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1pk",
+      "https://go.vansh.nyc/1h9",
+      "https://go.vansh.nyc/Y2"
+    ]
+  },
+  {
+    "company": "CVS Health",
+    "domain": "cvshealth.com",
+    "category": "Health",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "SQL",
+        "Java",
+        "JavaScript",
+        "React"
+      ],
+      "preferred": [
+        "Generative AI",
+        "Scalability / performance",
+        "C++"
+      ],
+      "url": "https://cvshealth.wd1.myworkdayjobs.com/CVS_Health_Careers/job/AZ---Scottsdale/Innovation---Technology-Internship-Software-Engineering--Platform---Applications--Summer-2027-Grad_R1081216"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "JavaScript",
+      "React",
+      "Angular",
+      "Spring",
+      "AWS",
+      "Azure"
+    ],
+    "niche": [
+      "Generative AI",
+      "Machine learning",
+      "LLMs"
+    ],
+    "summary": "5 SWE intern postings; Python, Java and React most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://cvshealth.wd1.myworkdayjobs.com/CVS_Health_Careers/job/AZ---Scottsdale/Innovation---Technology-Internship-Software-Engineering--Platform---Applications--Summer-2027-Grad_R1081216",
+      "https://cvshealth.wd1.myworkdayjobs.com/CVS_Health_Careers/job/Hartford-Farmington-Ave-Rogers/Innovation---Technology-Internship---Product---Agile-Delivery---Summer-2027--Undergraduate-_R1080767",
+      "https://cvshealth.wd1.myworkdayjobs.com/CVS_Health_Careers/job/NY---New-York/Innovation---Technology-Internship---Data-Science---Summer-2027--Graduate-_R1081038"
+    ]
+  },
+  {
+    "company": "Wing",
+    "domain": "wing.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "C++",
+        "Data structures",
+        "Algorithms",
+        "Linux / Unix"
+      ],
+      "preferred": [],
+      "url": "https://wing.com/careers/8872468002?gh_jid=8872468002"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "Java"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "Java",
+      "Linux / Unix"
+    ],
+    "niche": [
+      "Machine learning",
+      "Data pipelines / ETL",
+      "Deep learning"
+    ],
+    "summary": "5 SWE and AI intern postings; Python, C++ and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://wing.com/careers/8872468002?gh_jid=8872468002",
+      "https://wing.com/careers/8872471002?gh_jid=8872471002",
+      "https://wing.com/careers/8872472002?gh_jid=8872472002"
+    ]
+  },
+  {
+    "company": "Bosch",
+    "domain": "bosch.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "cycle": "Spring 2027",
+      "required": [
+        "Machine learning",
+        "Python",
+        "LLMs",
+        "PyTorch",
+        "Deep learning"
+      ],
+      "preferred": [
+        "C++",
+        "C#",
+        "MATLAB",
+        "Linux / Unix",
+        "Debugging"
+      ],
+      "url": "https://jobs.smartrecruiters.com/BoschGroup/744000154759734-artificial-intelligence-machine-learning-foundation-models-intern?oga=true"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "C#"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "C#",
+      "PyTorch",
+      "Spark",
+      "Linux / Unix",
+      "TensorFlow",
+      "OpenCV"
+    ],
+    "niche": [
+      "Machine learning",
+      "Deep learning",
+      "LLMs"
+    ],
+    "summary": "5 SWE and AI intern postings; Python, C++ and PyTorch most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.smartrecruiters.com/BoschGroup/744000154759734-artificial-intelligence-machine-learning-foundation-models-intern?oga=true",
+      "https://jobs.smartrecruiters.com/BoschGroup/744000160208440-motorsport-software-and-data-analytics-graduate-intern-?oga=true",
+      "https://jobs.smartrecruiters.com/BoschGroup/744000157483412-agentic-ai-r-d-intern?oga=true"
+    ]
+  },
+  {
+    "company": "Formlabs",
+    "domain": "formlabs.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Spring 2027",
+      "required": [
+        "Python",
+        "SQL",
+        "Linux / Unix",
+        "Embedded / firmware"
+      ],
+      "preferred": [
+        "C++"
+      ],
+      "url": "https://go.vansh.nyc/1v2"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "SQL",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "SQL",
+      "C++",
+      "Linux / Unix"
+    ],
+    "niche": [
+      "Computer vision"
+    ],
+    "summary": "5 SWE intern postings; Python, SQL and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1v2",
+      "https://www.welcometothejungle.com/en/companies/HW7NHG/jobs/manufacturing-test-software-internship-winter-spring-2027_somerville_sv6y4kmm",
+      "https://careers.formlabs.com/job/8374598/apply/?gh_jid=8374598"
+    ]
+  },
+  {
+    "company": "Trimble",
+    "domain": "trimble.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "required": [
+        "SQL",
+        "Databases",
+        "TypeScript",
+        "Python",
+        "LLMs"
+      ],
+      "preferred": [
+        "Bash / Shell",
+        "AI agents",
+        "Linux / Unix",
+        "Agile / Scrum",
+        "Snowflake"
+      ],
+      "url": "https://go.vansh.nyc/1lh"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "SQL",
+      "Bash / Shell",
+      "TypeScript"
+    ],
+    "core_stack": [
+      "SQL",
+      "Bash / Shell",
+      "TypeScript",
+      "Angular",
+      ".NET",
+      "Linux / Unix",
+      "Snowflake",
+      "Git"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "AI agents"
+    ],
+    "summary": "4 SWE and AI intern postings; SQL, Bash / Shell and Angular most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1lh",
+      "https://go.vansh.nyc/1dM",
+      "https://trimble.wd1.myworkdayjobs.com/TrimbleCareers/job/US---TN-Knoxville/Software-Engineering-Intern_R58120"
+    ]
+  },
+  {
+    "company": "Boston Scientific",
+    "domain": "bostonscientific.com",
+    "category": "Health",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "C++",
+        "C#",
+        "OpenAI / Anthropic APIs",
+        "Git"
+      ],
+      "preferred": [
+        "Linux / Unix",
+        "Testing",
+        "Debugging",
+        "Mobile development"
+      ],
+      "url": "https://go.vansh.nyc/1gJ"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "C#"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "C#",
+      "OpenAI / Anthropic APIs",
+      "Git",
+      "GitHub / GitLab",
+      "CI/CD",
+      "Jenkins"
+    ],
+    "niche": [
+      "Machine learning",
+      "Deep learning",
+      "LLMs"
+    ],
+    "summary": "4 SWE and AI intern postings; Python, C++ and OpenAI / Anthropic APIs most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1gJ",
+      "https://go.vansh.nyc/YR",
+      "https://bostonscientific.eightfold.ai/careers/job/563602813862694"
+    ]
+  },
+  {
+    "company": "PayPal",
+    "domain": "paypal.com",
+    "category": "Fintech",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "Java",
+        "C++",
+        "Data structures",
+        "Algorithms"
+      ],
+      "preferred": [],
+      "url": "https://paypal.eightfold.ai/careers/job/274922982814"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "C++",
+      "REST APIs",
+      "TensorFlow",
+      "scikit-learn",
+      "React",
+      "Node.js"
+    ],
+    "niche": [
+      "Machine learning",
+      "Statistics / probability",
+      "MLOps / deployment"
+    ],
+    "summary": "4 SWE and AI intern postings; Python, Java and REST APIs most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://paypal.eightfold.ai/careers/job/274922982814",
+      "https://paypal.eightfold.ai/careers/job/274922982818",
+      "https://paypal.eightfold.ai/careers/job/274922983149"
+    ]
+  },
+  {
+    "company": "Match Group",
+    "domain": "mtch.com",
+    "category": "Consumer",
+    "intern": {
+      "found": true,
+      "required": [
+        "Data structures",
+        "Algorithms",
+        "Python",
+        "Mobile development",
+        "Java"
+      ],
+      "preferred": [
+        "GitHub / GitLab",
+        "gRPC",
+        "Kafka",
+        "AWS",
+        "Redis"
+      ],
+      "url": "https://jobs.lever.co/matchgroup/54a814d1-9a73-43d7-a266-c933ffd99ce3/apply"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "Scala"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "Scala",
+      "Spark",
+      "GitHub / GitLab",
+      "Node.js",
+      "gRPC",
+      "Kafka"
+    ],
+    "niche": [
+      "Machine learning",
+      "Generative AI",
+      "Deep learning"
+    ],
+    "summary": "4 SWE and AI intern postings; Python, Java and Spark most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.lever.co/matchgroup/54a814d1-9a73-43d7-a266-c933ffd99ce3/apply",
+      "https://jobs.lever.co/matchgroup/860a839a-5be3-44dc-916f-eb2e71d67d72/apply",
+      "https://jobs.lever.co/matchgroup/cda906dd-c02a-4bbc-b533-1636d58958ef/apply"
+    ]
+  },
+  {
+    "company": "Intuitive",
+    "domain": "intuitive.com",
+    "category": "Health",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "SQL",
+        "Machine learning",
+        "Algorithms",
+        "System design"
+      ],
+      "preferred": [
+        "scikit-learn",
+        "OpenAI / Anthropic APIs",
+        "Snowflake",
+        "Azure",
+        "LLMs"
+      ],
+      "url": "https://jobs.smartrecruiters.com/Intuitive/744000159218439-ai-ml-engineer-intern?oga=true"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "SQL",
+      "C#"
+    ],
+    "core_stack": [
+      "Python",
+      "SQL",
+      "C#",
+      "PyTorch",
+      "scikit-learn",
+      "OpenAI / Anthropic APIs",
+      "Snowflake",
+      "Azure"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "AI agents"
+    ],
+    "summary": "4 SWE and AI intern postings; Python, SQL and PyTorch most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.smartrecruiters.com/Intuitive/744000159218439-ai-ml-engineer-intern?oga=true",
+      "https://jobs.smartrecruiters.com/Intuitive/744000158310864-reinforcement-learning-intern?oga=true",
+      "https://jobs.smartrecruiters.com/Intuitive/744000158312151-ai-research-intern?oga=true"
+    ]
+  },
+  {
+    "company": "Lockheed Martin",
+    "domain": "lockheedmartin.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "Object-oriented",
+        "Java",
+        "C++",
+        "C"
+      ],
+      "preferred": [
+        "CI/CD",
+        "Embedded / firmware",
+        "Linux / Unix",
+        "GitHub / GitLab"
+      ],
+      "url": "https://go.vansh.nyc/1pZ"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "C"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "C",
+      "CI/CD",
+      "Linux / Unix",
+      "GitHub / GitLab",
+      "Docker",
+      "Git"
+    ],
+    "niche": [
+      "Prompt engineering"
+    ],
+    "summary": "3 SWE intern postings; Python, C++ and CI/CD most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1pZ",
+      "https://go.vansh.nyc/1q0",
+      "https://lockheedmartin.eightfold.ai/careers/job/996477676855"
+    ]
+  },
+  {
+    "company": "GDIT",
+    "domain": "gdit.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "SQL",
+        "Machine learning",
+        "LLMs",
+        "AI agents"
+      ],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1s6"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "SQL",
+      "Java"
+    ],
+    "core_stack": [
+      "Python",
+      "SQL",
+      "Java",
+      "Tableau / Power BI",
+      "AWS",
+      "Docker"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "AI agents"
+    ],
+    "summary": "3 SWE and AI intern postings; Python, SQL and Tableau / Power BI most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1s6",
+      "https://go.vansh.nyc/1hS",
+      "https://go.vansh.nyc/1xx"
+    ]
+  },
+  {
+    "company": "Sierra Nevada Corporation",
+    "domain": "sncorp.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "required": [
+        "Java",
+        "C#",
+        "MATLAB",
+        "Python",
+        "C++"
+      ],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1iR"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Java",
+      "C#",
+      "MATLAB"
+    ],
+    "core_stack": [
+      "Java",
+      "C#",
+      "MATLAB",
+      "Azure",
+      "Docker",
+      "Kubernetes",
+      "GitHub / GitLab",
+      "CI/CD"
+    ],
+    "niche": [],
+    "summary": "3 SWE intern postings; Java, C# and Azure most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1iR",
+      "https://go.vansh.nyc/19u",
+      "https://go.vansh.nyc/19v"
+    ]
+  },
+  {
+    "company": "Shield AI",
+    "domain": "shield.ai",
+    "category": "AI",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "Java",
+        "C++",
+        "JavaScript",
+        "C"
+      ],
+      "preferred": [
+        "PyTorch",
+        "TensorFlow",
+        "Machine learning",
+        "Deep learning",
+        "Statistics / probability"
+      ],
+      "url": "https://jobs.lever.co/shieldai/db8fc063-8856-4404-991c-f287712de949/apply"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "C++",
+      "PyTorch",
+      "TensorFlow",
+      "Git",
+      "GitHub / GitLab"
+    ],
+    "niche": [
+      "Machine learning",
+      "Deep learning",
+      "Computer vision"
+    ],
+    "summary": "3 SWE intern postings; Python, Java and PyTorch most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.lever.co/shieldai/db8fc063-8856-4404-991c-f287712de949/apply",
+      "https://jobs.ashbyhq.com/shield/db04c516-d21a-449c-8bfd-1cf830eafb5a/application?embed=true",
+      "https://jobs.lever.co/shieldai/ac38d092-f435-4301-880b-48d0e92679a4/apply"
+    ]
+  },
+  {
+    "company": "Costco",
+    "domain": "costco.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "required": [],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1bB"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "SQL"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "SQL",
+      "GCP",
+      "Git",
+      "GitHub / GitLab",
+      "CI/CD",
+      "Tableau / Power BI"
+    ],
+    "niche": [
+      "Data pipelines / ETL",
+      "Machine learning",
+      "LLMs"
+    ],
+    "summary": "4 SWE and AI intern postings; Python, C++ and GCP most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1bB",
+      "https://phf.tbe.taleo.net/phf02/ats/careers/v2/viewRequisition?org=COSTCO&cws=41&rid=10994",
+      "https://phf.tbe.taleo.net/phf02/ats/careers/v2/viewRequisition?org=COSTCO&cws=41&rid=11001"
+    ]
+  },
+  {
+    "company": "Cambridge Investment Research",
+    "domain": "cir2.com",
+    "category": "Finance",
+    "intern": {
+      "found": true,
+      "required": [
+        "SQL",
+        "APIs",
+        "C#",
+        "Object-oriented",
+        "Databases"
+      ],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1ch"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "SQL",
+      "C#",
+      "Python"
+    ],
+    "core_stack": [
+      "SQL",
+      "C#",
+      "Python",
+      "Snowflake",
+      "CI/CD",
+      "Kafka",
+      "Azure",
+      "React"
+    ],
+    "niche": [
+      "Data pipelines / ETL"
+    ],
+    "summary": "3 SWE intern postings; SQL, C# and Snowflake most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1ch",
+      "https://go.vansh.nyc/1ci",
+      "https://go.vansh.nyc/1cj"
+    ]
+  },
+  {
+    "company": "Johnson & Johnson",
+    "domain": "jnj.com",
+    "category": "Health",
+    "intern": {
+      "found": true,
+      "cycle": "Spring 2027",
+      "required": [
+        "Statistics / probability",
+        "JavaScript",
+        "C",
+        "Rust",
+        "Angular"
+      ],
+      "preferred": [
+        "Git",
+        "Linux / Unix",
+        "System design",
+        "Operating systems",
+        "C++"
+      ],
+      "url": "https://jj.wd5.myworkdayjobs.com/JJ/job/Danvers-Massachusetts-United-States-of-America/Software-Engineering-Co-Op_R-098277"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "JavaScript",
+      "Linux / Unix",
+      "Git",
+      "Angular",
+      "PostgreSQL",
+      "MySQL"
+    ],
+    "niche": [
+      "Statistics / probability",
+      "Machine learning",
+      "LLMs"
+    ],
+    "summary": "5 SWE and AI intern postings; Python, C++ and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jj.wd5.myworkdayjobs.com/JJ/job/Danvers-Massachusetts-United-States-of-America/Software-Engineering-Co-Op_R-098277",
+      "https://jj.wd5.myworkdayjobs.com/jj/job/Cincinnati-Ohio-United-States-of-America/Software-Engineering-Co-Op--Spring-2027_R-095741",
+      "https://jj.wd5.myworkdayjobs.com/jj/job/Danvers-Massachusetts-United-States-of-America/Software-Test-Engineering-Co-op--RLM-_R-098669"
+    ]
+  },
+  {
+    "company": "Motorola Solutions",
+    "domain": "motorolasolutions.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [],
+      "preferred": [
+        "Docker",
+        "Linux / Unix",
+        "Git",
+        "Object-oriented",
+        "Debugging"
+      ],
+      "url": "https://motorolasolutions.wd5.myworkdayjobs.com/careers/job/Illinois-Remote-Work/Software-Presales-Enablement-Intern---Summer-Internship-2027_R70228"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python"
+    ],
+    "core_stack": [
+      "Python",
+      "Docker",
+      "Linux / Unix",
+      "Git",
+      "CI/CD"
+    ],
+    "niche": [],
+    "summary": "3 SWE intern postings; Python and Docker most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://motorolasolutions.wd5.myworkdayjobs.com/careers/job/Illinois-Remote-Work/Software-Presales-Enablement-Intern---Summer-Internship-2027_R70228",
+      "https://motorolasolutions.wd5.myworkdayjobs.com/Careers/job/Schaumburg-IL/Software-Engineering-Intern---2027-Summer-Internship_R70179",
+      "https://motorolasolutions.wd5.myworkdayjobs.com/Careers/job/Allen-TX-TX139/Software-System-Technologist-Intern--Summer-2027-Internship-_R70511"
+    ]
+  },
+  {
+    "company": "Copart",
+    "domain": "copart.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "required": [
+        "OpenAI / Anthropic APIs",
+        "Python",
+        "SQL",
+        "Hugging Face",
+        "PostgreSQL"
+      ],
+      "preferred": [
+        "Linux / Unix",
+        "AWS",
+        "GCP",
+        "Git",
+        "Jenkins"
+      ],
+      "url": "https://copart.wd12.myworkdayjobs.com/copart/job/Dallas-TX---Headquarters/Data---AI-Intern_JR111596"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "JavaScript",
+      "Linux / Unix",
+      "Spring",
+      "OpenAI / Anthropic APIs",
+      "AWS",
+      "GCP"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "Generative AI"
+    ],
+    "summary": "3 SWE and AI intern postings; Python, Java and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://copart.wd12.myworkdayjobs.com/copart/job/Dallas-TX---Headquarters/Data---AI-Intern_JR111596",
+      "https://copart.wd12.myworkdayjobs.com/copart/job/Dallas-TX---Headquarters/Site-Reliability-Engineer-Intern_JR110631",
+      "https://copart.wd12.myworkdayjobs.com/copart/job/Dallas-TX---Headquarters/Software-Engineering-Intern_JR109689"
+    ]
+  },
+  {
+    "company": "Addepar",
+    "domain": "addepar.com",
+    "category": "Fintech",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "SQL",
+        "Databricks",
+        "Data pipelines / ETL",
+        "Java"
+      ],
+      "preferred": [],
+      "url": "https://job-boards.greenhouse.io/addepar1/jobs/8910327002"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "SQL",
+      "Java"
+    ],
+    "core_stack": [
+      "Python",
+      "SQL",
+      "Java",
+      "Databricks",
+      "React",
+      "REST APIs",
+      "Kafka",
+      "MySQL"
+    ],
+    "niche": [
+      "Data pipelines / ETL",
+      "Machine learning",
+      "LLMs"
+    ],
+    "summary": "4 SWE and AI intern postings; Python, SQL and Databricks most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://job-boards.greenhouse.io/addepar1/jobs/8910327002",
+      "https://job-boards.greenhouse.io/addepar1/jobs/8927531002",
+      "https://job-boards.greenhouse.io/addepar1/jobs/8927543002"
+    ]
+  },
+  {
+    "company": "ServiceNow",
+    "domain": "servicenow.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Operating systems",
+        "Python",
+        "Java",
+        "Go",
+        "React"
+      ],
+      "preferred": [],
+      "url": "https://jobs.smartrecruiters.com/ServiceNow/744000161209600-assoc-ai-engineering-cloud-security-automation-intern"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "Go"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "Go",
+      "React",
+      "Node.js",
+      "Angular",
+      "Vue",
+      "GraphQL"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs"
+    ],
+    "summary": "3 AI intern postings; Python, Java and React most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.smartrecruiters.com/ServiceNow/744000161209600-assoc-ai-engineering-cloud-security-automation-intern",
+      "https://jobs.smartrecruiters.com/ServiceNow/744000155345689-ai-engineering-software-engineer-internships-summer-2027-masters-?oga=true",
+      "https://go.vansh.nyc/1vZ"
+    ]
+  },
+  {
+    "company": "Lawrence Livermore National Laboratory",
+    "domain": "llnl.gov",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [],
+      "preferred": [],
+      "url": "https://jobs.smartrecruiters.com/LLNL/3743990015740565-defense-science-and-technology-internship-undergraduate-student-summer-2027?oga=true"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "Docker",
+      "Kubernetes",
+      "Git",
+      "CI/CD"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "MLOps / deployment"
+    ],
+    "summary": "3 SWE intern postings; Python, C++ and Docker most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.smartrecruiters.com/LLNL/3743990015740565-defense-science-and-technology-internship-undergraduate-student-summer-2027?oga=true",
+      "https://jobs.smartrecruiters.com/LLNL/3743990015740696-defense-science-and-technology-internship-graduate-computer-student-summer-2027?oga=true",
+      "https://jobs.smartrecruiters.com/LLNL/3743990015408206-computing-undergraduate-student-intern-devops-internship-program-summer-2027?oga=true"
+    ]
+  },
+  {
+    "company": "Danaher",
+    "domain": "danaher.com",
+    "category": "Health",
+    "intern": {
+      "found": true,
+      "required": [
+        "Java",
+        "C++",
+        "C",
+        "Embedded / firmware",
+        "JavaScript"
+      ],
+      "preferred": [
+        "Agile / Scrum",
+        "Git",
+        "OpenAI / Anthropic APIs",
+        "Jenkins",
+        "Debugging"
+      ],
+      "url": "https://danaher.wd1.myworkdayjobs.com/DanaherJobs/job/Brea-California-United-States/Intern---Application-Integration-Developer_R1316677"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Java",
+      "Python",
+      "C++"
+    ],
+    "core_stack": [
+      "Java",
+      "Python",
+      "C++",
+      "Git",
+      ".NET",
+      "Linux / Unix",
+      "OpenAI / Anthropic APIs",
+      "GitHub / GitLab"
+    ],
+    "niche": [],
+    "summary": "3 SWE intern postings; Java, Python and Git most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://danaher.wd1.myworkdayjobs.com/DanaherJobs/job/Brea-California-United-States/Intern---Application-Integration-Developer_R1316677",
+      "https://danaher.wd1.myworkdayjobs.com/DanaherJobs/job/Vista-California-United-States/Software-Engineering-Intern_R1315719",
+      "https://danaher.wd1.myworkdayjobs.com/DanaherJobs/job/Indianapolis-Indiana-United-States/Firmware-Engineer-Co-op_R1321509"
+    ]
+  },
+  {
+    "company": "Medpace",
+    "domain": "medpace.com",
+    "category": "Health",
+    "intern": {
+      "found": true,
+      "required": [],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1wk"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "SQL"
+    ],
+    "core_stack": [
+      "SQL",
+      "Snowflake",
+      "Tableau / Power BI",
+      "Azure",
+      "SQL Server"
+    ],
+    "niche": [
+      "Data pipelines / ETL"
+    ],
+    "summary": "3 SWE intern postings; SQL and Snowflake most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1wk",
+      "https://go.vansh.nyc/1wl",
+      "https://go.vansh.nyc/1wm"
+    ]
+  },
+  {
+    "company": "Waymo",
+    "domain": "waymo.com",
+    "category": "AI",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "C++",
+        "C",
+        "SQL",
+        "Distributed systems"
+      ],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1qh"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "C"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "C",
+      "PyTorch",
+      "TensorFlow",
+      "JAX"
+    ],
+    "niche": [
+      "Deep learning",
+      "Data pipelines / ETL",
+      "Machine learning"
+    ],
+    "summary": "2 SWE and AI intern postings; Python, C++ and PyTorch most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1qh",
+      "https://careers.withwaymo.com/jobs?gh_jid=8279620"
+    ]
+  },
+  {
+    "company": "T-Mobile",
+    "domain": "t-mobile.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1qv"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Java",
+      "TypeScript",
+      "Kotlin"
+    ],
+    "core_stack": [
+      "Java",
+      "TypeScript",
+      "Kotlin",
+      "Linux / Unix",
+      "Git",
+      "AWS",
+      "Docker",
+      "Kubernetes"
+    ],
+    "niche": [],
+    "summary": "3 SWE intern postings; Java, TypeScript and Linux / Unix most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://go.vansh.nyc/1qv",
+      "https://go.vansh.nyc/1qz",
+      "https://tmobile.wd1.myworkdayjobs.com/external/job/Philadelphia-Pennsylvania/Summer-2027-T-Ads-Software-Engineering-Internship_REQ381219"
+    ]
+  },
+  {
+    "company": "Cisco",
+    "domain": "cisco.com",
+    "category": "Data & Infra",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "C",
+        "Bash / Shell",
+        "Linux / Unix",
+        "GitHub / GitLab"
+      ],
+      "preferred": [
+        "Machine learning"
+      ],
+      "url": "https://go.vansh.nyc/1uy"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C",
+      "Bash / Shell"
+    ],
+    "core_stack": [
+      "Python",
+      "C",
+      "Bash / Shell",
+      "Linux / Unix",
+      "GitHub / GitLab",
+      "CI/CD",
+      "Jenkins"
+    ],
+    "niche": [
+      "Machine learning"
+    ],
+    "summary": "2 SWE intern postings; Python, C and Linux / Unix most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1uy",
+      "https://cisco.wd5.myworkdayjobs.com/Cisco_Careers/job/San-Jose-California-US/Software-Engineer-Embedded-Systems-I--Intern----United-States_2024641-1"
+    ]
+  },
+  {
+    "company": "Micron",
+    "domain": "micron.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "required": [
+        "Embedded / firmware",
+        "Python",
+        "OpenAI / Anthropic APIs",
+        "Machine learning",
+        "LLMs"
+      ],
+      "preferred": [
+        "Git",
+        "CI/CD",
+        "RAG",
+        "Prompt engineering",
+        "Testing"
+      ],
+      "url": "https://go.vansh.nyc/1d7"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++",
+      "C"
+    ],
+    "core_stack": [
+      "Python",
+      "C++",
+      "C",
+      "Git",
+      "OpenAI / Anthropic APIs",
+      "CI/CD",
+      "Docker",
+      "Linux / Unix"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "RAG"
+    ],
+    "summary": "2 SWE intern postings; Python, C++ and Git most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1d7",
+      "https://go.vansh.nyc/XX"
+    ]
+  },
+  {
+    "company": "New York Life",
+    "domain": "newyorklife.com",
+    "category": "Finance",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "Java",
+        "C++",
+        "SQL",
+        "C"
+      ],
+      "preferred": [
+        "REST APIs",
+        "Git",
+        "Generative AI",
+        "APIs",
+        "Debugging"
+      ],
+      "url": "https://go.vansh.nyc/1v1"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "C++",
+      "REST APIs",
+      "Git"
+    ],
+    "niche": [
+      "Generative AI"
+    ],
+    "summary": "2 SWE intern postings; Python, Java and REST APIs most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1v1",
+      "https://jobs.newyorklife.com/job/Tampa-2027-New-York-Life-Direct-Summer-Internship-Program-IBM-i-Developer-FL-33601/1448954400/"
+    ]
+  },
+  {
+    "company": "Clearwater Analytics",
+    "domain": "clearwateranalytics.com",
+    "category": "Fintech",
+    "intern": {
+      "found": true,
+      "required": [
+        "Java",
+        "Cloud computing"
+      ],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1cl"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Java"
+    ],
+    "core_stack": [
+      "Java"
+    ],
+    "niche": [],
+    "summary": "2 SWE intern postings; Java most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1cl",
+      "https://go.vansh.nyc/1cm"
+    ]
+  },
+  {
+    "company": "Guardian Life",
+    "domain": "guardianlife.com",
+    "category": "Finance",
+    "intern": {
+      "found": true,
+      "required": [
+        "Python",
+        "Machine learning",
+        "SQL",
+        "Spark",
+        "Databricks"
+      ],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1cV"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "SQL",
+      "JavaScript"
+    ],
+    "core_stack": [
+      "Python",
+      "SQL",
+      "JavaScript",
+      "Spark",
+      "Databricks",
+      "Snowflake",
+      "AWS",
+      "OpenAI / Anthropic APIs"
+    ],
+    "niche": [
+      "Machine learning",
+      "Data pipelines / ETL",
+      "LLMs"
+    ],
+    "summary": "2 SWE and AI intern postings; Python, SQL and Spark most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1cV",
+      "https://go.vansh.nyc/1cW"
+    ]
+  },
+  {
+    "company": "CNA",
+    "domain": "cna.com",
+    "category": "Finance",
+    "intern": {
+      "found": true,
+      "required": [],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1c9"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "SQL",
+      "Java",
+      "Python"
+    ],
+    "core_stack": [
+      "SQL",
+      "Java",
+      "Python",
+      "Terraform"
+    ],
+    "niche": [
+      "Machine learning",
+      "Statistics / probability"
+    ],
+    "summary": "2 SWE and AI intern postings; SQL, Java and Terraform most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1c9",
+      "https://go.vansh.nyc/1ca"
+    ]
+  },
+  {
+    "company": "Auto-Owners Insurance",
+    "domain": "auto-owners.com",
+    "category": "Finance",
+    "intern": {
+      "found": true,
+      "required": [],
+      "preferred": [
+        "Agile / Scrum",
+        "C++",
+        "JavaScript",
+        "SQL",
+        "C#"
+      ],
+      "url": "https://go.vansh.nyc/1c4"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "C++",
+      "JavaScript",
+      "SQL"
+    ],
+    "core_stack": [
+      "C++",
+      "JavaScript",
+      "SQL",
+      "Angular",
+      ".NET",
+      "AWS",
+      "Git"
+    ],
+    "niche": [
+      "Machine learning",
+      "Deep learning",
+      "NLP"
+    ],
+    "summary": "2 SWE intern postings; C++, JavaScript and Angular most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1c4",
+      "https://go.vansh.nyc/1c5"
+    ]
+  },
+  {
+    "company": "Great American Insurance",
+    "domain": "greatamericaninsurancegroup.com",
+    "category": "Finance",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "Python",
+        "Java",
+        "Kotlin",
+        "C#",
+        "Vue"
+      ],
+      "preferred": [],
+      "url": "https://gaig.wd1.myworkdayjobs.com/GAIG_External/job/Cincinnati-OH-USA/DevOps-Developer-Intern---Summer-2027_R9826"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "Java",
+      "Kotlin"
+    ],
+    "core_stack": [
+      "Python",
+      "Java",
+      "Kotlin",
+      "Vue",
+      ".NET"
+    ],
+    "niche": [],
+    "summary": "3 SWE intern postings; Python, Java and Vue most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://gaig.wd1.myworkdayjobs.com/GAIG_External/job/Cincinnati-OH-USA/DevOps-Developer-Intern---Summer-2027_R9826",
+      "https://gaig.wd1.myworkdayjobs.com/GAIG_External/job/Cincinnati-OH-USA/Extreme-Programming-Engineer-Intern---Summer-2027_R9821",
+      "https://gaig.wd1.myworkdayjobs.com/GAIG_External/job/Cincinnati-OH-USA/Data-Engineering-Intern---Summer-2027_R9794"
+    ]
+  },
+  {
+    "company": "Astranis",
+    "domain": "astranis.com",
+    "category": "Hardware & Defense",
+    "intern": {
+      "found": true,
+      "cycle": "Winter 2027",
+      "required": [],
+      "preferred": [],
+      "url": "https://go.vansh.nyc/1lz"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python",
+      "C++"
+    ],
+    "core_stack": [
+      "Python",
+      "C++"
+    ],
+    "niche": [],
+    "summary": "2 SWE intern postings; Python, C++ most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://go.vansh.nyc/1lz",
+      "https://job-boards.greenhouse.io/astranis/jobs/4704569006"
+    ]
+  },
+  {
+    "company": "Notion",
+    "domain": "notion.so",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "cycle": "Summer 2027",
+      "required": [
+        "TypeScript",
+        "React",
+        "Swift",
+        "Machine learning",
+        "LLMs"
+      ],
+      "preferred": [
+        "Python"
+      ],
+      "url": "https://jobs.ashbyhq.com/notion/27090d0f-07d3-419b-adaa-837b5e22f947/application?embed=true"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "TypeScript",
+      "Python",
+      "Rust"
+    ],
+    "core_stack": [
+      "TypeScript",
+      "Python",
+      "Rust",
+      "React",
+      "CI/CD"
+    ],
+    "niche": [
+      "Machine learning",
+      "LLMs",
+      "AI agents"
+    ],
+    "summary": "3 SWE intern postings; TypeScript, Python and React most asked.",
+    "evidence": "B",
+    "sources": [
+      "https://jobs.ashbyhq.com/notion/27090d0f-07d3-419b-adaa-837b5e22f947/application?embed=true",
+      "https://jobs.ashbyhq.com/notion/27090d0f-07d3-419b-adaa-837b5e22f947",
+      "https://jobs.ashbyhq.com/notion/43ffba97-b64a-4c6a-ac13-c803253c9413"
+    ]
+  },
+  {
+    "company": "Mosaic",
+    "domain": "mosaicco.com",
+    "category": "Enterprise",
+    "intern": {
+      "found": true,
+      "cycle": "Spring 2027",
+      "required": [
+        "Python",
+        "PyTorch",
+        "TensorFlow",
+        "scikit-learn",
+        "pandas"
+      ],
+      "preferred": [],
+      "url": "https://mosaic.wd5.myworkdayjobs.com/mosaic/job/US---Tampa-FL-Lithia-area/Artificial-Intelligence-Co-Op-Intern---Spring-2027_64729"
+    },
+    "new_grad": {
+      "found": false
+    },
+    "need": [
+      "Python"
+    ],
+    "core_stack": [
+      "Python",
+      "PyTorch",
+      "TensorFlow",
+      "scikit-learn",
+      "pandas",
+      "NumPy"
+    ],
+    "niche": [
+      "Machine learning",
+      "Deep learning",
+      "LLMs"
+    ],
+    "summary": "1 AI intern posting; Python and PyTorch most asked.",
+    "evidence": "C",
+    "sources": [
+      "https://mosaic.wd5.myworkdayjobs.com/mosaic/job/US---Tampa-FL-Lithia-area/Artificial-Intelligence-Co-Op-Intern---Spring-2027_64729"
+    ]
+  }
 ]
