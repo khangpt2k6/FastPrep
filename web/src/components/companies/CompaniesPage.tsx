@@ -1,7 +1,7 @@
 // Ported from Arena.vie's Companies page: what intern and new grad postings ask for, company by company. Loaded on its
 // own (React.lazy in Dashboard), so the research data and the tech icons stay out of the main bundle.
 import { useMemo } from 'react';
-import { CATEGORIES, companies, type Company, type CompanyCategory } from '../../data/companies';
+import { CATEGORIES, TIERS, companies, type Company, type CompanyCategory, type CompanyTier } from '../../data/companies';
 import { displayName, logoDomain } from '../../lib/format';
 import { normName } from '../../lib/jobs';
 import type { JobRow } from '../../lib/types';
@@ -18,6 +18,12 @@ const MOST_ASKED = (() => {
   const counts = new Map<string, number>();
   for (const company of companies) for (const tech of company.need) counts.set(tech, (counts.get(tech) ?? 0) + 1);
   return [...counts.entries()].filter(([tech]) => tech !== 'Any language').sort((a, b) => b[1] - a[1]).slice(0, 14);
+})();
+
+const PER_TIER = (() => {
+  const counts = new Map<CompanyTier, number>();
+  for (const company of companies) if (company.tier) counts.set(company.tier, (counts.get(company.tier) ?? 0) + 1);
+  return counts;
 })();
 
 const PER_CATEGORY = (() => {
@@ -55,16 +61,19 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
   const tech = params.get('tech');
   const typeParam = params.get('type');
   const category = typeParam && (CATEGORIES as readonly string[]).includes(typeParam) ? (typeParam as CompanyCategory) : null;
+  const tierParam = params.get('tier');
+  const tier = tierParam && (TIERS as readonly string[]).includes(tierParam) ? (tierParam as CompanyTier) : null;
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return companies.filter((company) => {
       if (category && company.category !== category) return false;
+      if (tier && company.tier !== tier) return false;
       if (tech && !company.need.includes(tech) && !company.stack.includes(tech)) return false;
       if (!needle) return true;
       return [company.name, company.category, company.summary, ...company.need, ...company.stack, ...company.niche].join(' ').toLowerCase().includes(needle);
     });
-  }, [category, query, tech]);
+  }, [category, query, tech, tier]);
 
   const counts = useMemo(() => new Map(companies.map((c) => [c.slug, jobsAt(c, jobs)])), [jobs]);
   const pickTech = (name: string) => setParams({ tech: tech === name ? null : name });
@@ -91,6 +100,13 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
         value={category ?? 'all'}
         onChange={(value) => setParams({ type: value === 'all' ? null : value })}
         options={[{ value: 'all', label: 'All', count: companies.length }, ...CATEGORIES.map((c) => ({ value: c, label: c, count: PER_CATEGORY.get(c) ?? 0 }))]}
+      />
+
+      <PillGroup<string>
+        label="Company size"
+        value={tier ?? 'all'}
+        onChange={(value) => setParams({ tier: value === 'all' ? null : value })}
+        options={[{ value: 'all', label: 'Any size', count: companies.length }, ...TIERS.map((t) => ({ value: t, label: t, count: PER_TIER.get(t) ?? 0 }))]}
       />
 
       <div className="asked" role="group" aria-label="Most asked">
@@ -126,10 +142,10 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
           }
         />
       ) : (
-        <div className="cogrid stagger">
-          {shown.map((company) => {
+        <div className="cogrid">
+          {shown.map((company, i) => {
             const hit = counts.get(company.slug) ?? { count: 0, key: company.domain };
-            return <CompanyCard key={company.slug} company={company} tech={tech} onPickTech={pickTech} jobs={hit.count} onSeeJobs={() => onSeeJobs(hit.key)} />;
+            return <CompanyCard key={company.slug} index={i} company={company} tech={tech} onPickTech={pickTech} jobs={hit.count} onSeeJobs={() => onSeeJobs(hit.key)} />;
           })}
         </div>
       )}

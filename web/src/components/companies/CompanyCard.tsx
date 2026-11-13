@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { SummaryPop, useReveal } from './reveal';
 import type { Company, Posting } from '../../data/companies';
 import { IconBriefcase } from '../Icons';
 import { TechChip } from './TechChip';
@@ -62,8 +63,10 @@ export function CompanyMonogram({ company }: { company: Company }) {
   );
 }
 
-export function CompanyCard({ company, tech, onPickTech, jobs, onSeeJobs }: {
+export function CompanyCard({ company, tech, onPickTech, jobs, onSeeJobs, index = 0 }: {
   company: Company;
+  /** Its place in the grid: cards in one row load in one after another. */
+  index?: number;
   tech: string | null;
   onPickTech: (name: string) => void;
   /** How many jobs the agent has from this company. */
@@ -71,13 +74,14 @@ export function CompanyCard({ company, tech, onPickTech, jobs, onSeeJobs }: {
   onSeeJobs: () => void;
 }) {
   const evidence = EVIDENCE[company.evidence];
+  const { ref, shown } = useReveal<HTMLElement>();
   return (
-    <article className="card cocard">
+    <article ref={ref} className={`card cocard ${shown ? 'is-in' : ''}`} style={{ '--col': index % 3 } as CSSProperties}>
       <header className="cocard__head">
         <CompanyMonogram company={company} />
         <div className="cocard__who">
           <h2 className="cocard__name">{company.name}</h2>
-          <p className="cocard__cat">{company.category}</p>
+          <p className="cocard__cat">{company.tier ? `${company.category} · ${company.tier}` : company.category}</p>
         </div>
         {jobs > 0 ? (
           <span className="cocard__jobs num" title={`The agent has ${jobs} ${jobs === 1 ? 'job' : 'jobs'} from ${company.name}`}>
@@ -109,9 +113,8 @@ export function CompanyCard({ company, tech, onPickTech, jobs, onSeeJobs }: {
         </Row>
       ) : null}
 
-      <p className="cocard__summary">{company.summary}</p>
-
       <footer className="cocard__foot">
+        <SummaryPop title={company.name}>{company.summary}</SummaryPop>
         <PostingLink label="Intern" posting={company.intern} />
         <PostingLink label="New grad" posting={company.newGrad} />
         {jobs > 0 ? (
