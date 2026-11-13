@@ -233,19 +233,24 @@ export function JobsPage(props: JobsPageProps) {
           <FindButton searching={props.searching} onSearch={props.onSearch} small />
         </div>
         <div className="jfilters" role="group" aria-label="Narrow the jobs">
-          <PillSelect<PostedWithin>
+          <span className={`jf jf--sky ${filters.posted !== 'any' ? 'is-set' : ''}`}>
+            <PillSelect<PostedWithin>
             label="Posted"
             value={filters.posted}
             onChange={(posted) => set({ posted })}
             options={(Object.keys(POSTED_LABEL) as PostedWithin[]).map((k) => ({ value: k, label: POSTED_LABEL[k] }))}
           />
-          <PillSelect<JobKind>
+          </span>
+          <span className={`jf jf--ember ${filters.kind !== 'any' ? 'is-set' : ''}`}>
+            <PillSelect<JobKind>
             label="Type"
             value={filters.kind}
             onChange={(kind) => set({ kind })}
             options={(Object.keys(KIND_LABEL) as JobKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))}
           />
-          <PillSelect<WorkModeFilter>
+          </span>
+          <span className={`jf jf--pine ${filters.mode !== 'any' ? 'is-set' : ''}`}>
+            <PillSelect<WorkModeFilter>
             label="Work mode"
             value={filters.mode}
             onChange={(mode) => set({ mode })}
@@ -256,13 +261,19 @@ export function JobsPage(props: JobsPageProps) {
               { value: 'On site', label: 'On site' },
             ]}
           />
-          <PillSelect<string>
+          </span>
+          <span className={`jf jf--plum ${Boolean(filters.state) ? 'is-set' : ''}`}>
+            <PillSelect<string>
             label="Location"
             value={filters.state}
             onChange={(state) => set({ state })}
             options={[{ value: '', label: 'Anywhere' }, ...(props.states ?? []).map((code) => ({ value: code, label: STATES[code] ?? code }))]}
           />
-          <span title={props.homeLabel ? `Distance from ${props.homeLabel}; remote jobs always show` : 'Add your city on the Profile page to filter by distance'}>
+          </span>
+          <span
+            className={`jf jf--rose ${filters.miles !== 0 ? 'is-set' : ''}`}
+            title={props.homeLabel ? `Distance from ${props.homeLabel}; remote jobs always show` : 'Add your city on the Profile page to filter by distance'}
+          >
             <PillSelect<Miles>
               label="Distance"
               value={filters.miles}

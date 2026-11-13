@@ -42,6 +42,8 @@
   width: 4px;
   border-radius: 0 4px 4px 0;
   background: var(--kind, var(--ember-500));
+  /* No colored edge on the card: the kind tag and the wolf already say what it is. */
+  display: none;
 }
 
 .upnext__text {
@@ -291,12 +293,14 @@
   font-size: 11px;
 }
 
+/* The kind as a small dot with a soft halo, not a bar. */
 .agrow__mark {
-  align-self: stretch;
-  width: 3px;
-  min-height: 30px;
-  border-radius: 3px;
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--kind);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--kind) 16%, transparent);
 }
 
 .agrow__icon {

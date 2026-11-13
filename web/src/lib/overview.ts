@@ -301,13 +301,19 @@ export function briefing({ jobs, inbox, now }: OverviewInput): string {
 }
 
 /** A company row in the inbox, resolved to a display name and a logo domain through the jobs when it can be. */
-export function companyLookup(jobs: JobRow[]) {
+export function companyLookup(jobs: JobRow[], mail: { company: string; domain?: string | null }[] = []) {
   const byName = new Map<string, { name: string; domain: string }>();
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
   for (const j of jobs) {
     const name = displayName(j);
     const domain = logoDomain(j.company_domain);
     for (const key of [norm(name), norm(j.company)]) if (key && (!byName.has(key) || (domain && !byName.get(key)?.domain))) byName.set(key, { name, domain });
+  }
+  // Companies that wrote to the person: their sender domain gives a logo to the calendar and anywhere else a name shows.
+  for (const row of mail) {
+    const key = norm(row.company);
+    const domain = logoDomain(row.domain ?? '');
+    if (key && domain && !byName.get(key)?.domain) byName.set(key, { name: byName.get(key)?.name ?? row.company, domain });
   }
   return (raw: string) => byName.get(norm(raw)) ?? null;
 }

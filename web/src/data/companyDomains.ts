@@ -90,7 +90,7 @@ const DOMAINS: Record<string, string> = {
   baycare: 'baycare.org', baycarehealthsystem: 'baycare.org', adventhealth: 'adventhealth.com', usf: 'usf.edu',
   universityofsouthflorida: 'usf.edu', kforce: 'kforce.com', carmax: 'carmax.com',
   // People the person has applied to.
-  prox: 'joinprox.com',
+  prox: 'joinprox.com', fedcon: 'fedcon.com',
 };
 
 /** A company's name as the map keys it: lower case, only letters and digits, a leading "the" and legal suffixes dropped. */

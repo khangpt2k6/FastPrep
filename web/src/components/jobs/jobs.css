@@ -547,3 +547,63 @@
     margin-left: 0;
   }
 }
+
+/* Each filter has its own color, so the row reads at a glance: posted sky, type ember, work mode pine, place plum,
+   distance rose. A filter that is set fills with its color. Their menus open to the right, never under the sidebar. */
+.jf {
+  position: relative;
+  display: inline-flex;
+}
+
+.jf--sky { --jf-50: var(--sky-50); --jf-500: var(--sky-500); --jf-700: var(--sky-700); }
+.jf--ember { --jf-50: var(--ember-50); --jf-500: var(--ember-500); --jf-700: var(--ember-700); }
+.jf--pine { --jf-50: var(--pine-50); --jf-500: var(--pine-500); --jf-700: var(--pine-700); }
+.jf--plum { --jf-50: #f3eefa; --jf-500: #7b5ea7; --jf-700: #5f4787; }
+.jf--rose { --jf-50: var(--rose-50); --jf-500: var(--rose-500); --jf-700: var(--rose-700); }
+
+.jf .pselect__btn {
+  border-color: transparent;
+  background: var(--jf-50);
+  color: var(--jf-700);
+}
+
+.jf .pselect__btn svg {
+  color: var(--jf-500);
+}
+
+.jf .pselect__btn:hover:not(:disabled),
+.jf .pselect__btn[aria-expanded='true'] {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--jf-50) 70%, var(--jf-500) 30%);
+}
+
+.jf.is-set .pselect__btn,
+.jf.is-set .pselect__btn:hover:not(:disabled) {
+  background: var(--jf-700);
+  color: #fff;
+}
+
+.jf.is-set .pselect__btn svg {
+  color: rgb(255 255 255 / 0.85);
+}
+
+.jf .pselect__menu {
+  left: 0;
+  right: auto;
+  width: max-content;
+  min-width: 220px;
+  transform-origin: top left;
+}
+
+.jf .pselect__opt:hover,
+.jf .pselect__opt:focus-visible {
+  background: var(--jf-50);
+}
+
+.jf .pselect__opt.is-on {
+  color: var(--jf-700);
+}
+
+.jf .pselect__check {
+  color: var(--jf-500);
+}

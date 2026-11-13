@@ -203,7 +203,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   );
   const sent = useMemo(() => applications.filter((j) => ['sent', 'unconfirmed'].includes(statusInfo(j).tone)).length, [applications]);
   // Company names and logos for the calendar's companies, through the jobs.
-  const lookup = useMemo(() => companyLookup(jobsT.rows), [jobsT.rows]);
+  const lookup = useMemo(() => companyLookup(jobsT.rows, inboxT.rows), [jobsT.rows, inboxT.rows]);
 
   // The form the agent is filling right now, shown on the agent page.
   const current = useMemo(() => applications.find((j) => j.status === 'applying') ?? null, [applications]);
