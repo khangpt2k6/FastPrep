@@ -8,15 +8,19 @@ web page (Vercel)  --commands-->  Supabase  <--jobs, status, screenshots--  agen
 
 ## One-time setup
 
-1. Create a Supabase project and run `supabase/schema.sql` in its SQL editor. Add one user under Authentication > Users (auto-confirmed): its email and password are `AGENT_EMAIL` and `AGENT_PASSWORD`.
+1. Create a Supabase project and run `supabase/schema.sql` in its SQL editor. Add one user under Authentication > Users (auto-confirmed): its email and password are `AGENT_EMAIL` and `AGENT_PASSWORD`. Then turn off "Allow new users to sign up" under Authentication > Sign In / Providers, so that account is the only one.
 2. Copy `.env.example` to `.env` in the repo root and fill it in.
-3. To deploy the page on Vercel, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `AGENT_EMAIL` and `AGENT_PASSWORD` in the Vercel project, then run `vercel deploy --prod` in `web/`.
+3. To deploy the page on Vercel, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel project, then run `vercel deploy --prod` in `web/`. Do not set `AGENT_EMAIL` or `AGENT_PASSWORD` there: the page never needs them.
 4. Install the agent: `python -m venv .venv`, then `.venv\Scripts\pip install -e .`
 5. Optional, but needed for sites that email a code: run `agent-automation-tui your-resume.pdf` once and sign in to your mailbox when it asks.
 
-## No sign-in
+## Sign-in
 
-One person uses this dashboard, so it has no sign-in screen: the page logs in as `AGENT_EMAIL` by itself, the same Supabase user the agent writes with. That login is built into the page's script, so anyone who opens the deployed address sees the dashboard and can use it, profile included. The page asks search engines not to index it.
+The page opens on a sign-in screen. Sign in with `AGENT_EMAIL` and `AGENT_PASSWORD`, the same Supabase user the agent writes with, so every row the agent writes is readable there. Nothing of the dashboard is shown, and no row is asked for, before that.
+
+No login is built into the page's script. Only the Supabase url and the anon key are, and with those alone every table and the screenshot bucket answer with nothing: row level security gives each row to its own signed-in user. Sign out is in the page; it ends the session in that browser only, so the agent on your computer stays signed in.
+
+To change the password, change it in Supabase (Authentication > Users) and in `.env`, then restart the agent. The page asks search engines not to index it.
 
 ## Run
 
