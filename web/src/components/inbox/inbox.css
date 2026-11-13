@@ -140,9 +140,15 @@ kbd {
 .mrow__sel {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
-  background: var(--ember-50);
-  box-shadow: inset 3px 0 0 var(--ember-500);
+  /* The opened application is lifted out of the list like a sheet of paper: a warm wash fading to white and a soft
+     neutral shadow, no edge or bar. */
+  border-radius: 14px;
+  background: linear-gradient(120deg, var(--ember-50), #fff 72%);
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.05), 0 12px 26px -16px rgb(21 24 28 / 0.32);
+}
+
+.mrow.is-selected .mrow__company {
+  color: var(--ember-700);
 }
 
 .mrow__hit {
