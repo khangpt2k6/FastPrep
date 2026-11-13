@@ -545,6 +545,36 @@ def test_a_resume_uploaded_on_the_page_becomes_the_one_in_use(session: Session) 
     assert sorted(model.asked) == ["profile", "search_profile"]
 
 
+def test_a_resume_kept_beside_the_others_is_read_and_changes_nothing_here(session: Session) -> None:
+    untried = job(2)
+    session.store.add(untried)
+    session.store.set_score(untried.id, 3.0)
+    path = "u1/resumes/1731400000000-Ada_ML.txt"
+    db = Remote(
+        automation_resumes=[
+            {"id": 1, "user_id": "u1", "name": "Ada Rossi CV.pdf", "path": "u1/resumes/1-Ada_Rossi_CV.pdf", "status": "active"},
+            {"id": 3, "user_id": "u1", "name": "Ada ML.txt", "path": path, "status": "uploaded", "label": "ML"},
+        ],
+        automation_commands=[{"id": 6, "user_id": "u1", "kind": "resume", "status": "pending", "payload": {"resume_id": 3, "activate": False}, "job_ids": [], "dry_run": True}],
+    )
+    db.files[path] = (NEW_CV.encode(), "text/plain")
+    model = Schemas(search_profile=PROFILE, profile=PREFILLED)
+    session._client = model  # type: ignore[assignment]
+    before = session.config.cv.read_text(encoding="utf-8")
+    agent = agent_for(session, db)
+
+    asyncio.run(agent.next_command())
+    assert db.tables["automation_commands"][0]["status"] == "done"
+    kept = db.row("automation_resumes", id=3)
+    assert kept["status"] == "old" and kept["label"] == "ML" and kept["text"] == NEW_CV.strip()
+    assert kept["data"]["search"]["titles"] == ["Python Engineer", "Python Developer"] and kept["data"]["profile"]["skills"] == ["Python"]
+    # The resume in use, the search and the jobs found stay as they were.
+    assert db.row("automation_resumes", id=1)["status"] == "active"
+    assert session.config.cv.read_text(encoding="utf-8") == before and session.resume_name() == "Ada Rossi CV.pdf"
+    assert session.store.get(untried.id) is not None and not agent.wake.is_set()
+    assert sorted(model.asked) == ["profile", "search_profile"]
+
+
 def test_a_resume_that_cannot_be_read_says_why_on_its_row_and_changes_nothing(session: Session) -> None:
     path = "u1/resumes/1731400000000-scan.txt"
     db = Remote(

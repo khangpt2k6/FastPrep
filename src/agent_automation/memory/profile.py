@@ -194,12 +194,30 @@ def _weight_ok(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
 
 
+async def search_profile(client: AsyncOpenAI, config: Config, cv: str) -> dict[str, Any]:
+    """What the search would be for this resume text, as install_resume writes it, without writing anything: for a resume
+    kept on the page but not in use."""
+    profile = await structured(client, config.quick_model, PROFILE_SYSTEM, cv, "search_profile", PROFILE_SCHEMA)
+    profile["plan"] = clean_plan(profile["plan"])
+    return profile
+
+
+def profile_titles(profile: dict[str, Any], most: int = 20) -> list[str]:
+    """The titles a search profile looks for, each once, as the page shows them."""
+    titles: dict[str, str] = {}
+    for node in (profile.get("plan") or {}).get("nodes") or []:
+        for form in node.get("forms") or []:
+            text = str(form.get("text") or "").strip()
+            if text:
+                titles.setdefault(text.lower(), text)
+    return list(titles.values())[:most]
+
+
 async def install_resume(client: AsyncOpenAI, config: Config, path: Path, store: Store, keep_goals: bool = False) -> dict[str, Any]:
     """Read the resume and write what the search needs; the profile written. What the person already answered stays, and
     with `keep_goals` so do goals already in the settings, which the person may have written by hand."""
     cv = read_resume(path)
-    profile = await structured(client, config.quick_model, PROFILE_SYSTEM, cv, "search_profile", PROFILE_SCHEMA)
-    profile["plan"] = clean_plan(profile["plan"])
+    profile = await search_profile(client, config, cv)
     config.workspace.mkdir(parents=True, exist_ok=True)
     config.cv.write_text(cv, encoding="utf-8")
     # The file as the person gave it: the CV every application sends.

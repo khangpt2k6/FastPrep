@@ -36,7 +36,7 @@ from agent_automation.agent.scoring import NotAnswering
 from agent_automation.agent.session import Session
 from agent_automation.hooks.runner import run_hooks
 from agent_automation.memory.config import DRY_RUN_ENV, Config, ConfigError, default_home, load_config, load_dotenv
-from agent_automation.memory.profile import read_resume, set_search_places
+from agent_automation.memory.profile import profile_titles, read_resume, search_profile, set_search_places
 from agent_automation.memory.store import SENT_WORDS, SUBMITTED, Stored, safe_name
 from agent_automation.memory.web_profile import add_from_linkedin, mirror_to_home, prefill, profile_answers, writing_text
 from agent_automation.memory.web_rules import answer_rules_text, builtin_rules, mirror_rules
@@ -967,11 +967,16 @@ class Agent:
     async def read_upload(self, payload: dict[str, Any]) -> None:
         """A resume uploaded on the page, made the one in use. It is read, its search set up (goals written by hand and the
         places picked on the page stay), and its row on the page filled in; the jobs not tried yet give way to the new
-        search's. A resume that cannot be read changes nothing here, and its row says why."""
+        search's. A resume that cannot be read changes nothing here, and its row says why. With `activate` false in the
+        payload it is only read and kept on the page beside the others ('old'): nothing here changes and no job is scored
+        again, until the page makes it the one in use."""
         try:
             number = int(payload["resume_id"])
         except (KeyError, TypeError, ValueError):
             raise ConfigError("the command names no resume") from None
+        if payload.get("activate") is False:
+            await self.keep_resume(number)
+            return
         session = self.session
         where = {"user_id": f"eq.{self.db.user_id}", "id": f"eq.{number}"}
         try:
@@ -1006,6 +1011,36 @@ class Agent:
         if not self.settings.paused:
             self.say("searching", f"Searching again for {name}")
         self.wake.set()
+
+    async def keep_resume(self, number: int) -> None:
+        """A resume kept on the page and not used yet: read, and what the agent would search for with it written on its row,
+        so the page can show it and offer it as the one in use. The resume in use and the search stay as they are."""
+        session = self.session
+        where = {"user_id": f"eq.{self.db.user_id}", "id": f"eq.{number}"}
+        try:
+            rows = await self.db.select(RESUMES, {**where, "select": "id,name,path"})
+            if not rows:
+                raise ConfigError(f"resume {number} is not on the page any more")
+            name, path = str(rows[0]["name"]), str(rows[0]["path"])
+            await self.db.update(RESUMES, where, {"status": "reading", "error": "", "updated_at": _now()})
+            self.say("reading", f"Reading {name}")
+            file = keep_upload(session.config.data_dir, name, await self.db.download(path), Path(path).suffix)
+            cv = await asyncio.to_thread(read_resume, file)
+            profile = await prefill(session.client, session.config.quick_model, cv)
+            search = await search_profile(session.client, session.config, cv)
+            summary = {
+                "goals": search.get("goals") or "", "cities": list(search.get("cities") or []),
+                "countries": [str(code).strip().upper() for code in search.get("countries") or []], "titles": profile_titles(search),
+            }
+            await self.db.update(RESUMES, where, {"status": "old", "error": "", "text": cv, "data": {"search": summary, "profile": profile}, "updated_at": _now()})
+        except Exception as error:
+            try:
+                await self.db.update(RESUMES, where, {"status": "failed", "error": str(error)[:500], "updated_at": _now()})
+            except Exception as again:  # noqa: BLE001  The command still says what went wrong.
+                click.echo(f"resume row: {again}")
+            raise
+        click.echo(f"Resume {name} is kept on the page.")
+        self.idle(f"{name} is saved with your resumes.")
 
     async def publish_resume(self, again: bool = False) -> None:
         """The resume in use, put on the page as the active one: when the page has none yet (a resume from before the page

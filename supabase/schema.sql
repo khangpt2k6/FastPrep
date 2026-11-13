@@ -393,3 +393,7 @@ do $$
 begin
   begin alter publication supabase_realtime add table public.automation_calendar; exception when duplicate_object then null; end;
 end $$;
+
+-- A person keeps several resumes (one per kind of role, say): each can carry a short label set on the page ("ML",
+-- "Backend"). One is 'active', the one applications send; the others stay as 'old', read and ready to be made active.
+alter table public.automation_resumes add column if not exists label text not null default '';
