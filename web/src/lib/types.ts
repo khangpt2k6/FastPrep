@@ -92,6 +92,8 @@ export interface JobRow {
   updated_at: string;
   /** When the agent first found the job; rows from before the column have none. */
   found_at?: string | null;
+  /** When the source posted it; rows from before the agent kept it lack it. */
+  posted_at?: string | null;
 }
 
 export type CommandStatus = 'pending' | 'running' | 'done' | 'failed';

@@ -521,3 +521,29 @@
     padding: 8px 4px 0 0;
   }
 }
+
+/* The second toolbar row: when it was posted, what kind of role, how it is worked, where, and how far from home. */
+.jfilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--frost) 60%, transparent);
+}
+
+.jfilters__clear {
+  margin-left: auto;
+  color: var(--ember-700);
+}
+
+@media (max-width: 719px) {
+  .jfilters {
+    padding: 8px 10px;
+  }
+
+  .jfilters__clear {
+    margin-left: 0;
+  }
+}

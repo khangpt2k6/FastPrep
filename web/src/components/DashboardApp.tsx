@@ -39,6 +39,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { IconPencil, IconUser } from './Icons';
 import { ActionBar } from './jobs/ActionBar';
 import { JobsPage, NO_JOB_FILTERS, type JobFilterState } from './jobs/JobsPage';
+import { cityPoint, statesOf } from '../lib/geo';
 import { Lightbox } from './Lightbox';
 import { Notice } from './Notice';
 import { REVIEW_STEP, type WizardReason } from './profile/wizardSteps';
@@ -175,10 +176,20 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   const candidates = useMemo(() => jobsT.rows.filter((j) => (j.status === 'scored' || j.status === 'new') && j.score !== null), [jobsT.rows]);
   const company = page === 'jobs' ? params.get('company') : null;
   const jobFilters: JobFilterState = { ...filters, company };
+  // Home for the distance filter: the profile's city, when the page knows where it is.
+  const homeCity = String((profile.personal as { city?: string }).city ?? '').split(',')[0].trim();
+  const homeState = String((profile.personal as { state?: string }).state ?? '');
+  const home = useMemo(() => cityPoint(homeCity, homeState), [homeCity, homeState]);
+  // The states the jobs name, most jobs first, for the location filter.
+  const jobStates = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const job of candidates) for (const code of statesOf(job.location)) counts.set(code, (counts.get(code) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([code]) => code);
+  }, [candidates]);
   const visible = useMemo(
-    () => sortJobs(filterJobs(candidates, { ...filters, company, saved, now }), filters.sort),
-    // now only matters for New only; a minute of drift is fine.
-    [candidates, filters, company, saved, filters.newOnly ? Math.floor(now / 60000) : 0],
+    () => sortJobs(filterJobs(candidates, { ...filters, company, saved, now, home }), filters.sort),
+    // now only matters for New only and "posted within"; a minute of drift is fine.
+    [candidates, filters, company, saved, home, filters.newOnly || filters.posted !== 'any' ? Math.floor(now / 60000) : 0],
   );
   const companyLabel = useMemo(() => {
     if (!company) return '';
@@ -521,6 +532,8 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
             setParams({ company: null });
           }}
           companyLabel={companyLabel}
+            states={jobStates}
+            homeLabel={home ? homeCity : ''}
           searching={searching}
           onSearch={() => void search()}
           now={now}

@@ -1,7 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
 import type { JobRow, LoadError } from '../../lib/types';
-import { SORT_LABEL, type MinScore, type SortKey } from '../../lib/jobs';
+import { KIND_LABEL, POSTED_LABEL, SORT_LABEL, type JobKind, type MinScore, type Miles, type PostedWithin, type SortKey, type WorkModeFilter } from '../../lib/jobs';
+import { STATES } from '../../lib/geo';
 import { CheckBox, EmptyState, PillGroup, SkeletonCards } from '../common';
 import { IconRadar, IconSearch, IconStar, IconX } from '../Icons';
 import { Shimmer, StateFade } from '../motion';
@@ -21,9 +22,17 @@ export interface JobFilterState {
   savedOnly: boolean;
   /** A company key from the Companies page ("See jobs"), kept in the route. */
   company: string | null;
+  posted: PostedWithin;
+  kind: JobKind;
+  mode: WorkModeFilter;
+  /** A two-letter state, '' for anywhere. */
+  state: string;
+  miles: Miles;
 }
 
-export const NO_JOB_FILTERS: Omit<JobFilterState, 'company'> = { query: '', minScore: 0, sort: 'score', newOnly: false, savedOnly: false };
+export const NO_JOB_FILTERS: Omit<JobFilterState, 'company'> = {
+  query: '', minScore: 0, sort: 'score', newOnly: false, savedOnly: false, posted: 'any', kind: 'any', mode: 'any', state: '', miles: 0,
+};
 
 interface JobsPageProps {
   /** Scored jobs that can still be applied to, before any filter. */
@@ -44,6 +53,10 @@ interface JobsPageProps {
   onClearFilters: () => void;
   /** The filtered company's display name, for its tag. */
   companyLabel?: string;
+  /** The states the jobs name, most jobs first, for the location filter. */
+  states?: string[];
+  /** The home city for the distance filter ("Tampa"); empty when the profile has no city the page knows. */
+  homeLabel?: string;
   /** A search is on its way or running: the button shimmers "Finding jobs". */
   searching: boolean;
   onSearch: () => void;
@@ -95,7 +108,8 @@ export function JobsPage(props: JobsPageProps) {
   const { candidates, visible, loading, error, selected, queued, filters, now } = props;
   const selectable = visible.filter((j) => !queued.has(j.id)).map((j) => j.id);
   const set = props.onFilters;
-  const filtered = filters.query !== '' || filters.minScore !== 0 || filters.newOnly || filters.savedOnly || Boolean(filters.company);
+  const narrowing = Number(filters.posted !== 'any') + Number(filters.kind !== 'any') + Number(filters.mode !== 'any') + Number(Boolean(filters.state)) + Number(filters.miles !== 0);
+  const filtered = filters.query !== '' || filters.minScore !== 0 || filters.newOnly || filters.savedOnly || Boolean(filters.company) || narrowing > 0;
 
   let body: ReactNode;
   let state = 'list';
@@ -217,6 +231,59 @@ export function JobsPage(props: JobsPageProps) {
             {loading ? '' : filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}
           </span>
           <FindButton searching={props.searching} onSearch={props.onSearch} small />
+        </div>
+        <div className="jfilters" role="group" aria-label="Narrow the jobs">
+          <PillSelect<PostedWithin>
+            label="Posted"
+            value={filters.posted}
+            onChange={(posted) => set({ posted })}
+            options={(Object.keys(POSTED_LABEL) as PostedWithin[]).map((k) => ({ value: k, label: POSTED_LABEL[k] }))}
+          />
+          <PillSelect<JobKind>
+            label="Type"
+            value={filters.kind}
+            onChange={(kind) => set({ kind })}
+            options={(Object.keys(KIND_LABEL) as JobKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))}
+          />
+          <PillSelect<WorkModeFilter>
+            label="Work mode"
+            value={filters.mode}
+            onChange={(mode) => set({ mode })}
+            options={[
+              { value: 'any', label: 'Any work mode' },
+              { value: 'Remote', label: 'Remote' },
+              { value: 'Hybrid', label: 'Hybrid' },
+              { value: 'On site', label: 'On site' },
+            ]}
+          />
+          <PillSelect<string>
+            label="Location"
+            value={filters.state}
+            onChange={(state) => set({ state })}
+            options={[{ value: '', label: 'Anywhere' }, ...(props.states ?? []).map((code) => ({ value: code, label: STATES[code] ?? code }))]}
+          />
+          <span title={props.homeLabel ? `Distance from ${props.homeLabel}; remote jobs always show` : 'Add your city on the Profile page to filter by distance'}>
+            <PillSelect<Miles>
+              label="Distance"
+              value={filters.miles}
+              onChange={(miles) => set({ miles })}
+              disabled={!props.homeLabel}
+              display={(option) => (option.value === 0 ? 'Any distance' : `${option.value} mi`)}
+              options={[
+                { value: 0, label: 'Any distance' },
+                ...([25, 50, 100, 250] as Miles[]).map((m) => ({ value: m, label: `Within ${m} mi${props.homeLabel ? ` of ${props.homeLabel}` : ''}` })),
+              ]}
+            />
+          </span>
+          {narrowing > 0 ? (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm jfilters__clear"
+              onClick={() => set({ posted: 'any', kind: 'any', mode: 'any', state: '', miles: 0 })}
+            >
+              Clear {narrowing === 1 ? 'filter' : `${narrowing} filters`}
+            </button>
+          ) : null}
         </div>
         <StateFade state={state}>{body}</StateFade>
       </section>

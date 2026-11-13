@@ -28,6 +28,7 @@ import { IconUser } from '../Icons';
 import { InboxView } from '../inbox/InboxPage';
 import { ActionBar } from '../jobs/ActionBar';
 import { JobsPage, NO_JOB_FILTERS } from '../jobs/JobsPage';
+import { cityPoint, statesOf } from '../../lib/geo';
 import { LettersView, type LettersActions } from '../letters/CoverLettersPage';
 import { Lightbox } from '../Lightbox';
 import { MemoryPage } from '../memory/MemoryPage';
@@ -501,7 +502,9 @@ export default function Preview() {
   const isSearching = searching || (online && (state === 'searching' || state === 'scoring'));
 
   const candidates = useMemo(() => jobs.filter((j) => j.status === 'scored'), [jobs]);
-  const visible = useMemo(() => sortJobs(filterJobs(candidates, { ...filters, company, saved, now }), filters.sort), [candidates, filters, company, saved]);
+  const home = useMemo(() => cityPoint('Tampa', 'FL'), []);
+  const jobStates = useMemo(() => [...new Set(candidates.flatMap((job) => statesOf(job.location)))], [candidates]);
+  const visible = useMemo(() => sortJobs(filterJobs(candidates, { ...filters, company, saved, now, home }), filters.sort), [candidates, filters, company, saved, home]);
   const applications = jobs.filter((j) => APPLICATION_STATUSES.includes(j.status)).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   const sent = applications.filter((j) => ['sent', 'unconfirmed'].includes(statusInfo(j).tone)).length;
   const current = online ? applications.find((j) => j.status === 'applying') ?? null : null;
@@ -757,6 +760,8 @@ export default function Preview() {
       header = <PageHeader title={meta.title} subtitle={meta.sub} count={loading ? undefined : narrowed ? `${visible.length} of ${candidates.length}` : candidates.length} />;
       content = (
         <JobsPage
+              states={jobStates}
+              homeLabel="Tampa"
           candidates={candidates}
           visible={visible}
           loading={loading}

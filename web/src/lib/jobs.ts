@@ -1,8 +1,30 @@
 // Filters for the Jobs page, company keys (shared with Companies), sorting and the match meter's words.
+import { milesFrom, statesOf } from './geo';
 import { displayName, isNewJob, logoDomain } from './format';
 import type { JobRow } from './types';
 
 export type SortKey = 'score' | 'new';
+export type PostedWithin = 'any' | 'day' | 'week' | 'month';
+export type JobKind = 'any' | 'intern' | 'coop' | 'newgrad';
+export type WorkModeFilter = 'any' | 'Remote' | 'Hybrid' | 'On site';
+export type Miles = 0 | 25 | 50 | 100 | 250;
+
+export const POSTED_LABEL: Record<PostedWithin, string> = { any: 'Any time', day: 'Past 24 hours', week: 'Past week', month: 'Past month' };
+export const KIND_LABEL: Record<JobKind, string> = { any: 'Any type', intern: 'Internship', coop: 'Co-op', newgrad: 'New grad' };
+const POSTED_MS: Record<PostedWithin, number> = { any: 0, day: 864e5, week: 7 * 864e5, month: 30 * 864e5 };
+
+/** What kind of role a title is: internship, co-op or new grad; '' when it says none of them. */
+export function jobKind(title: string): Exclude<JobKind, 'any'> | '' {
+  if (/\bco-?op\b/i.test(title)) return 'coop';
+  if (/\bintern(ship)?s?\b/i.test(title)) return 'intern';
+  if (/\b(new grad(uate)?|university grad(uate)?|entry[- ]level|early career|graduate (program|engineer|developer))\b/i.test(title)) return 'newgrad';
+  return '';
+}
+
+/** When the job was posted, else when the agent found it: what "posted within" reads. */
+export function postedTime(job: Pick<JobRow, 'posted_at' | 'found_at' | 'updated_at'>): number {
+  return Date.parse(job.posted_at ?? '') || Date.parse(job.found_at ?? '') || Date.parse(job.updated_at) || 0;
+}
 export type MinScore = 0 | 3 | 4;
 
 export const SORT_LABEL: Record<SortKey, string> = {
@@ -44,6 +66,15 @@ export interface JobFilters {
   company: string | null;
   saved: Set<string>;
   now: number;
+  posted?: PostedWithin;
+  kind?: JobKind;
+  mode?: WorkModeFilter;
+  /** A two-letter state; '' for anywhere. */
+  state?: string;
+  /** Within this many miles of home; 0 for any distance. Remote jobs always pass. */
+  miles?: Miles;
+  /** Home, for the distance filter: the city on the profile. */
+  home?: [number, number] | null;
 }
 
 export function filterJobs(jobs: JobRow[], f: JobFilters): JobRow[] {
@@ -53,6 +84,15 @@ export function filterJobs(jobs: JobRow[], f: JobFilters): JobRow[] {
     if (f.newOnly && !isNewJob(job, f.now)) return false;
     if (f.savedOnly && !f.saved.has(job.id)) return false;
     if (f.company && !atCompany(job, f.company)) return false;
+    if (f.posted && f.posted !== 'any' && f.now - postedTime(job) > POSTED_MS[f.posted]) return false;
+    if (f.kind && f.kind !== 'any' && jobKind(job.title) !== f.kind) return false;
+    const mode = workMode(job);
+    if (f.mode && f.mode !== 'any' && mode !== f.mode) return false;
+    if (f.state && !statesOf(job.location).includes(f.state)) return false;
+    if (f.miles && f.home && mode !== 'Remote') {
+      const miles = milesFrom(f.home, job.location);
+      if (miles === null || miles > f.miles) return false;
+    }
     if (!q) return true;
     return `${job.title} ${job.company} ${displayName(job)} ${job.location}`.toLowerCase().includes(q);
   });
