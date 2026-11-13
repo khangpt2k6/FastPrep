@@ -50,7 +50,7 @@ export function DropZone({ onFile, disabled = false }: { onFile: (file: File) =>
         <IconResume size={28} />
       </span>
       <p className="drop__title">{over ? 'Let go to upload' : 'Drop your resume here'}</p>
-      <p className="drop__hint">PDF, up to 10 MB</p>
+      <p className="drop__hint">PDF or Word, up to 10 MB</p>
       <button type="button" className="btn btn--brand drop__btn" disabled={disabled} onClick={(e) => {
           e.stopPropagation();
           input.current?.click();

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export const PAGES = ['jobs', 'applications', 'inbox', 'agent', 'profile', 'preferences', 'memory', 'letters', 'setup', 'companies', 'rules'] as const;
+export const PAGES = ['overview', 'jobs', 'applications', 'inbox', 'agent', 'profile', 'preferences', 'memory', 'letters', 'setup', 'companies', 'rules'] as const;
 export type Page = (typeof PAGES)[number];
 
 export interface Route {
@@ -12,7 +12,7 @@ export interface Route {
 function parse(): Route {
   const hash = window.location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const page = (PAGES as readonly string[]).includes(path) ? (path as Page) : 'jobs';
+  const page = (PAGES as readonly string[]).includes(path) ? (path as Page) : 'overview';
   const params = new URLSearchParams(query);
   const outer = new URLSearchParams(window.location.search);
   outer.forEach((value, key) => {

@@ -377,6 +377,40 @@ export const IconBuilding = (p: IconProps) => (
   </Svg>
 );
 
+/** A dial: the Overview. */
+export const IconGauge = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4.2 17.5a8.5 8.5 0 1 1 15.6 0" />
+    <path d="M12 13.5l3.6-4.1" />
+    <circle cx="12" cy="13.8" r="1.3" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
+export const IconPause = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 6v12M15 6v12" />
+  </Svg>
+);
+
+export const IconStar = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3.8l2.4 5 5.4.7-4 3.8 1 5.4-4.8-2.6-4.8 2.6 1-5.4-4-3.8 5.4-.7z" />
+  </Svg>
+);
+
+/** A small arrow for a change: up by default, rotate it for down. */
+export const IconTrend = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 18.5V6M6.5 11.5L12 6l5.5 5.5" />
+  </Svg>
+);
+
+export const IconSort = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7.5 18V6M4.5 9l3-3 3 3M16.5 6v12M13.5 15l3 3 3-3" />
+  </Svg>
+);
+
 /** A list with ticks: the agent's rules. */
 export const IconRules = (p: IconProps) => (
   <Svg {...p}>
@@ -385,13 +419,33 @@ export const IconRules = (p: IconProps) => (
   </Svg>
 );
 
-/** The mark: an ink rounded tile with a white cursor and a small violet spark. */
-export function Logo({ size = 36 }: { size?: number }) {
+/** Four tiles: the phone's More sheet. */
+export const IconGrid = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4.5" y="4.5" width="6" height="6" rx="1.6" />
+    <rect x="13.5" y="4.5" width="6" height="6" rx="1.6" />
+    <rect x="4.5" y="13.5" width="6" height="6" rx="1.6" />
+    <rect x="13.5" y="13.5" width="6" height="6" rx="1.6" />
+  </Svg>
+);
+
+/** A door with an arrow: sign out. */
+export const IconLogout = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M14 4.5h3.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H14" />
+    <path d="M10.5 8l-4 4 4 4M6.5 12H15" />
+  </Svg>
+);
+
+/** The mark: a rounded tile with a cursor and a small ember spark. `light` is for the granite sidebar. */
+export function Logo({ size = 36, light = false }: { size?: number; light?: boolean }) {
+  const tile = light ? '#F5F6F7' : '#15181C';
+  const cursor = light ? '#15181C' : '#FFFFFF';
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-      <rect width="40" height="40" rx="10" fill="#0B0B12" />
-      <path d="M13 11.5l14.5 7.2-6.3 1.9-2.6 6.2z" fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M27.5 25.5l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#A78BFA" />
+      <rect width="40" height="40" rx="10" fill={tile} />
+      <path d="M13 11.5l14.5 7.2-6.3 1.9-2.6 6.2z" fill={cursor} stroke={cursor} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M27.5 25.5l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#F07B1F" />
     </svg>
   );
 }

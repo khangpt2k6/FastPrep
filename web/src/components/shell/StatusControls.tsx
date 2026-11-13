@@ -1,90 +1,53 @@
-import { stateLabel, timeAgo } from '../../lib/format';
-import type { AgentRow, LiveStatus } from '../../lib/types';
-import { ProgressRing, Shimmer, Swap } from '../motion';
-import { WolfTile, wolfForState } from '../mascot/Wolf';
-import { agentTone, type AgentTone } from '../agent/live';
+import { progressOf, stateLabel, timeAgo } from '../../lib/format';
+import type { AgentRow } from '../../lib/types';
+import type { AgentTone } from '../agent/live';
 
-/** Gray when offline, green when ready, violet and pulsing while working, red on error. */
-export function StatusDot({ tone }: { tone: AgentTone }) {
-  return <span className={`sdot sdot--${tone}`} aria-hidden="true" />;
+/** A short, friendly line for what the agent is doing: "Scoring jobs, 12 of 40". */
+function busyLine(state: string, message: string): string {
+  const p = progressOf(message);
+  switch (state) {
+    case 'scoring':
+      return p ? `Scoring jobs, ${p.done} of ${p.total}` : 'Scoring new jobs';
+    case 'applying':
+      return p ? `Applying, ${p.done} of ${p.total}` : 'Filling a form';
+    case 'searching':
+      return 'Finding new postings';
+    case 'reading':
+      return 'Reading your resume';
+    case 'writing':
+      return p ? `Writing letters, ${p.done} of ${p.total}` : 'Writing letters';
+    case 'starting':
+      return 'Starting up';
+    default:
+      return message || stateLabel(state);
+  }
 }
 
-interface AgentStatusProps {
-  agent: AgentRow | null;
-  online: boolean;
-  loading: boolean;
-  now: number;
-  live: LiveStatus;
-  onOpen: () => void;
-  /** Phones: a smaller pill. */
-  compact?: boolean;
-}
-
-/** The pill's word, and the longer line for its tooltip and screen readers. */
+/** One word for the agent's state, and a longer line for the card, tooltips and screen readers. */
 export function statusWords(agent: AgentRow | null, online: boolean, loading: boolean, now: number, tone: AgentTone) {
   const state = online ? agent?.state ?? 'idle' : 'offline';
   if (loading) return { word: 'Connecting', line: 'Connecting to the agent' };
   if (!online) {
     const seen = agent?.last_seen ? timeAgo(agent.last_seen, now) : '';
-    return { word: 'Offline', line: seen ? `Agent offline, seen ${seen}` : 'Agent not started yet' };
+    return { word: 'Offline', line: seen ? `Offline, last seen ${seen}` : 'Not started yet' };
   }
-  if (tone === 'paused') return { word: 'Paused', line: 'Agent paused, it takes no new jobs' };
+  if (tone === 'paused') return { word: 'Paused', line: 'Paused, it takes no new jobs' };
   if (tone === 'bad') return { word: 'Error', line: agent?.message || 'The agent hit an error' };
-  if (tone === 'busy') return { word: stateLabel(state), line: agent?.message || stateLabel(state) };
-  return { word: 'Online', line: agent?.message || 'Agent online, waiting for jobs' };
+  if (tone === 'busy') return { word: stateLabel(state), line: busyLine(state, agent?.message ?? '') };
+  return { word: 'Online', line: 'Online, waiting for jobs' };
 }
 
-/** The agent's pill: the wolf on its tile, and Online, Paused, Offline or what it is doing. Opens the agent page. */
-export function AgentStatus({ agent, online, loading, now, live, onOpen, compact = false }: AgentStatusProps) {
-  const state = online ? agent?.state ?? 'idle' : 'offline';
-  const tone: AgentTone = loading ? 'off' : agentTone(online, state);
-  const busy = tone === 'busy';
-  const { word, line } = statusWords(agent, online, loading, now, tone);
-  const quiet = tone === 'off' || tone === 'paused';
-  return (
-    <button
-      type="button"
-      className={`agentpill agentpill--${tone} ${compact ? 'agentpill--compact' : ''} press`}
-      onClick={onOpen}
-      title={line}
-      aria-label={`${line}. Open the agent page`}
-    >
-      <WolfTile mood={quiet ? 'music' : wolfForState(state)} size={compact ? 24 : 26} on={busy} dim={quiet} />
-      <span className={`agentpill__dot sdot sdot--${tone}`} aria-hidden="true" />
-      <span className="agentpill__word" aria-hidden="true">
-        <Swap id={word}>
-          <Shimmer tone="strong" active={busy}>
-            {word}
-          </Shimmer>
-        </Swap>
-      </span>
-      {live === 'down' ? (
-        <span className="agentpill__warn" title="Live updates paused, retrying" aria-hidden="true">
-          !
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-/** A small aurora ring with "12/40" beside it, like Arena's solved count. */
-export function RingPill({ done, total, label, onClick }: { done: number; total: number; label: string; onClick?: () => void }) {
-  return (
-    <button type="button" className="ringpill press" onClick={onClick} title={label} aria-label={label}>
-      <ProgressRing value={total > 0 ? done / total : 0} size={22} />
-      <span className="ringpill__text num">
-        {done}
-        <span className="ringpill__total">/{total}</span>
-      </span>
-    </button>
-  );
-}
-
-/** Dry run fills forms and never sends. Off means Live: real applications go out, so a red Live tag appears. */
+/** Dry run fills forms and never sends (a sand tag). Off means Live: real applications go out (a rose tag). */
 export function DryRunSwitch({ dryRun, onChange, compact = false }: { dryRun: boolean; onChange: (value: boolean) => void; compact?: boolean }) {
   return (
-    <label className={`dryrun ${dryRun ? '' : 'is-live'} ${compact ? 'dryrun--compact' : ''}`} title={dryRun ? 'Dry run: fills forms, never sends' : 'Live: applications are sent. Turn on to stop sending.'}>
-      <span className="dryrun__label">{dryRun ? 'Dry run' : 'Live'}</span>
+    <label
+      className={`dryrun ${dryRun ? 'is-dry' : 'is-live'} ${compact ? 'dryrun--compact' : ''}`}
+      title={dryRun ? 'Dry run: fills forms, never sends' : 'Live: applications are sent. Turn on to stop sending.'}
+    >
+      <span className="dryrun__text">
+        <span className="dryrun__tag">{dryRun ? 'Dry run' : 'Live'}</span>
+        <span className="dryrun__hint">{dryRun ? 'Fills forms, sends nothing' : 'Applications are sent'}</span>
+      </span>
       <input type="checkbox" role="switch" checked={dryRun} onChange={(e) => onChange(e.target.checked)} aria-label="Dry run" />
       <span className="switch switch--sm" aria-hidden="true">
         <span className="switch__thumb" />

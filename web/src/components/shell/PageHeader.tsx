@@ -1,31 +1,25 @@
 import type { ReactNode } from 'react';
-import { Wolf, type WolfMood } from '../mascot/Wolf';
 
 interface PageHeaderProps {
   title: string;
   /** One gray line under the title. */
-  subtitle?: string;
-  /** The page's wolf, beside the title. */
-  wolf?: WolfMood;
-  /** A count in a chip beside the title. */
+  subtitle?: ReactNode;
+  /** A count beside the title, in mono. */
   count?: ReactNode;
   /** Controls on the right; they wrap under the title on a phone. */
   actions?: ReactNode;
 }
 
-/** After Arena's page header: the wolf, a big title with a count chip, one gray line, actions on the right. */
-export function PageHeader({ title, subtitle, wolf, count, actions }: PageHeaderProps) {
+/** The top of every page: a display title with an optional count, one gray line, actions on the right. */
+export function PageHeader({ title, subtitle, count, actions }: PageHeaderProps) {
   return (
     <header className="pagehead">
-      <div className="pagehead__title">
-        {wolf ? <Wolf mood={wolf} size={56} motion="pop" eager className="pagehead__wolf" /> : null}
-        <div className="pagehead__text">
-          <div className="pagehead__line">
-            <h1>{title}</h1>
-            {count !== undefined && count !== null ? <span className="chip chip--count num">{count}</span> : null}
-          </div>
-          {subtitle ? <p className="pagehead__sub">{subtitle}</p> : null}
+      <div className="pagehead__text">
+        <div className="pagehead__line">
+          <h1 className="pagehead__title">{title}</h1>
+          {count !== undefined && count !== null ? <span className="pagehead__count num">{count}</span> : null}
         </div>
+        {subtitle ? <p className="pagehead__sub">{subtitle}</p> : null}
       </div>
       {actions ? <div className="pagehead__actions">{actions}</div> : null}
     </header>

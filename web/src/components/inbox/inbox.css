@@ -11,14 +11,14 @@
 .inbox__synced {
   display: inline-flex;
   align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: var(--surface);
+  height: 26px;
+  padding: 0 9px;
+  border-radius: var(--r-tag);
+  background: var(--card);
   box-shadow: inset 0 0 0 1px var(--line);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--muted);
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11.5px;
 }
 
 .inbox__list {
@@ -27,44 +27,59 @@
   padding: 0;
 }
 
+/* One application: logo, company and role over the mail subject, then status, time and who sent it. */
 .inboxrow {
-  display: flex;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 128px 64px 64px;
+  grid-template-areas:
+    'logo company status when by'
+    'logo role status when by'
+    'logo sub status when by';
   align-items: center;
-  gap: 12px;
-  min-height: 60px;
+  column-gap: 12px;
+  min-height: 64px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 10px;
   animation: fade-up 260ms var(--ease-out) both;
   transition: background-color 140ms ease;
 }
 
-.inboxrow.is-striped {
-  background: color-mix(in srgb, var(--surface-alt) 80%, transparent);
+.inboxrow {
+  position: relative;
+}
+
+.inboxrow + .inboxrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 60px;
+  right: 12px;
+  height: 1px;
+  background: var(--line);
+}
+
+.inboxrow:hover::before,
+.inboxrow:hover + .inboxrow::before {
+  opacity: 0;
 }
 
 .inboxrow:hover {
-  background: var(--brand-soft);
+  background: var(--frost);
 }
 
-.inboxrow__main {
-  min-width: 0;
-  flex: 1;
-}
-
-.inboxrow__title {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
+.inboxrow__logo {
+  grid-area: logo;
+  align-self: start;
+  margin-top: 2px;
 }
 
 .inboxrow__company {
-  flex: none;
-  max-width: 50%;
+  grid-area: company;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
 }
 
@@ -74,70 +89,78 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--muted);
 }
 
 .inboxrow__role {
-  font-size: 14px;
-  color: var(--ink-soft);
+  grid-area: role;
+  color: var(--ink-2);
+  font-size: 13.5px;
 }
 
 .inboxrow__sub {
-  margin-top: 1px;
+  grid-area: sub;
+  color: var(--ink-3);
   font-size: 12.5px;
 }
 
-.inboxrow__meta {
-  flex: none;
-  display: grid;
-  grid-template-columns: 116px 64px 72px;
-  align-items: center;
-  gap: 10px;
-  font-size: 12.5px;
-  color: var(--muted);
-}
-
-.inboxrow__meta .tag {
+.inboxrow__status {
+  grid-area: status;
   justify-self: start;
 }
 
 .inboxrow__when {
-  text-align: right;
+  grid-area: when;
+  justify-self: end;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  white-space: nowrap;
 }
 
 .inboxrow__by {
+  grid-area: by;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   gap: 5px;
+  color: var(--ink-3);
+  font-size: 12.5px;
   font-weight: 600;
 }
 
 .inboxrow__by.is-agent {
-  color: var(--brand-dark);
+  color: var(--ember-700);
 }
 
+/* Phones: the company and the time share the first line, the role and subject get the full width, the status last. */
 @media (max-width: 720px) {
   .inboxrow {
-    align-items: flex-start;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'logo company when'
+      'logo role role'
+      'logo sub sub'
+      'logo status by';
+    row-gap: 3px;
+    align-items: start;
   }
 
-  .inboxrow__title {
-    flex-direction: column;
-    gap: 0;
+  .inboxrow__when {
+    padding-top: 2px;
   }
 
-  .inboxrow__company {
-    max-width: 100%;
+  .inboxrow__sub {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
-  .inboxrow__meta {
-    grid-template-columns: auto;
-    justify-items: end;
-    gap: 4px;
+  .inboxrow__status {
+    margin-top: 6px;
   }
 
   .inboxrow__by {
-    display: none;
+    margin-top: 8px;
   }
 }

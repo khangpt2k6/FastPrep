@@ -1,7 +1,8 @@
 // A small confetti burst on a canvas laid over the page for about a second. No library.
 // Skipped entirely when the person asks for reduced motion.
 
-const COLORS = ['#0285ff', '#10a37f', '#7cc4ff', '#ffb547', '#ff7aa8', '#8f7cff', '#0d0d0d'];
+// Ember in its steps, granite and frost: the palette's own colours.
+const COLORS = ['#F07B1F', '#FDB27A', '#D9640C', '#FFE3CC', '#1B1E22', '#4A5058', '#CDD2D8'];
 
 interface Piece {
   x: number;

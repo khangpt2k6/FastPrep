@@ -22,6 +22,8 @@ export interface LiveTable<T> {
   reload: () => void;
 }
 
+let channelCount = 0;
+
 /** Fetches a table once, then keeps it current with postgres_changes for this user's rows. */
 export function useLiveTable<T extends object>({ table, userId, load, keyOf, pollMs = 20_000 }: Options<T>): LiveTable<T> {
   const [map, setMap] = useState<Map<string, T>>(() => new Map());
@@ -82,8 +84,10 @@ export function useLiveTable<T extends object>({ table, userId, load, keyOf, pol
       });
     };
 
+    // A name of its own per subscription: supabase-js hands back an existing channel for a repeated name, and adding
+    // listeners to a channel that already joined throws. Two hooks on one table (the Overview and a page) need two.
     const channel = supabase
-      .channel(`${table}:${userId}`)
+      .channel(`${table}:${userId}:${++channelCount}`)
       .on<T>('postgres_changes', { event: '*', schema: 'public', table, filter: `user_id=eq.${userId}` }, onChange)
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {

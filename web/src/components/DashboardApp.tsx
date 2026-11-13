@@ -3,7 +3,7 @@ import { errorText } from '../lib/errors';
 import { APPLICATION_STATUSES, WORKING_STATES, companyName, displayName, isOnline, plural, statusInfo, stopReason } from '../lib/format';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
 import { applyResume, activeResume, byNewest, isPending, writeResume, type ResumeProfile } from '../lib/resume';
-import { companyCounts, filterJobs, kindCounts, onTrack, sortJobs, type Track } from '../lib/jobs';
+import { atCompany, filterJobs, sortJobs } from '../lib/jobs';
 import { confetti } from '../lib/confetti';
 import { playChime, showBrowserNotification } from '../lib/notify';
 import type { AgentSettings, JobRow, LiveStatus } from '../lib/types';
@@ -27,33 +27,30 @@ import { useNotifyPrefs } from '../hooks/useNotifyPrefs';
 import { useNow } from '../hooks/useNow';
 import { useSavedJobs } from '../hooks/useSavedJobs';
 import { sendCoverLetters, useCoverLetters } from '../hooks/useCoverLetters';
-import { useRoute, type Page } from '../hooks/useRoute';
+import { useInbox } from '../hooks/useInbox';
+import { useRoute } from '../hooks/useRoute';
 import { AgentPage } from './agent/AgentPage';
-import { useLogTail } from './agent/live';
+import { agentTone, useLogTail } from './agent/live';
 import { ApplicationsPage } from './applications/ApplicationsPage';
 import { Callout, SkeletonPanel } from './common';
 import { ConfirmSubmit } from './ConfirmSubmit';
 import { ErrorBoundary } from './ErrorBoundary';
 import { IconPencil, IconUser } from './Icons';
 import { ActionBar } from './jobs/ActionBar';
-import { BannerRow } from './jobs/BannerRow';
-import { JobsPage, type JobFilterState } from './jobs/JobsPage';
-import { CalendarCard, ProgressCard, applicationParts, useApplyDays } from './jobs/Rail';
+import { JobsPage, NO_JOB_FILTERS, type JobFilterState } from './jobs/JobsPage';
 import { Lightbox } from './Lightbox';
 import { Notice } from './Notice';
 import { REVIEW_STEP, type WizardReason } from './profile/wizardSteps';
-import { AccountMenu, Navbar } from './shell/Navbar';
-import { NotifyMenu } from './shell/NotifyMenu';
 import { LiveCallout, OfflineCallout } from './shell/Notices';
 import { PageHeader } from './shell/PageHeader';
 import { PAGE_META } from './shell/pages';
-import { AgentCard, QuickAgent } from './shell/QuickAgent';
-import { DashSidebar, TabBar, type SetupMark } from './shell/Sidebar';
-import { AgentStatus, DryRunSwitch, RingPill } from './shell/StatusControls';
+import { Shell } from './shell/Shell';
+import type { AgentCardProps, Marks, SetupMark } from './shell/Sidebar';
+import { statusWords } from './shell/StatusControls';
 import { Toasts, useToasts, type ToastTone } from './Toasts';
-import { PageTransition, TopProgress } from './motion';
+import { PageTransition } from './motion';
 
-// Heavier pages load on first visit, so the Jobs page comes up fast.
+// Heavier pages load on first visit, so the first page comes up fast.
 const CoverLettersPage = lazy(() => import('./letters/CoverLettersPage').then((m) => ({ default: m.CoverLettersPage })));
 const PreferencesPage = lazy(() => import('./PreferencesPage').then((m) => ({ default: m.PreferencesPage })));
 const MemoryPage = lazy(() => import('./memory/MemoryPage').then((m) => ({ default: m.MemoryPage })));
@@ -61,7 +58,8 @@ const ProfilePage = lazy(() => import('./profile/ProfilePage').then((m) => ({ de
 const ProfileWizard = lazy(() => import('./profile/ProfileWizard').then((m) => ({ default: m.ProfileWizard })));
 const SetupPage = lazy(() => import('./setup/SetupPage').then((m) => ({ default: m.SetupPage })));
 const CompaniesPage = lazy(() => import('./companies/CompaniesPage'));
-const InboxPage = lazy(() => import('./inbox/InboxPage').then((m) => ({ default: m.InboxPage })));
+const InboxView = lazy(() => import('./inbox/InboxPage').then((m) => ({ default: m.InboxView })));
+const OverviewPage = lazy(() => import('./overview/OverviewPage').then((m) => ({ default: m.OverviewPage })));
 const RulesPage = lazy(() => import('./rules/RulesPage').then((m) => ({ default: m.RulesPage })));
 
 export interface DashboardProps {
@@ -99,8 +97,6 @@ function finishedMessage(job: JobRow): { title: string; detail?: string; tone: T
   }
 }
 
-const NO_FILTERS: Omit<JobFilterState, 'company'> = { query: '', minScore: 0, track: 'all', role: null, sort: 'score' };
-
 /** A loading page in the shape of a card of rows. */
 function PageSkeleton() {
   return <SkeletonPanel count={5} />;
@@ -117,6 +113,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   const settingsT = useAgentSettings(userId);
   const resumesT = useResumes(userId);
   const lettersT = useCoverLetters(userId);
+  const inboxT = useInbox(userId);
   const notify = useNotifyPrefs();
   const { toasts, push, dismiss } = useToasts();
   const tail = useLogTail(agentT.agent);
@@ -124,7 +121,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [dryRun, setDryRun] = useState(true);
-  const [filters, setFilters] = useState<Omit<JobFilterState, 'company'>>(NO_FILTERS);
+  const [filters, setFilters] = useState<Omit<JobFilterState, 'company'>>(NO_JOB_FILTERS);
   const [applyBusy, setApplyBusy] = useState(false);
   const [searchBusy, setSearchBusy] = useState(false);
   const [lettersBusy, setLettersBusy] = useState(false);
@@ -174,24 +171,20 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   const jobFilters: JobFilterState = { ...filters, company };
   const visible = useMemo(
     () => sortJobs(filterJobs(candidates, { ...filters, company, saved, now }), filters.sort),
-    // now only matters for the New track; a minute of drift is fine.
-    [candidates, filters, company, saved, filters.track === 'new' ? Math.floor(now / 60000) : 0],
+    // now only matters for New only; a minute of drift is fine.
+    [candidates, filters, company, saved, filters.newOnly ? Math.floor(now / 60000) : 0],
   );
-  const kinds = useMemo(() => kindCounts(candidates), [candidates]);
-  const companies = useMemo(() => companyCounts(candidates), [candidates]);
-  const trackCounts = useMemo(() => {
-    const out = {} as Record<Track, number>;
-    for (const t of ['all', 'new', 'remote', 'top', 'saved'] as Track[]) out[t] = candidates.filter((j) => onTrack(j, t, saved, now)).length;
-    return out;
-  }, [candidates, saved, Math.floor(now / 60000)]);
+  const companyLabel = useMemo(() => {
+    if (!company) return '';
+    const hit = candidates.find((j) => atCompany(j, company));
+    return hit ? displayName(hit) : company;
+  }, [candidates, company]);
 
   const applications = useMemo(
     () => jobsT.rows.filter((j) => APPLICATION_STATUSES.includes(j.status)).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)),
     [jobsT.rows],
   );
-  const parts = useMemo(() => applicationParts(applications), [applications]);
-  const days = useApplyDays(applications);
-  const finished = parts.sent + parts.filled + parts.blocked;
+  const sent = useMemo(() => applications.filter((j) => ['sent', 'unconfirmed'].includes(statusInfo(j).tone)).length, [applications]);
 
   // The form the agent is filling right now, shown on the agent page.
   const current = useMemo(() => applications.find((j) => j.status === 'applying') ?? null, [applications]);
@@ -365,11 +358,6 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     openWizard(REVIEW_STEP, 'manual');
   }
 
-  const pickCompany = (key: string | null) => {
-    if (page === 'jobs') setParams({ company: key });
-    else navigate('jobs', key ? { company: key } : undefined);
-  };
-
   const coreTables = [agentT, jobsT, commandsT, profileT];
   const live = combineLive(coreTables.map((t) => t.live));
 
@@ -391,13 +379,12 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   }
 
   const applyingCount = applications.filter((j) => j.status === 'applying').length;
-  const marks: Partial<Record<Page, { node: ReactNode; label: string }>> = {};
+  const marks: Marks = {};
   if (applyingCount > 0) marks.applications = { node: <span className="navcount num">{applyingCount}</span>, label: `${applyingCount} in progress` };
-  if (profileReady && !profileComplete) marks.profile = { node: <span className="navdot navdot--amber" />, label: 'incomplete' };
+  if (profileReady && !profileComplete) marks.profile = { node: <span className="navdot navdot--ember" />, label: 'incomplete' };
   if (candidates.length > 0) marks.jobs = { node: <span className="navcount num">{candidates.length}</span>, label: `${candidates.length} jobs` };
 
-  const dryRunSwitch = (compact: boolean) => <DryRunSwitch dryRun={dryRun} onChange={setDryRun} compact={compact} />;
-  const quick = {
+  const agentCard: AgentCardProps = {
     agent,
     online,
     loading: agentT.loading,
@@ -407,8 +394,41 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     onSettings: (patch: Partial<AgentSettings>) => void changeSettings(patch),
     searching,
     onSearch: () => void search(),
-    onOpen: () => navigate('agent'),
   };
+  const tone = agentT.loading ? 'off' : agentTone(online, state);
+  const words = statusWords(agent, online, agentT.loading, now, tone);
+
+  const notices = (applying: boolean) => (
+    <>
+      {applying && !dryRun ? <LiveCallout /> : null}
+      {!online && !agentT.loading ? <OfflineCallout /> : null}
+      {applying && profileReady && !profileComplete ? (
+        <Callout
+          tone="yellow"
+          icon={<IconUser size={16} />}
+          action={
+            <button type="button" className="btn btn--primary btn--sm" onClick={() => openWizard(0)}>
+              Finish
+            </button>
+          }
+        >
+          <strong>Profile incomplete.</strong> Needed before applying.
+        </Callout>
+      ) : null}
+    </>
+  );
+  const dock = (
+    <ActionBar
+      count={chosen.length}
+      dryRun={dryRun}
+      online={online}
+      applying={applyBusy}
+      onApply={requestApply}
+      onLetters={writeLetters}
+      writing={lettersBusy}
+      onClear={() => setSelected(new Set())}
+    />
+  );
 
   const jobParam = page === 'memory' ? params.get('job') : null;
   const jobRow = jobParam ? jobsT.rows.find((j) => j.id === jobParam) : undefined;
@@ -422,11 +442,46 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     : null;
 
   const meta = PAGE_META[page];
-  let header: ReactNode = <PageHeader title={meta.title} subtitle={meta.sub} wolf={meta.wolf} />;
+  let header: ReactNode = <PageHeader title={meta.title} subtitle={meta.sub} />;
   let content: ReactNode;
   switch (page) {
+    case 'overview':
+      header = null;
+      content = (
+        <>
+          <OverviewPage
+            firstName={profile.personal.first_name}
+            agent={agent}
+            tone={tone}
+            state={state}
+            line={words.line}
+            jobs={jobsT.rows}
+            candidates={candidates}
+            jobsLoading={jobsT.loading}
+            jobsError={jobsT.error}
+            letters={lettersT.rows}
+            inbox={inboxT.rows}
+            inboxLoading={inboxT.loading}
+            inboxMissing={inboxT.error?.kind === 'missing-table'}
+            commands={commandsT.rows}
+            now={now}
+            searching={searching}
+            onSearch={() => void search()}
+            onReviewStrong={() => {
+              setFilters({ ...NO_JOB_FILTERS, minScore: 4 });
+              navigate('jobs');
+            }}
+            onNavigate={(p) => navigate(p)}
+            selected={selected}
+            queued={queued}
+            onToggle={toggle}
+            notices={notices(false)}
+          />
+          {dock}
+        </>
+      );
+      break;
     case 'jobs':
-      header = <h1 className="sr-only">Jobs</h1>;
       content = (
         <JobsPage
           candidates={candidates}
@@ -447,71 +502,20 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
             if (Object.keys(rest).length) setFilters((f) => ({ ...f, ...rest }));
           }}
           onClearFilters={() => {
-            setFilters(NO_FILTERS);
+            setFilters(NO_JOB_FILTERS);
             setParams({ company: null });
           }}
-          kinds={kinds}
-          companies={companies}
-          trackCounts={trackCounts}
+          companyLabel={companyLabel}
           searching={searching}
           onSearch={() => void search()}
           now={now}
-          scored={agent?.jobs_scored ?? candidates.length}
-          found={agent?.jobs_found ?? 0}
-          banner={
-            <BannerRow
-              found={agent?.jobs_found ?? 0}
-              searching={searching}
-              onSearch={() => void search()}
-              setup={{ done: setupDone, label: setupDone ? 'Ready' : hasResume ? 'Finish your profile' : 'Step 1 of 3' }}
-              letters={lettersT.rows.length}
-              sent={parts.sent}
-              onNavigate={(p) => navigate(p)}
-            />
-          }
-          notices={
-            <>
-              {!dryRun ? <LiveCallout /> : null}
-              {!online && !agentT.loading ? <OfflineCallout /> : null}
-              {profileReady && !profileComplete ? (
-                <Callout
-                  tone="yellow"
-                  icon={<IconUser size={16} />}
-                  action={
-                    <button type="button" className="btn btn--primary btn--sm" onClick={() => openWizard(0)}>
-                      Finish
-                    </button>
-                  }
-                >
-                  <strong>Profile incomplete.</strong> Needed before applying.
-                </Callout>
-              ) : null}
-            </>
-          }
-          actionBar={
-            <ActionBar
-              count={chosen.length}
-              dryRun={dryRun}
-              online={online}
-              applying={applyBusy}
-              onApply={requestApply}
-              onLetters={writeLetters}
-              writing={lettersBusy}
-              onClear={() => setSelected(new Set())}
-            />
-          }
-          rail={
-            <>
-              <CalendarCard days={days} now={now} />
-              <ProgressCard parts={parts} onOpen={() => navigate('applications')} />
-              <AgentCard {...quick} />
-            </>
-          }
+          notices={notices(true)}
+          actionBar={dock}
         />
       );
       break;
     case 'applications':
-      header = <PageHeader title={meta.title} subtitle={meta.sub} wolf={meta.wolf} count={applications.length || undefined} />;
+      header = <PageHeader title={meta.title} subtitle={meta.sub} count={applications.length || undefined} />;
       content = (
         <ApplicationsPage
           items={applications}
@@ -535,7 +539,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       );
       break;
     case 'inbox':
-      content = <InboxPage userId={userId} now={now} />;
+      content = <InboxView table={inboxT} now={now} jobs={jobsT.rows} />;
       break;
     case 'agent':
       content = (
@@ -549,7 +553,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           tail={tail}
           commands={commandsT.rows}
           live={live}
-          sent={parts.sent}
+          sent={sent}
           current={current}
           settings={settings}
           settingsState={{ loading: settingsT.loading, missing: settingsMissing, error: settingsT.error && !settingsMissing ? settingsT.error.message : null }}
@@ -562,7 +566,6 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
         <PageHeader
           title={meta.title}
           subtitle={meta.sub}
-          wolf={meta.wolf}
           actions={
             profileReady ? (
               <button type="button" className="btn btn--secondary btn--sm" onClick={() => openWizard(profileComplete ? REVIEW_STEP : 0)}>
@@ -597,7 +600,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       content = <RulesPage userId={userId} toast={push} onNavigate={(p) => navigate(p)} />;
       break;
     case 'memory':
-      content = <MemoryPage memory={memoryT} now={now} job={jobFilter} onClearJob={() => navigate('memory')} toast={push} />;
+      content = <MemoryPage memory={memoryT} now={now} job={jobFilter} onClearJob={() => navigate('memory')} toast={push} jobs={jobsT.rows} />;
       break;
     case 'letters':
       content = <CoverLettersPage userId={userId} jobs={jobsT.rows} online={online} now={now} toast={push} />;
@@ -626,41 +629,28 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   }
 
   return (
-    <div className={`app ${dryRun ? '' : 'is-live'}`}>
-      <TopProgress active={working} />
-      <Navbar
+    <>
+      <Shell
         page={page}
         onNavigate={(target) => navigate(target)}
+        marks={marks}
         setup={setupMark}
-        status={<AgentStatus agent={agent} online={online} loading={agentT.loading} now={now} live={live} onOpen={() => navigate('agent')} />}
-        ring={<RingPill done={finished} total={finished + candidates.length} label={`${finished} of ${finished + candidates.length} jobs done`} onClick={() => navigate('applications')} />}
-        alerts={<NotifyMenu prefs={notify} recent={applications.slice(0, 5)} now={now} onOpenRecent={() => navigate('applications')} variant="bar" />}
-        dryRun={dryRunSwitch(false)}
-        account={<AccountMenu email={email} />}
-      />
-      <div className="layout">
-        <aside className="layout__side">
-          <DashSidebar
-            page={page}
-            onNavigate={(target) => navigate(target)}
-            marks={marks}
-            setup={setupMark}
-            companies={companies.slice(0, 6).map((c) => ({ key: c.key, name: c.name, domain: c.domain, count: c.count }))}
-            activeCompany={company}
-            onCompany={pickCompany}
-          />
-        </aside>
-        <main className={`layout__main layout__main--${page}`} id="main">
-          <PageTransition pageKey={page}>
-            {header}
-            <ErrorBoundary resetKey={page}>
-              <Suspense fallback={<PageSkeleton />}>{content}</Suspense>
-            </ErrorBoundary>
-          </PageTransition>
-        </main>
-      </div>
-      <TabBar page={page} onNavigate={(target) => navigate(target)} marks={marks} setup={setupMark} email={email} more={dryRunSwitch(true)} />
-      {page !== 'agent' ? <QuickAgent {...quick} /> : null}
+        agent={agentCard}
+        working={working}
+        dryRun={dryRun}
+        onDryRun={setDryRun}
+        notify={notify}
+        recent={applications.slice(0, 5)}
+        onOpenRecent={() => navigate('applications')}
+        email={email}
+      >
+        <PageTransition pageKey={page}>
+          {header}
+          <ErrorBoundary resetKey={page}>
+            <Suspense fallback={<PageSkeleton />}>{content}</Suspense>
+          </ErrorBoundary>
+        </PageTransition>
+      </Shell>
 
       {profileReady && wizard.key > 0 ? (
         <Suspense fallback={null}>
@@ -685,6 +675,6 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       <ConfirmSubmit jobs={confirmJobs} onCancel={() => setConfirmJobs(null)} onConfirm={() => confirmJobs && apply(confirmJobs)} />
       <Lightbox shot={shot} onClose={() => setShot(null)} />
       <Toasts toasts={toasts} onDismiss={dismiss} />
-    </div>
+    </>
   );
 }

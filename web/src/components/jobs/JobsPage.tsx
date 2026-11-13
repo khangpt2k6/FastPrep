@@ -1,25 +1,29 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
 import type { JobRow, LoadError } from '../../lib/types';
-import type { CompanyCount, MinScore, SortKey, Track } from '../../lib/jobs';
-import { CheckBox, EmptyState, SkeletonCards } from '../common';
-import { IconRadar } from '../Icons';
-import { Shimmer, StateFade } from '../motion';
+import { SORT_LABEL, type MinScore, type SortKey } from '../../lib/jobs';
+import { CheckBox, EmptyState, PillGroup, SkeletonCards } from '../common';
+import { IconRadar, IconSearch, IconStar, IconX } from '../Icons';
+import { AnimatedNumber, Shimmer, StateFade } from '../motion';
+import { PillSelect } from '../settings';
 import { JobCard } from './JobCard';
-import { CompanyBar, RoleChips } from './ChipRows';
-import { ListToolbar } from './ListToolbar';
-import { TrackPills } from './TrackPills';
+import './jobs.css';
 
 export type { MinScore };
 
 export interface JobFilterState {
   query: string;
   minScore: MinScore;
-  track: Track;
-  role: string | null;
-  company: string | null;
   sort: SortKey;
+  /** Only jobs found in the last 24 hours. */
+  newOnly: boolean;
+  /** Only starred jobs. */
+  savedOnly: boolean;
+  /** A company key from the Companies page ("See jobs"), kept in the route. */
+  company: string | null;
 }
+
+export const NO_JOB_FILTERS: Omit<JobFilterState, 'company'> = { query: '', minScore: 0, sort: 'score', newOnly: false, savedOnly: false };
 
 interface JobsPageProps {
   /** Scored jobs that can still be applied to, before any filter. */
@@ -38,22 +42,15 @@ interface JobsPageProps {
   filters: JobFilterState;
   onFilters: (patch: Partial<JobFilterState>) => void;
   onClearFilters: () => void;
-  kinds: { name: string; count: number }[];
-  companies: CompanyCount[];
-  trackCounts: Record<Track, number>;
+  /** The filtered company's display name, for its tag. */
+  companyLabel?: string;
   /** A search is on its way or running: the button shimmers "Finding jobs". */
   searching: boolean;
   onSearch: () => void;
   now: number;
-  scored: number;
-  found: number;
-  /** The gradient cards on top. */
-  banner?: ReactNode;
   /** Callouts above the list: agent offline, Live mode, profile incomplete. */
   notices?: ReactNode;
   actionBar: ReactNode;
-  /** The right column: calendar, progress, the agent. */
-  rail?: ReactNode;
 }
 
 function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Set<string>; onToggleAll: JobsPageProps['onToggleAll'] }) {
@@ -64,7 +61,7 @@ function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Se
     if (ref.current) ref.current.indeterminate = count > 0 && !all;
   }, [count, all]);
   return (
-    <label className="check" title={all ? 'Clear selection' : 'Select all'}>
+    <label className="check jtool__all" title={all ? 'Clear selection' : 'Select all shown'}>
       <input ref={ref} type="checkbox" checked={all} disabled={ids.length === 0} onChange={() => onToggleAll(ids, !all)} aria-label="Select all jobs shown" />
       <CheckBox />
     </label>
@@ -81,10 +78,24 @@ export function FindButton({ searching, onSearch, small = false }: { searching: 
   );
 }
 
+/** A small switch with its words, for the toolbar. */
+function ToolSwitch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <label className={`jtool__switch ${checked ? 'is-on' : ''}`}>
+      <input type="checkbox" role="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className="switch switch--sm" aria-hidden="true">
+        <span className="switch__thumb" />
+      </span>
+      <span>{label}</span>
+    </label>
+  );
+}
+
 export function JobsPage(props: JobsPageProps) {
   const { candidates, visible, loading, error, selected, queued, filters, now } = props;
   const selectable = visible.filter((j) => !queued.has(j.id)).map((j) => j.id);
   const set = props.onFilters;
+  const filtered = filters.query !== '' || filters.minScore !== 0 || filters.newOnly || filters.savedOnly || Boolean(filters.company);
 
   let body: ReactNode;
   let state = 'list';
@@ -104,7 +115,7 @@ export function JobsPage(props: JobsPageProps) {
     );
   } else if (loading) {
     state = 'loading';
-    body = <SkeletonCards count={8} check zebra />;
+    body = <SkeletonCards count={8} check />;
   } else if (candidates.length === 0) {
     state = 'none';
     body = (
@@ -120,7 +131,8 @@ export function JobsPage(props: JobsPageProps) {
     body = (
       <EmptyState
         wolf="thinking"
-        title="No matches"
+        title="No jobs match these filters"
+        text="Try a lower score or clear the search."
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={props.onClearFilters}>
             Clear filters
@@ -130,66 +142,92 @@ export function JobsPage(props: JobsPageProps) {
     );
   } else {
     body = (
-      <>
-        <div className="jhead" aria-hidden="true">
-          <span />
-          <span />
-          <span>Job</span>
-          <span className="jhead__loc">Place</span>
-          <span className="jhead__time">Found</span>
-          <span className="jhead__score">Match</span>
-        </div>
-        <ul className="jlist">
-          <AnimatePresence mode="popLayout">
-            {visible.map((job, i) => (
-              <JobCard
-                key={job.id}
-                index={i}
-                job={job}
-                now={now}
-                selected={selected.has(job.id)}
-                queued={queued.has(job.id)}
-                saved={props.saved.has(job.id)}
-                onToggle={props.onToggle}
-                onSave={props.onSave}
-              />
-            ))}
-          </AnimatePresence>
-        </ul>
-      </>
+      <ul className="jlist">
+        <AnimatePresence mode="popLayout" initial={false}>
+          {visible.map((job, i) => (
+            <JobCard
+              key={job.id}
+              index={i}
+              job={job}
+              now={now}
+              selected={selected.has(job.id)}
+              queued={queued.has(job.id)}
+              saved={props.saved.has(job.id)}
+              onToggle={props.onToggle}
+              onSave={props.onSave}
+            />
+          ))}
+        </AnimatePresence>
+      </ul>
     );
   }
 
   return (
-    <div className="home">
-      <div className="home__main page">
-        {props.notices}
-        {props.banner}
-        <RoleChips kinds={props.kinds} active={filters.role} onPick={(role) => set({ role })} />
-        <CompanyBar companies={props.companies} active={filters.company} onPick={(company) => set({ company })} />
-        <TrackPills active={filters.track} counts={props.trackCounts} onPick={(track) => set({ track })} />
-        <section className="card listcard" aria-label="Jobs">
-          <div className="listcard__top">
-            {visible.length > 0 && !loading && !error ? <SelectAll ids={selectable} selected={selected} onToggleAll={props.onToggleAll} /> : null}
-            <ListToolbar
-              query={filters.query}
-              onQuery={(query) => set({ query })}
-              sort={filters.sort}
-              onSort={(sort) => set({ sort })}
-              minScore={filters.minScore}
-              onMinScore={(minScore) => set({ minScore })}
-              shown={visible.length}
-              total={candidates.length}
-              scored={props.scored}
-              found={props.found}
-              action={<FindButton searching={props.searching} onSearch={props.onSearch} small />}
-            />
-          </div>
-          <StateFade state={state}>{body}</StateFade>
-        </section>
-        {props.actionBar}
-      </div>
-      {props.rail ? <aside className="home__rail">{props.rail}</aside> : null}
+    <div className="jobs page">
+      {props.notices}
+      <section className="card jcard" aria-label="Jobs">
+        <div className="jtool" role="toolbar" aria-label="Filter and sort jobs">
+          {visible.length > 0 && !loading && !error ? <SelectAll ids={selectable} selected={selected} onToggleAll={props.onToggleAll} /> : null}
+          <label className="jsearch">
+            <IconSearch size={15} />
+            <input type="search" value={filters.query} onChange={(e) => set({ query: e.target.value })} placeholder="Search title, company, place" aria-label="Search jobs" />
+            {filters.query ? (
+              <button type="button" className="icon-btn icon-btn--sm" onClick={() => set({ query: '' })} aria-label="Clear search">
+                <IconX size={13} />
+              </button>
+            ) : null}
+          </label>
+          {filters.company ? (
+            <span className="jtool__company">
+              <span className="jtool__companyname">{props.companyLabel || filters.company}</span>
+              <button type="button" className="icon-btn icon-btn--sm" onClick={() => set({ company: null })} aria-label={`Show every company, not only ${props.companyLabel || filters.company}`}>
+                <IconX size={12} />
+              </button>
+            </span>
+          ) : null}
+          <PillGroup<MinScore>
+            label="Match score"
+            value={filters.minScore}
+            onChange={(minScore) => set({ minScore })}
+            options={[
+              { value: 0, label: 'Any', title: 'Any score' },
+              { value: 3, label: '3+', title: 'Score 3 and up' },
+              { value: 4, label: '4+', title: 'Strong matches, 4 and up' },
+            ]}
+          />
+          <PillSelect<SortKey>
+            label="Sort"
+            value={filters.sort}
+            onChange={(sort) => set({ sort })}
+            options={(Object.keys(SORT_LABEL) as SortKey[]).map((k) => ({ value: k, label: SORT_LABEL[k] }))}
+          />
+          <ToolSwitch checked={filters.newOnly} onChange={(newOnly) => set({ newOnly })} label="New only" />
+          <button
+            type="button"
+            className={`icon-btn jtool__saved ${filters.savedOnly ? 'is-on' : ''}`}
+            aria-pressed={filters.savedOnly}
+            onClick={() => set({ savedOnly: !filters.savedOnly })}
+            aria-label="Saved only"
+            title={filters.savedOnly ? 'Showing saved jobs' : 'Show saved jobs only'}
+          >
+            <IconStar size={16} fill={filters.savedOnly ? 'currentColor' : 'none'} />
+          </button>
+          <span className="jtool__count num" aria-live="polite">
+            {filtered ? (
+              <>
+                <AnimatedNumber value={visible.length} id="jobs-shown" /> of {candidates.length}
+              </>
+            ) : (
+              <>
+                <AnimatedNumber value={candidates.length} id="jobs-all" /> jobs
+              </>
+            )}
+          </span>
+          <FindButton searching={props.searching} onSearch={props.onSearch} small />
+        </div>
+        <StateFade state={state}>{body}</StateFade>
+      </section>
+      {props.actionBar}
     </div>
   );
 }

@@ -1,21 +1,34 @@
 /* The sign-in screen and the sign-out control. Tokens and the .splash, .field, .input and .btn rules come from styles.css. */
 
 .signin {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
   width: 100%;
   max-width: 380px;
-  padding: 28px 26px 22px;
-  border-radius: 20px;
+  padding: 26px 26px 22px;
+  border-radius: var(--r-card);
   border: 1px solid var(--line);
-  background: var(--surface);
-  box-shadow: var(--shadow-float);
+  background: var(--card);
+  box-shadow: var(--shadow-raised);
+}
+
+.signin__wolf {
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  margin-top: -78px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--line), 0 0 0 7px var(--frost), 0 0 0 8px var(--ember-100);
 }
 
 .signin .splash__title {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   text-align: center;
 }
 
@@ -25,60 +38,57 @@
 }
 
 .signin .btn {
-  height: 40px;
+  height: 42px;
   margin-top: 4px;
-}
-
-.signin .btn--primary {
-  background: var(--brand);
-}
-
-.signin .btn--primary:hover:not(:disabled) {
-  background: var(--brand-dark);
 }
 
 .signin__error {
   width: 100%;
   max-width: none;
+  padding: 8px 12px;
+  border-radius: var(--r-control);
+  background: var(--rose-50);
+  color: var(--rose-700);
+  font-size: 13px;
   text-align: left;
 }
 
 .signin__note {
   width: 100%;
   padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--yellow-bg);
-  color: var(--yellow);
+  border-radius: var(--r-control);
+  background: var(--sand-50);
+  color: var(--sand-700);
   font-size: 13px;
   text-align: left;
 }
 
 .signin__hint {
-  color: var(--muted);
+  color: var(--ink-3);
   font-size: 12px;
 }
 
-/* Sign out: a full-width row inside the account menu and the phone's More menu. */
+/* Sign out: a full-width row inside the sidebar and the phone's More sheet. */
 
 .signout {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 38px;
+  min-height: 36px;
   padding: 0 10px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-control);
   background: none;
-  color: var(--red);
-  font-size: 13.5px;
-  font-weight: 700;
+  color: var(--rose-700);
+  font-size: 13px;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
 }
 
 .signout:hover:not(:disabled) {
-  background: var(--red-bg);
+  background: var(--rose-50);
 }
 
 .signout:disabled {
@@ -92,11 +102,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--muted);
+  color: var(--ink-3);
   font-weight: 500;
 }
 
-.acct__signout .signout__who,
-.more__signout .signout__who {
+.side__signout .signout__who,
+.sheet__signout .signout__who {
   display: none;
 }

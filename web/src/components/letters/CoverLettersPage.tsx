@@ -605,7 +605,7 @@ export function LettersView({ data, actions, jobs, online, now, toast }: Letters
             </h2>
             <span className="chip chip--count num">{letters.length}</span>
           </div>
-          {lettersT.loading && letters.length === 0 ? <SkeletonCards count={3} check={false} zebra /> : null}
+          {lettersT.loading && letters.length === 0 ? <SkeletonCards count={3} check={false} /> : null}
           {!lettersT.loading && letters.length === 0 ? (
             <EmptyState compact wolf="reading" title="No letters yet" text="Select jobs, then Write letters." />
           ) : (

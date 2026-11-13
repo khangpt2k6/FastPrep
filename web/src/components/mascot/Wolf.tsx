@@ -1,5 +1,6 @@
-// The agent's persona: the person's gray wolf. Six stickers in public/mascot, 256px webp with their own white edge,
-// so the same file sits on the light paper and on a charcoal card. Pick the mood for what the agent is doing.
+// The agent's persona: the person's gray wolf. Six stickers in public/mascot, 256px webp with their own white edge.
+// Pick the mood for what the agent is doing.
+import type { CSSProperties } from 'react';
 import type { AgentTone } from '../agent/live';
 
 export type WolfMood = 'laptop' | 'reading' | 'thinking' | 'cheer' | 'checklist' | 'music';
@@ -53,7 +54,7 @@ export function Wolf({
   motion?: WolfMotion;
   /** Offline or paused: gray and quiet. */
   dim?: boolean;
-  /** A small red badge, for an error. */
+  /** A small rose badge, for an error. */
   alert?: boolean;
   /** Empty when the words beside it already say it. */
   alt?: string;
@@ -85,41 +86,23 @@ export function Wolf({
   );
 }
 
-/** The agent's wolf for its tone and state. */
-export function AgentWolf({ tone, state, size = 72, motion, className = '', eager = false }: {
-  tone: AgentTone;
-  state: string;
-  size?: number;
-  motion?: WolfMotion;
-  className?: string;
-  eager?: boolean;
-}) {
+/**
+ * The wolf's face in a circle with an ember status ring: an arc that turns while the agent works, a soft glow that
+ * breathes when it is idle, gray when paused or offline, rose with a badge on an error.
+ */
+export function WolfRing({ tone, state, size = 56, className = '' }: { tone: AgentTone; state: string; size?: number; className?: string }) {
   const quiet = tone === 'off' || tone === 'paused';
   const mood = quiet ? 'music' : wolfForState(state);
   return (
-    <Wolf
-      mood={mood}
-      size={size}
-      dim={quiet}
-      alert={tone === 'bad'}
-      motion={motion ?? (tone === 'busy' ? 'bob' : 'idle')}
-      eager={eager}
-      className={className}
-    />
-  );
-}
-
-/** A wolf on a lavender rounded square, like a sticker picker tile; a violet ring when `on`. */
-export function WolfTile({ mood, size = 32, on = false, dim = false, className = '' }: {
-  mood: WolfMood;
-  size?: number;
-  on?: boolean;
-  dim?: boolean;
-  className?: string;
-}) {
-  return (
-    <span className={`wolftile ${on ? 'is-on' : ''} ${dim ? 'is-dim' : ''} ${className}`} style={{ width: size, height: size }} aria-hidden="true">
-      <img src={`/mascot/wolf-${mood}.webp`} alt="" width={size} height={size} draggable={false} decoding="async" />
+    <span className={`wring wring--${tone} ${className}`} style={{ '--wr': `${size}px` } as CSSProperties} aria-hidden="true">
+      <svg className="wring__ring" viewBox="0 0 100 100" focusable="false">
+        <circle className="wring__track" cx="50" cy="50" r="46" pathLength={100} />
+        <circle className="wring__arc" cx="50" cy="50" r="46" pathLength={100} />
+      </svg>
+      <span className="wring__face">
+        <img src={`/mascot/wolf-${mood}.webp`} alt="" draggable={false} decoding="async" />
+      </span>
+      {tone === 'bad' ? <span className="wring__alert">!</span> : null}
     </span>
   );
 }

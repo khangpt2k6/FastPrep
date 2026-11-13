@@ -1,5 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import type { MemoryRow } from '../../lib/types';
+import type { JobRow, MemoryRow } from '../../lib/types';
+import { companyName, displayName } from '../../lib/format';
+import { companyLookup } from '../../lib/overview';
 import { errorText } from '../../lib/errors';
 import { deleteAnswer, editAnswer, setPinned, teachAnswer } from '../../hooks/useAutomationData';
 import type { LiveTable } from '../../hooks/useLiveTable';
@@ -21,6 +23,8 @@ interface MemoryPageProps {
   job: { id: string; company: string; domain?: string } | null;
   onClearJob: () => void;
   toast: (toast: ToastInput) => void;
+  /** The jobs, for company names and logos. */
+  jobs?: JobRow[];
 }
 
 function TeachDialog({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: () => void }) {
@@ -100,7 +104,17 @@ function TeachDialog({ open, onClose, onSaved }: { open: boolean; onClose: () =>
   );
 }
 
-export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPageProps) {
+const NO_JOBS: JobRow[] = [];
+
+export function MemoryPage({ memory, now, job, onClearJob, toast, jobs = NO_JOBS }: MemoryPageProps) {
+  // Company names and logos as the other pages show them: through the row's job, else by name.
+  const byId = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
+  const lookup = useMemo(() => companyLookup(jobs), [jobs]);
+  const companyOf = (row: MemoryRow) => {
+    const hit = row.job_id ? byId.get(row.job_id) : undefined;
+    if (hit) return { name: displayName(hit), domain: hit.company_domain };
+    return row.company ? lookup(row.company) ?? lookup(companyName(row.company)) : null;
+  };
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [teaching, setTeaching] = useState(false);
@@ -169,7 +183,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
   } else if (memory.loading) {
     body = (
       <div className="card listcard">
-        <SkeletonCards count={4} check={false} zebra />
+        <SkeletonCards count={4} check={false} />
       </div>
     );
   } else if (scoped.length === 0) {
@@ -201,6 +215,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
             onSave={(answer) => run(() => editAnswer(row.id, answer), 'Could not save answer')}
             onPin={() => void run(() => setPinned(row.id, !row.pinned), 'Could not update pin')}
             onDelete={() => setDoomed(row)}
+            company={companyOf(row)}
           />
         ))}
         </AnimatePresence>
@@ -224,7 +239,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast }: MemoryPagePr
           ]}
         />
         <div className="toolbar__end">
-          <label className="searchpill">
+          <label className="searchfield">
             <IconSearch size={15} />
             <input
               type="search"

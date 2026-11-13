@@ -16,7 +16,7 @@ interface ActionBarProps {
   onClear: () => void;
 }
 
-/** A floating pill that rises once jobs are selected. Live mode gives it a red edge. */
+/** A floating dock that rises once jobs are selected. Live mode gives it a rose edge. */
 export function ActionBar(props: ActionBarProps) {
   // Keep the last non-zero count so the bar does not read "0" while it leaves.
   const last = useRef(props.count);
@@ -56,7 +56,7 @@ function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, on
           Agent offline
         </span>
       ) : null}
-      <span className={`tag ${dryRun ? 'tag--blue' : 'tag--red tag--strong'}`} title={dryRun ? 'Fills forms, never sends' : 'Applications are sent to employers'}>
+      <span className={`tag ${dryRun ? 'tag--yellow' : 'tag--red tag--strong'}`} title={dryRun ? 'Fills forms, never sends' : 'Applications are sent to employers'}>
         {dryRun ? 'Dry run' : 'Live'}
       </span>
       <button type="button" className="btn btn--secondary btn--sm" onClick={onLetters} disabled={writing} title="Write cover letters for these jobs">

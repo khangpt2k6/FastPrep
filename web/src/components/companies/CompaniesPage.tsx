@@ -71,12 +71,11 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
   return (
     <div className="page page--companies">
       <PageHeader
-        wolf="laptop"
         title="Companies"
         count={shown.length}
         subtitle="What intern and new grad postings ask for, company by company."
         actions={
-          <label className="searchpill searchpill--wide">
+          <label className="searchfield">
             <span className="sr-only">Search companies</span>
             <IconSearch size={15} />
             <input type="search" value={query} onChange={(e) => setParams({ q: e.target.value || null })} placeholder="Company or tech" />
@@ -118,7 +117,16 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
       </div>
 
       {shown.length === 0 ? (
-        <EmptyState wolf="thinking" title="No matches" />
+        <EmptyState
+          wolf="thinking"
+          title="No companies match"
+          text={query ? `Nothing for "${query}" with these filters.` : 'Nothing with these filters.'}
+          action={
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => setParams({ q: null, tech: null, type: null })}>
+              Clear filters
+            </button>
+          }
+        />
       ) : (
         <div className="cogrid stagger">
           {shown.map((company) => {

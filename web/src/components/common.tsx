@@ -4,6 +4,7 @@ import { SPRING } from '../lib/motion';
 import { AnimatedNumber } from './motion/AnimatedNumber';
 import { matchInfo, scoreColor, type TagColor } from '../lib/format';
 import { Wolf, type WolfMood } from './mascot/Wolf';
+import { TrailDivider } from './motif';
 
 /** A Notion-style tag: a pastel fill with matching text. */
 export function Tag({ color = 'gray', children, title, className = '' }: { color?: TagColor; children: ReactNode; title?: string; className?: string }) {
@@ -65,10 +66,7 @@ export function CheckBox() {
   );
 }
 
-/**
- * An empty screen after Arena's: the wolf (or an icon) inside a slowly turning dotted orbit, a short title, one gray
- * line at most, and one button.
- */
+/** An empty screen: the wolf (or an icon), a short title, one gray line at most, the trail, and one button. */
 export function EmptyState({ icon, wolf, title, children, text, action, compact = false }: {
   icon?: ReactNode;
   wolf?: WolfMood;
@@ -81,22 +79,12 @@ export function EmptyState({ icon, wolf, title, children, text, action, compact 
   const line = text ?? children;
   return (
     <div className={`emptystate ${compact ? 'emptystate--compact' : ''}`}>
-      <div className="emptystate__stage" aria-hidden="true">
-        <span className="emptystate__glow" />
-        <span className="emptystate__orbit">
-          <svg viewBox="0 0 240 150" className="emptystate__ring">
-            <ellipse cx="120" cy="82" rx="108" ry="40" pathLength={100} />
-          </svg>
-          <span className="emptystate__moon" />
-        </span>
-        <span className="emptystate__spark emptystate__spark--a" />
-        <span className="emptystate__spark emptystate__spark--b" />
-        <span className="emptystate__art">
-          {wolf ? <Wolf mood={wolf} size={compact ? 84 : 112} motion="idle" /> : <span className="emptystate__icon">{icon}</span>}
-        </span>
-      </div>
+      <span className="emptystate__art" aria-hidden="true">
+        {wolf ? <Wolf mood={wolf} size={compact ? 72 : 96} motion="idle" /> : <span className="emptystate__icon">{icon}</span>}
+      </span>
       <p className="emptystate__title">{title}</p>
       {line ? <p className="emptystate__text">{line}</p> : null}
+      <TrailDivider className="emptystate__trail" />
       {action ? <div className="emptystate__action">{action}</div> : null}
     </div>
   );

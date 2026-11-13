@@ -11,22 +11,20 @@ import type { Page } from '../../hooks/useRoute';
 import { useSavedJobs } from '../../hooks/useSavedJobs';
 import { useNow } from '../../hooks/useNow';
 import { useResumeActivated } from '../../hooks/useResumes';
-import { APPLICATION_STATUSES, WORKING_STATES, isOnline } from '../../lib/format';
-import { companyCounts, filterJobs, kindCounts, onTrack, sortJobs, type Track } from '../../lib/jobs';
+import { APPLICATION_STATUSES, WORKING_STATES, displayName, isOnline, statusInfo } from '../../lib/format';
+import { atCompany, filterJobs, sortJobs } from '../../lib/jobs';
 import { mergeProfile, profileProgress } from '../../lib/profile';
 import { activeResume } from '../../lib/resume';
 import { confetti } from '../../lib/confetti';
 import { AgentPage } from '../agent/AgentPage';
-import { useLogTail } from '../agent/live';
+import { agentTone, useLogTail } from '../agent/live';
 import { ApplicationsPage } from '../applications/ApplicationsPage';
 import { Callout, SkeletonPanel } from '../common';
 import { ConfirmSubmit } from '../ConfirmSubmit';
 import { IconUser } from '../Icons';
 import { InboxView } from '../inbox/InboxPage';
 import { ActionBar } from '../jobs/ActionBar';
-import { BannerRow } from '../jobs/BannerRow';
-import { JobsPage, type JobFilterState } from '../jobs/JobsPage';
-import { CalendarCard, ProgressCard, applicationParts, useApplyDays } from '../jobs/Rail';
+import { JobsPage, NO_JOB_FILTERS } from '../jobs/JobsPage';
 import { LettersView, type LettersActions } from '../letters/CoverLettersPage';
 import { Lightbox } from '../Lightbox';
 import { MemoryPage } from '../memory/MemoryPage';
@@ -35,21 +33,19 @@ import { RulesView, type RulesActions } from '../rules/RulesPage';
 import type { RuleRow } from '../../lib/rules';
 import { ProfilePage } from '../profile/ProfilePage';
 import { SetupPage, type SetupStart } from '../setup/SetupPage';
-import { AccountMenu, Navbar } from '../shell/Navbar';
-import { NotifyMenu } from '../shell/NotifyMenu';
 import { LiveCallout, OfflineCallout } from '../shell/Notices';
 import { PageHeader } from '../shell/PageHeader';
 import { PAGE_META } from '../shell/pages';
-import { AgentCard, QuickAgent } from '../shell/QuickAgent';
-import { DashSidebar, TabBar } from '../shell/Sidebar';
-import { AgentStatus, DryRunSwitch, RingPill } from '../shell/StatusControls';
+import { Shell } from '../shell/Shell';
+import type { AgentCardProps, Marks } from '../shell/Sidebar';
+import { statusWords } from '../shell/StatusControls';
 import { BootError, BootSplash } from '../Splash';
 import { Toasts, useToasts } from '../Toasts';
 import { mockPdfUrl } from './mockPdf';
 import { PageTransition } from './PageTransition';
-import { TopProgress } from './TopProgress';
 
 const CompaniesPage = lazy(() => import('../companies/CompaniesPage'));
+const OverviewPage = lazy(() => import('../overview/OverviewPage').then((m) => ({ default: m.OverviewPage })));
 const ProfileWizard = lazy(() => import('../profile/ProfileWizard').then((m) => ({ default: m.ProfileWizard })));
 
 const iso = (minsAgo: number) => new Date(Date.now() - minsAgo * 60000).toISOString();
@@ -57,9 +53,9 @@ const isoAhead = (mins: number) => new Date(Date.now() + mins * 60000).toISOStri
 
 /** A stand-in screenshot: a plain form page drawn as an SVG. */
 const SHOT = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1000' viewBox='0 0 800 1000'><rect width='800' height='1000' fill='#ffffff'/><rect x='60' y='60' width='300' height='28' rx='6' fill='#0b0b12'/>${[160, 250, 340, 430, 520]
-    .map((y) => `<rect x='60' y='${y}' width='180' height='14' rx='3' fill='#d4d4dc'/><rect x='60' y='${y + 24}' width='680' height='40' rx='8' fill='none' stroke='#e7e7ec' stroke-width='2'/>`)
-    .join('')}<rect x='60' y='640' width='200' height='48' rx='10' fill='#6d3cf5'/></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1000' viewBox='0 0 800 1000'><rect width='800' height='1000' fill='#ffffff'/><rect x='60' y='60' width='300' height='28' rx='6' fill='#15181c'/>${[160, 250, 340, 430, 520]
+    .map((y) => `<rect x='60' y='${y}' width='180' height='14' rx='3' fill='#cdd2d8'/><rect x='60' y='${y + 24}' width='680' height='40' rx='8' fill='none' stroke='#e1e4e8' stroke-width='2'/>`)
+    .join('')}<rect x='60' y='640' width='200' height='48' rx='10' fill='#15181c'/></svg>`,
 )}`;
 
 /** Real domains, so logos and the Companies page's job counts can be checked. */
@@ -99,6 +95,69 @@ function job(id: string, raw: string, name: string, domain: string, title: strin
   };
 }
 
+/** A small seeded random, so the mock history is the same on every load. */
+function seeded(seed: number) {
+  let x = seed;
+  return () => {
+    x = (x * 1103515245 + 12345) % 2147483648;
+    return x / 2147483648;
+  };
+}
+
+const MORE: [raw: string, name: string, domain: string][] = [
+  ['notion', 'Notion', 'notion.so'],
+  ['figma', 'Figma', 'figma.com'],
+  ['linear', 'Linear', 'linear.app'],
+  ['vercel', 'Vercel', 'vercel.com'],
+  ['airbnb', 'Airbnb', 'airbnb.com'],
+  ['duolingo', 'Duolingo', 'duolingo.com'],
+  ['palantir', 'Palantir', 'palantir.com'],
+  ['nvidia', 'NVIDIA', 'nvidia.com'],
+  ['datadog', 'Datadog', 'datadoghq.com'],
+  ['stripe', 'Stripe', 'stripe.com'],
+  ['ramp', 'Ramp', 'ramp.com'],
+  ['cloudflare', 'Cloudflare', 'cloudflare.com'],
+];
+const MORE_TITLES = [
+  'Software Engineer Intern',
+  'Backend Engineer Intern, Platform',
+  'Machine Learning Intern, Ranking',
+  'Data Engineering Intern',
+  'Frontend Engineer Intern, Design Systems',
+  'iOS Engineer Intern',
+  'Software Engineer Intern, Infrastructure',
+  'Data Analyst Intern',
+];
+const MORE_PLACES = ['New York, NY', 'San Francisco, CA', 'Remote', 'Seattle, WA; Hybrid', 'Austin, TX', 'Boston, MA'];
+
+/** Scored jobs found over the last two weeks, and applications spread over twelve. */
+function history(): JobRow[] {
+  const rnd = seeded(7);
+  const out: JobRow[] = [];
+  for (let i = 0; i < 30; i++) {
+    const [raw, name, domain] = MORE[Math.floor(rnd() * MORE.length)];
+    const score = Math.round((1.4 + rnd() * 3.4) * 10) / 10;
+    out.push(job(`h${i}`, raw, name, domain, MORE_TITLES[Math.floor(rnd() * MORE_TITLES.length)], MORE_PLACES[Math.floor(rnd() * MORE_PLACES.length)], score, { found_at: iso(60 * (6 + rnd() * 24 * 13)) }));
+  }
+  for (let i = 0; i < 26; i++) {
+    const [raw, name, domain] = MORE[Math.floor(rnd() * MORE.length)];
+    // More lately than at the start: the hunt picked up.
+    const daysAgo = Math.floor(Math.pow(rnd(), 1.6) * 80) + 1;
+    const sentReal = rnd() < 0.55;
+    out.push(
+      job(`p${i}`, raw, name, domain, MORE_TITLES[Math.floor(rnd() * MORE_TITLES.length)], MORE_PLACES[Math.floor(rnd() * MORE_PLACES.length)], Math.round((3.4 + rnd() * 1.5) * 10) / 10, {
+        status: sentReal ? 'submitted' : 'blocked',
+        reason: sentReal ? '' : 'dry_run',
+        dry_run: !sentReal,
+        note: sentReal ? 'Confirmation page reached.' : 'Dry run: filled, nothing sent.',
+        updated_at: iso(daysAgo * 1440 - Math.floor(rnd() * 600)),
+        found_at: iso((daysAgo + 2) * 1440),
+      }),
+    );
+  }
+  return out;
+}
+
 function mockJobs(): JobRow[] {
   const jobs = COMPANIES.map(([raw, name, domain, title, location, score, mins], i) => job(`j${i}`, raw, name, domain, title, location, score, { found_at: iso(mins) }));
   jobs.push(
@@ -117,6 +176,7 @@ function mockJobs(): JobRow[] {
     job('a6', 'scopely', 'Scopely', 'scopely.com', 'Data Engineer Intern', 'Culver City, CA', 3.5, { status: 'failed', reason: 'form_not_loaded', note: 'The form timed out on page 3.', updated_at: iso(4400) }),
     job('a7', 'Northwind Labs', '', '', 'QA Engineer Intern', 'Remote', 3.1, { status: 'blocked', reason: 'missing_info', note: 'The form asks for a security clearance level.', updated_at: iso(5900) }),
     job('a8', 'jobgether', 'Jobgether', 'jobgether.com', 'Platform Engineer Intern', 'Remote', 3.4, { status: 'refused', note: 'The form rejected the phone number format.', updated_at: iso(8700) }),
+    ...history(),
   );
   return jobs;
 }
@@ -234,7 +294,7 @@ const PREFS: NotifyPrefs = {
   setSound: () => undefined,
 };
 
-const ALL_PAGES: Page[] = ['jobs', 'applications', 'inbox', 'agent', 'letters', 'companies', 'profile', 'preferences', 'rules', 'memory', 'setup'];
+const ALL_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'agent', 'letters', 'companies', 'profile', 'preferences', 'rules', 'memory', 'setup'];
 
 const rule = (id: string, kind: string, title: string, body: string, rest: Partial<RuleRow> = {}): RuleRow => ({
   id,
@@ -295,10 +355,8 @@ function mockRules(): RuleRow[] {
 
 const table = <T,>(rows: T[], loading: boolean, error: LiveTable<T>['error'] = null): LiveTable<T> => ({ rows, loading, error, live: 'live', reload: () => undefined });
 
-const NO_FILTERS: Omit<JobFilterState, 'company'> = { query: '', minScore: 0, track: 'all', role: null, sort: 'score' };
-
 export default function Preview() {
-  const [page, setPage] = useState<Page>('jobs');
+  const [page, setPage] = useState<Page>('overview');
   const [company, setCompany] = useState<string | null>(null);
   const [companyParams, setCompanyParams] = useState(() => new URLSearchParams());
   const [screen, setScreen] = useState<'app' | 'splash' | 'error'>('app');
@@ -308,7 +366,8 @@ export default function Preview() {
   const [settings, setSettings] = useState<AgentSettings>({ paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40 });
   const [oldDb, setOldDb] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [filters, setFilters] = useState(NO_FILTERS);
+  const [filters, setFilters] = useState(NO_JOB_FILTERS);
+  const [noInbox, setNoInbox] = useState(false);
   const [dryRun, setDryRun] = useState(true);
   const [confirm, setConfirm] = useState<JobRow[] | null>(null);
   const [shot, setShot] = useState<{ job: JobRow; url: string } | null>(null);
@@ -334,6 +393,7 @@ export default function Preview() {
       { job_id: 'j0', template_id: 'classic', body: letterText('Payments'), pdf_path: url, problems: '', updated_by: 'agent', updated_at: iso(25) },
       { job_id: 'j2', template_id: 'mine-data', body: letterText('Datadog'), pdf_path: '', problems: '', updated_by: 'agent', updated_at: iso(140) },
       { job_id: 'j4', template_id: 'startup', body: letterText('Cloudflare'), pdf_path: url, problems: 'The letter names a project twice.', updated_by: 'web', updated_at: iso(600) },
+      ...[3, 5, 8, 9, 12, 16, 23, 30, 41].map((d, i) => ({ job_id: `p${i}`, template_id: 'classic', body: letterText('Platform'), pdf_path: '', problems: '', updated_by: 'agent', updated_at: iso(d * 1440 + 200) })),
     ]);
     return () => URL.revokeObjectURL(url);
   }, []);
@@ -359,17 +419,8 @@ export default function Preview() {
 
   const candidates = useMemo(() => jobs.filter((j) => j.status === 'scored'), [jobs]);
   const visible = useMemo(() => sortJobs(filterJobs(candidates, { ...filters, company, saved, now }), filters.sort), [candidates, filters, company, saved]);
-  const kinds = useMemo(() => kindCounts(candidates), [candidates]);
-  const companies = useMemo(() => companyCounts(candidates), [candidates]);
-  const trackCounts = useMemo(() => {
-    const out = {} as Record<Track, number>;
-    for (const t of ['all', 'new', 'remote', 'top', 'saved'] as Track[]) out[t] = candidates.filter((j) => onTrack(j, t, saved, now)).length;
-    return out;
-  }, [candidates, saved]);
   const applications = jobs.filter((j) => APPLICATION_STATUSES.includes(j.status)).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
-  const parts = applicationParts(applications);
-  const days = useApplyDays(applications);
-  const finished = parts.sent + parts.filled + parts.blocked;
+  const sent = applications.filter((j) => ['sent', 'unconfirmed'].includes(statusInfo(j).tone)).length;
   const current = online ? applications.find((j) => j.status === 'applying') ?? null : null;
   const commands: CommandRow[] = [
     { id: 4, kind: 'resume', job_ids: [], dry_run: true, status: 'done', error: '', created_at: iso(4300) },
@@ -469,11 +520,11 @@ export default function Preview() {
   const reset = () => {
     setJobs(mockJobs());
     setSelected(new Set());
-    setFilters(NO_FILTERS);
+    setFilters(NO_JOB_FILTERS);
     setCompany(null);
   };
 
-  const quick = {
+  const agentCard: AgentCardProps = {
     agent,
     online,
     loading: false,
@@ -486,8 +537,41 @@ export default function Preview() {
     },
     searching: isSearching,
     onSearch: search,
-    onOpen: () => setPage('agent'),
   };
+  const tone = agentTone(online, state);
+  const words = statusWords(agent, online, false, now, tone);
+  const toggleOne = (id: string) =>
+    setSelected((sel) => {
+      const n = new Set(sel);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const queuedIds = new Set(['j10']);
+  const dock = (
+    <ActionBar
+      count={selected.size}
+      dryRun={dryRun}
+      online={online}
+      applying={false}
+      onApply={() => {
+        const chosen = candidates.filter((j) => selected.has(j.id));
+        if (dryRun) {
+          push({ tone: 'ok', title: `${chosen.length} jobs queued for dry run` });
+          setSelected(new Set());
+        } else setConfirm(chosen);
+      }}
+      onLetters={() => push({ tone: 'ok', title: `Writing ${selected.size} letters` })}
+      writing={false}
+      onClear={() => setSelected(new Set())}
+    />
+  );
+  const marks: Marks = {
+    jobs: { node: <span className="navcount num">{candidates.length}</span>, label: `${candidates.length} jobs` },
+    applications: { node: <span className="navcount num">1</span>, label: '1 in progress' },
+    profile: { node: <span className="navdot navdot--ember" />, label: 'incomplete' },
+  };
+  const companyLabel = company ? displayName(candidates.find((j) => atCompany(j, company)) ?? { company }) : '';
 
   if (screen !== 'app') {
     return (
@@ -503,25 +587,88 @@ export default function Preview() {
   }
 
   const meta = PAGE_META[page];
-  let header: ReactNode = <PageHeader title={meta.title} subtitle={meta.sub} wolf={meta.wolf} />;
+  let header: ReactNode = <PageHeader title={meta.title} subtitle={meta.sub} />;
   let content: ReactNode;
   let pageBar: ReactNode = null;
+  const finishBar = (
+    <>
+      <button type="button" className="btn btn--sm btn--primary" onClick={() => finish(false)}>
+        Finish (dry run)
+      </button>
+      <button type="button" className="btn btn--sm btn--ember" onClick={() => finish(true)}>
+        Finish (sent)
+      </button>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={newJob}>
+        New job
+      </button>
+    </>
+  );
+  const notices = (applying: boolean) => (
+    <>
+      {applying && !dryRun ? <LiveCallout /> : null}
+      {!online ? <OfflineCallout /> : null}
+      {applying ? (
+        <Callout
+          tone="yellow"
+          icon={<IconUser size={16} />}
+          action={
+            <button type="button" className="btn btn--primary btn--sm">
+              Finish
+            </button>
+          }
+        >
+          <strong>Profile incomplete.</strong> Needed before applying.
+        </Callout>
+      ) : null}
+    </>
+  );
   switch (page) {
-    case 'jobs':
-      header = <h1 className="sr-only">Jobs</h1>;
+    case 'overview':
+      header = null;
       pageBar = (
         <>
-          <button type="button" className="btn btn--sm btn--primary" onClick={() => finish(false)}>
-            Finish (dry run)
-          </button>
-          <button type="button" className="btn btn--sm btn--brand" onClick={() => finish(true)}>
-            Finish (sent)
-          </button>
-          <button type="button" className="btn btn--sm btn--secondary" onClick={newJob}>
-            New job
+          {finishBar}
+          <button type="button" className={`btn btn--sm ${noInbox ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setNoInbox((v) => !v)}>
+            Empty inbox
           </button>
         </>
       );
+      content = (
+        <>
+          <OverviewPage
+            firstName={PROFILE_DATA.personal.first_name}
+            agent={agent}
+            tone={tone}
+            state={state}
+            line={words.line}
+            jobs={jobs}
+            candidates={candidates}
+            jobsLoading={loading}
+            jobsError={null}
+            letters={letters}
+            inbox={noInbox ? [] : INBOX}
+            inboxLoading={loading}
+            inboxMissing={oldDb}
+            commands={commands}
+            now={now}
+            searching={isSearching}
+            onSearch={search}
+            onReviewStrong={() => {
+              setFilters({ ...NO_JOB_FILTERS, minScore: 4 });
+              setPage('jobs');
+            }}
+            onNavigate={setPage}
+            selected={selected}
+            queued={queuedIds}
+            onToggle={toggleOne}
+            notices={notices(false)}
+          />
+          {dock}
+        </>
+      );
+      break;
+    case 'jobs':
+      pageBar = finishBar;
       content = (
         <JobsPage
           candidates={candidates}
@@ -530,15 +677,8 @@ export default function Preview() {
           error={null}
           onRetry={() => undefined}
           selected={selected}
-          queued={new Set(['j10'])}
-          onToggle={(id) =>
-            setSelected((s) => {
-              const n = new Set(s);
-              if (n.has(id)) n.delete(id);
-              else n.add(id);
-              return n;
-            })
-          }
+          queued={queuedIds}
+          onToggle={toggleOne}
           onToggleAll={(ids, on) => setSelected(on ? new Set(ids) : new Set())}
           saved={saved}
           onSave={toggleSaved}
@@ -549,75 +689,20 @@ export default function Preview() {
             if (Object.keys(rest).length) setFilters((f) => ({ ...f, ...rest }));
           }}
           onClearFilters={() => {
-            setFilters(NO_FILTERS);
+            setFilters(NO_JOB_FILTERS);
             setCompany(null);
           }}
-          kinds={kinds}
-          companies={companies}
-          trackCounts={trackCounts}
+          companyLabel={companyLabel}
           searching={isSearching}
           onSearch={search}
           now={now}
-          scored={agent.jobs_scored}
-          found={agent.jobs_found}
-          banner={
-            <BannerRow
-              found={agent.jobs_found}
-              searching={isSearching}
-              onSearch={search}
-              setup={{ done: setupMark.done, label: setupMark.done ? 'Ready' : hasResume ? 'Finish your profile' : 'Step 1 of 3' }}
-              letters={letters.length}
-              sent={parts.sent}
-              onNavigate={setPage}
-            />
-          }
-          notices={
-            <>
-              {!dryRun ? <LiveCallout /> : null}
-              {!online ? <OfflineCallout /> : null}
-              <Callout
-                tone="yellow"
-                icon={<IconUser size={16} />}
-                action={
-                  <button type="button" className="btn btn--primary btn--sm">
-                    Finish
-                  </button>
-                }
-              >
-                <strong>Profile incomplete.</strong> Needed before applying.
-              </Callout>
-            </>
-          }
-          actionBar={
-            <ActionBar
-              count={selected.size}
-              dryRun={dryRun}
-              online={online}
-              applying={false}
-              onApply={() => {
-                const chosen = candidates.filter((j) => selected.has(j.id));
-                if (dryRun) {
-                  push({ tone: 'ok', title: `${chosen.length} jobs queued for dry run` });
-                  setSelected(new Set());
-                } else setConfirm(chosen);
-              }}
-              onLetters={() => push({ tone: 'ok', title: `Writing ${selected.size} letters` })}
-              writing={false}
-              onClear={() => setSelected(new Set())}
-            />
-          }
-          rail={
-            <>
-              <CalendarCard days={days} now={now} />
-              <ProgressCard parts={parts} onOpen={() => setPage('applications')} />
-              <AgentCard {...quick} />
-            </>
-          }
+          notices={notices(true)}
+          actionBar={dock}
         />
       );
       break;
     case 'applications':
-      header = <PageHeader title={meta.title} subtitle={meta.sub} wolf={meta.wolf} count={applications.length} />;
+      header = <PageHeader title={meta.title} subtitle={meta.sub} count={applications.length} />;
       content = (
         <ApplicationsPage
           items={applications}
@@ -637,7 +722,7 @@ export default function Preview() {
       );
       break;
     case 'inbox':
-      content = <InboxView table={table(INBOX, loading, oldDb ? { kind: 'missing-table', message: 'missing' } : null)} now={now} />;
+      content = <InboxView table={table(INBOX, loading, oldDb ? { kind: 'missing-table', message: 'missing' } : null)} now={now} jobs={jobs} />;
       break;
     case 'agent':
       content = (
@@ -651,11 +736,11 @@ export default function Preview() {
           tail={tail}
           commands={commands}
           live="live"
-          sent={parts.sent}
+          sent={sent}
           current={current}
           settings={settings}
           settingsState={{ loading: false, missing: oldDb, error: null }}
-          onSettings={quick.onSettings}
+          onSettings={agentCard.onSettings}
         />
       );
       pageBar = (
@@ -752,7 +837,7 @@ export default function Preview() {
       );
       break;
     case 'memory':
-      content = <MemoryPage memory={memory} now={now} job={null} onClearJob={() => undefined} toast={push} />;
+      content = <MemoryPage memory={memory} now={now} job={null} onClearJob={() => undefined} toast={push} jobs={jobs} />;
       break;
     case 'setup':
       header = null;
@@ -805,85 +890,69 @@ export default function Preview() {
       break;
   }
 
+  const devbar = (
+    <div className="devbar" aria-label="Preview controls">
+      <span className="devbar__label">Preview</span>
+      <select className="btn btn--sm btn--secondary" value={page} onChange={(e) => setPage(e.target.value as Page)} aria-label="Page">
+        {ALL_PAGES.map((p) => (
+          <option key={p} value={p}>
+            {PAGE_META[p].title}
+          </option>
+        ))}
+      </select>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={() => setMode((m) => MODES[(MODES.indexOf(m) + 1) % MODES.length])}>
+        Agent: {mode}
+      </button>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={() => setLoading((v) => !v)}>
+        {loading ? 'Loaded' : 'Loading'}
+      </button>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={() => confetti()}>
+        Confetti
+      </button>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'info', title: 'New answer learned', detail: 'Why do you want to work here?' })}>
+        Toast
+      </button>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'error', title: 'Could not queue jobs', detail: 'JWT expired' })}>
+        Error
+      </button>
+      <button type="button" className={`btn btn--sm ${oldDb ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setOldDb((v) => !v)}>
+        Old database
+      </button>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('splash')}>
+        Splash
+      </button>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('error')}>
+        Boot error
+      </button>
+      {pageBar}
+      <button type="button" className="btn btn--sm btn--ghost" onClick={reset}>
+        Reset
+      </button>
+    </div>
+  );
+
   return (
-    <div className={`app ${dryRun ? '' : 'is-live'}`}>
-      <TopProgress active={working || isSearching} />
-      <Navbar
+    <>
+      <Shell
         page={page}
         onNavigate={setPage}
+        marks={marks}
         setup={setupMark}
-        status={<AgentStatus agent={agent} online={online} loading={false} now={now} live="live" onOpen={() => setPage('agent')} />}
-        ring={<RingPill done={finished} total={finished + candidates.length} label={`${finished} of ${finished + candidates.length} jobs done`} onClick={() => setPage('applications')} />}
-        alerts={<NotifyMenu prefs={PREFS} recent={applications.slice(0, 5)} now={now} onOpenRecent={() => setPage('applications')} variant="bar" />}
-        dryRun={<DryRunSwitch dryRun={dryRun} onChange={setDryRun} />}
-        account={<AccountMenu email="alex.rivera@usf.edu" />}
-      />
-      <div className="layout">
-        <aside className="layout__side">
-          <DashSidebar
-            page={page}
-            onNavigate={setPage}
-            marks={{
-              jobs: { node: <span className="navcount num">{candidates.length}</span>, label: `${candidates.length} jobs` },
-              applications: { node: <span className="navcount num">1</span>, label: '1 in progress' },
-              profile: { node: <span className="navdot navdot--amber" />, label: 'incomplete' },
-            }}
-            setup={setupMark}
-            companies={companies.slice(0, 6)}
-            activeCompany={company}
-            onCompany={(key) => {
-              setCompany(key);
-              setPage('jobs');
-            }}
-          />
-        </aside>
-        <main className={`layout__main layout__main--${page}`}>
-          <div className="devbar" aria-label="Preview controls">
-            <span className="devbar__label">Preview</span>
-            <select className="btn btn--sm btn--secondary" value={page} onChange={(e) => setPage(e.target.value as Page)} aria-label="Page">
-              {ALL_PAGES.map((p) => (
-                <option key={p} value={p}>
-                  {PAGE_META[p].title}
-                </option>
-              ))}
-            </select>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={() => setMode((m) => MODES[(MODES.indexOf(m) + 1) % MODES.length])}>
-              Agent: {mode}
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={() => setLoading((v) => !v)}>
-              {loading ? 'Loaded' : 'Loading'}
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={() => confetti()}>
-              Confetti
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'info', title: 'New answer learned', detail: 'Why do you want to work here?' })}>
-              Toast
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'error', title: 'Could not queue jobs', detail: 'JWT expired' })}>
-              Error
-            </button>
-            <button type="button" className={`btn btn--sm ${oldDb ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setOldDb((v) => !v)}>
-              Old database
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('splash')}>
-              Splash
-            </button>
-            <button type="button" className="btn btn--sm btn--secondary" onClick={() => setScreen('error')}>
-              Boot error
-            </button>
-            {pageBar}
-            <button type="button" className="btn btn--sm btn--ghost" onClick={reset}>
-              Reset
-            </button>
-          </div>
-          <PageTransition pageKey={page}>
-            {header}
-            <Suspense fallback={<SkeletonPanel count={5} />}>{content}</Suspense>
-          </PageTransition>
-        </main>
-      </div>
-      <TabBar page={page} onNavigate={setPage} marks={{}} setup={setupMark} email="alex.rivera@usf.edu" more={<DryRunSwitch dryRun={dryRun} onChange={setDryRun} compact />} />
-      {page !== 'agent' ? <QuickAgent {...quick} /> : null}
+        agent={agentCard}
+        working={working || isSearching}
+        dryRun={dryRun}
+        onDryRun={setDryRun}
+        notify={PREFS}
+        recent={applications.slice(0, 5)}
+        onOpenRecent={() => setPage('applications')}
+        email="alex.rivera@usf.edu"
+        top={devbar}
+      >
+        <PageTransition pageKey={page}>
+          {header}
+          <Suspense fallback={<SkeletonPanel count={5} />}>{content}</Suspense>
+        </PageTransition>
+      </Shell>
       {wizard.key > 0 ? (
         <Suspense fallback={null}>
           <ProfileWizard
@@ -903,6 +972,6 @@ export default function Preview() {
       <ConfirmSubmit jobs={confirm} onCancel={() => setConfirm(null)} onConfirm={() => setConfirm(null)} />
       <Lightbox shot={shot} onClose={() => setShot(null)} />
       <Toasts toasts={toasts} onDismiss={dismiss} />
-    </div>
+    </>
   );
 }

@@ -2,13 +2,14 @@ import { useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { AgentRow, AgentSettings, CommandRow, JobRow, LiveStatus, LoadError } from '../../lib/types';
 import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
-import { AnimatedNumber, Orb, Shimmer, Swap, WaitingLines, orbState } from '../motion';
+import { AnimatedNumber, Shimmer, Swap, WaitingLines } from '../motion';
 import { clock, plural, stateLabel, timeAgo, untilText, waitingLines, type TagColor } from '../../lib/format';
 import { Callout, Tag } from '../common';
 import { Dialog } from '../Dialog';
 import { Group, GroupNote, NavRow, PillSelect, SettingRow, ToggleRow, type PillOption } from '../settings';
 import { IconAlert, IconCheckCircle, IconClock, IconDownload, IconFile, IconFilter, IconInfo, IconSpark, IconX } from '../Icons';
-import { AgentWolf } from '../mascot/Wolf';
+import { WolfRing } from '../mascot/Wolf';
+import { Contours } from '../motif';
 import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
 
 const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters', resume: 'Resume' };
@@ -20,7 +21,8 @@ const COMMAND_STATUS: Record<CommandRow['status'], { label: string; color: TagCo
   failed: { label: 'Failed', color: 'red' },
 };
 
-const LIVE_WORD: Record<LiveStatus, string> = { live: 'Connected', down: 'Reconnecting', connecting: 'Connecting' };
+// The page's own link to the database, not the agent: shown only while the agent is online, so it never sits beside "Offline".
+const LIVE_WORD: Record<LiveStatus, string> = { live: 'Live updates', down: 'Updates paused', connecting: 'Connecting' };
 
 const HOURS = [1, 3, 6, 12, 24];
 const LIMITS = [20, 40, 80];
@@ -184,34 +186,9 @@ export function AgentPage(props: AgentPageProps) {
       ) : null}
 
       <section className={`hero hero--${tone}`} aria-labelledby="hero-state">
-        <svg className="hero__art" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-          <defs>
-            <linearGradient id="hero-aurora" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#22d3ee" />
-              <stop offset="0.5" stopColor="#7c5cff" />
-              <stop offset="1" stopColor="#a855f7" />
-            </linearGradient>
-            <filter id="hero-veil" x="-20%" y="-60%" width="140%" height="220%">
-              <feGaussianBlur stdDeviation="18" />
-            </filter>
-          </defs>
-          <g filter="url(#hero-veil)" opacity="0.3">
-            <path d="M260 70 C380 20 500 120 640 50 S820 60 860 40" fill="none" stroke="url(#hero-aurora)" strokeWidth="34" strokeLinecap="round" className="anim-drift" style={{ ['--drift-dur' as string]: '18s', transformBox: 'fill-box', transformOrigin: 'center' }} />
-            <path d="M220 210 C360 170 470 230 600 190 S780 200 840 180" fill="none" stroke="url(#hero-aurora)" strokeWidth="20" strokeLinecap="round" opacity="0.6" className="anim-drift" style={{ ['--drift-dur' as string]: '22s', ['--drift-delay' as string]: '-6s', transformBox: 'fill-box', transformOrigin: 'center' }} />
-          </g>
-          <g fill="#f4f4f8" opacity="0.7">
-            <circle cx="420" cy="30" r="1.2" />
-            <circle cx="520" cy="60" r="0.9" />
-            <circle cx="610" cy="24" r="1.1" />
-            <circle cx="700" cy="70" r="0.8" />
-            <circle cx="760" cy="30" r="1.2" className="anim-twinkle" />
-            <circle cx="470" cy="226" r="0.9" />
-            <circle cx="660" cy="232" r="1" className="anim-twinkle" />
-          </g>
-        </svg>
-        <div className="hero__orb">
-          <Orb state={loading ? 'off' : orbState(tone)} size={188} className="hero__aura" />
-          <AgentWolf tone={loading ? 'off' : tone} state={state} size={136} eager className="hero__wolf" />
+        <Contours className="hero__map" />
+        <div className="hero__ring">
+          <WolfRing tone={loading ? 'off' : tone} state={state} size={136} />
         </div>
         <div className="hero__body">
           <p className="hero__eyebrow">
@@ -245,10 +222,12 @@ export function AgentPage(props: AgentPageProps) {
               <IconFile size={14} />
               {agent?.resume_name || 'No resume loaded'}
             </li>
-            <li className={`live-${live}`} title="Live updates">
-              <span className={`livedot livedot--${live}`} aria-hidden="true" />
-              <Swap id={live}>{LIVE_WORD[live]}</Swap>
-            </li>
+            {online ? (
+              <li className={`live-${live}`} title="This page's live link to the database">
+                <span className={`livedot livedot--${live}`} aria-hidden="true" />
+                <Swap id={live}>{LIVE_WORD[live]}</Swap>
+              </li>
+            ) : null}
           </ul>
           {!online && !loading ? (
             <p className="hero__alt">
@@ -383,7 +362,7 @@ export function AgentPage(props: AgentPageProps) {
                               : c.kind === 'resume'
                                 ? 'Read resume'
                                 : 'More jobs'}
-                          {c.kind === 'apply' ? c.dry_run ? <Tag color="blue">Dry run</Tag> : <Tag color="red">Live</Tag> : null}
+                          {c.kind === 'apply' ? c.dry_run ? <Tag color="yellow">Dry run</Tag> : <Tag color="red">Live</Tag> : null}
                         </span>
                         <span>
                           <span className={`tag tag--${status.color} tag--status ${c.status === 'running' ? 'is-live' : ''}`}>

@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 
-/** A thin blue bar sliding along the top edge while the agent works. Purely decorative: the state is said elsewhere. */
+/** A thin ember bar sliding along the top edge while the agent works. Purely decorative: the state is said elsewhere. */
 export function TopProgress({ active }: { active: boolean }) {
   return (
     <AnimatePresence>

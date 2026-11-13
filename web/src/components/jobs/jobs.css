@@ -1,0 +1,509 @@
+/* The Jobs page, loaded with it: one toolbar row over a card of job rows, each with the match meter. */
+
+.jobs {
+  gap: 16px;
+}
+
+.jcard {
+  position: relative;
+  padding: 0;
+  animation: fade-up 280ms var(--ease) 60ms both;
+}
+
+/* One row of controls: select all, search, company, score, sort, New only, saved, the count and Find more. */
+.jtool {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: rgb(255 255 255 / 0.96);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.jtool__all {
+  margin: 0 4px 0 4px;
+}
+
+.jsearch {
+  display: flex;
+  flex: 1 1 200px;
+  align-items: center;
+  gap: 8px;
+  min-width: 170px;
+  max-width: 320px;
+  height: 34px;
+  padding: 0 6px 0 11px;
+  border-radius: var(--r-control);
+  border: 1px solid transparent;
+  background: var(--frost);
+  color: var(--ink-3);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.jsearch:hover {
+  border-color: var(--line);
+}
+
+.jsearch:focus-within {
+  border-color: var(--ember-500);
+  background: var(--card);
+  box-shadow: var(--focus);
+}
+
+.jsearch input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.jsearch input::placeholder {
+  color: var(--ink-3);
+}
+
+.jtool__company {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 220px;
+  height: 28px;
+  padding: 0 2px 0 9px;
+  border-radius: var(--r-tag);
+  background: var(--ember-50);
+  box-shadow: inset 0 0 0 1px var(--ember-100);
+  color: var(--ember-700);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.jtool__companyname {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jtool__company .icon-btn {
+  color: var(--ember-700);
+}
+
+.jtool__company .icon-btn:hover:not(:disabled) {
+  background: var(--ember-100);
+  color: var(--ember-800);
+}
+
+.jtool__switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 6px;
+  border-radius: var(--r-control);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.jtool__switch:hover {
+  background: var(--frost);
+}
+
+.jtool__switch input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.jtool__switch.is-on {
+  color: var(--ink);
+}
+
+.jtool__saved {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-control);
+}
+
+.jtool__saved.is-on {
+  background: var(--ember-50);
+  color: var(--ember-600);
+}
+
+.jtool__count {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* The rows: white, a hairline between them, frost on hover, ember-50 when selected. */
+.jlist {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+}
+
+.jrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 12px;
+  transition: background-color 140ms ease;
+}
+
+.jrow + .jrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 64px;
+  right: 14px;
+  height: 1px;
+  background: var(--line);
+  transition: opacity 140ms ease;
+}
+
+.jrow:hover,
+.jrow:focus-within {
+  background: var(--frost);
+}
+
+.jrow:hover::before,
+.jrow:hover + .jrow::before,
+.jrow.is-selected::before,
+.jrow.is-selected + .jrow::before {
+  opacity: 0;
+}
+
+.jrow.is-selected {
+  background: var(--ember-50);
+}
+
+.jrow__hit {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 18px 36px minmax(0, 1fr) 132px 176px;
+  align-items: center;
+  column-gap: 14px;
+  min-width: 0;
+  padding: 12px 4px 12px 12px;
+  cursor: pointer;
+}
+
+.jrow.is-queued .jrow__hit {
+  cursor: default;
+}
+
+.jrow__main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.jrow__titleline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.jrow__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.jrow.is-queued .jrow__title {
+  color: var(--ink-2);
+}
+
+.jrow__meta {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.jrow__meta > * + *::before {
+  content: '\00b7';
+  margin: 0 7px;
+  color: var(--ink-4);
+  font-weight: 400;
+}
+
+.jrow__co {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.jrow__place {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jrow__more {
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.jrow__mode {
+  flex: none;
+  font-weight: 500;
+}
+
+.jrow__mode--remote {
+  color: var(--pine-700);
+}
+
+.jrow__mode--hybrid {
+  color: var(--sky-700);
+}
+
+.jrow__when {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.jrow__time {
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.jrow__acts {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  padding-right: 8px;
+}
+
+.jrow__star {
+  color: var(--ink-4);
+}
+
+.jrow__star.is-on {
+  color: var(--ember-600);
+}
+
+.jrow__open {
+  width: 32px;
+}
+
+/* The match meter: five short ember segments, the word and the score. */
+.meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+}
+
+.meter__segs {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.meter__seg {
+  width: 14px;
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ember-500) calc(var(--f, 0) * 100%), var(--fill) 0);
+  transform-origin: left center;
+  animation: seg-in 360ms var(--ease) both;
+  animation-delay: calc(var(--row, 0) * 25ms + var(--i, 0) * 45ms + 80ms);
+}
+
+.meter__word {
+  width: 46px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.meter__word--strong {
+  color: var(--ember-700);
+}
+
+.meter__score {
+  min-width: 24px;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: right;
+}
+
+.meter--compact {
+  gap: 7px;
+}
+
+.meter--compact .meter__seg {
+  width: 10px;
+  height: 6px;
+}
+
+.meter--none {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+@keyframes seg-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@media (max-width: 1279px) {
+  .jrow__hit {
+    grid-template-columns: 18px 36px minmax(0, 1fr) 118px auto;
+  }
+
+  .jrow__hit .meter__word {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .jtool {
+    top: 56px;
+  }
+}
+
+@media (max-width: 719px) {
+  /* On a phone the toolbar takes a few lines, so it scrolls away with the list instead of sticking. */
+  .jtool {
+    position: static;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .jsearch {
+    flex: 1 1 100%;
+    max-width: none;
+    order: -1;
+  }
+
+  .jtool__count {
+    margin-left: 0;
+    flex: 1;
+    text-align: right;
+  }
+
+  .jtool .findbtn {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .jrow {
+    align-items: flex-start;
+  }
+
+  .jrow + .jrow::before {
+    left: 12px;
+    right: 12px;
+  }
+
+  .jrow__hit {
+    grid-template-columns: 18px 32px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'check logo main main'
+      '. . when meter';
+    row-gap: 8px;
+    column-gap: 10px;
+    padding: 12px 0 12px 10px;
+  }
+
+  .jrow__check {
+    grid-area: check;
+    align-self: start;
+    margin-top: 8px;
+  }
+
+  .jrow__logo {
+    grid-area: logo;
+    align-self: start;
+    --logo: 32px !important;
+  }
+
+  .jrow__main {
+    grid-area: main;
+  }
+
+  .jrow__title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .jrow__meta {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    white-space: normal;
+  }
+
+  .jrow__when {
+    grid-area: when;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+  }
+
+  .jrow__hit > .meter {
+    grid-area: meter;
+    gap: 7px;
+  }
+
+  .jrow__hit .meter__seg {
+    width: 10px;
+    height: 7px;
+  }
+
+  .jrow__acts {
+    flex-direction: column;
+    padding: 8px 4px 0 0;
+  }
+}

@@ -16,9 +16,11 @@ interface MemoryCardProps {
   onDelete: () => void;
   /** Position in the list, for the entrance stagger. */
   index?: number;
+  /** The company as the other pages show it, found through the row's job or its name. */
+  company?: { name: string; domain?: string } | null;
 }
 
-export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function MemoryCard({ row, now, onSave, onPin, onDelete, index = 0 }, ref) {
+export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function MemoryCard({ row, now, onSave, onPin, onDelete, index = 0, company: known }, ref) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(row.answer);
   const [open, setOpen] = useState(false);
@@ -29,8 +31,8 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
   }, [row.answer, editing]);
 
   const [answerRef, clamped] = useOverflow<HTMLParagraphElement>(row.answer, open, editing);
-  // The memory row has the raw company name and no domain, so the tile is a monogram.
-  const company = row.company ? companyName(row.company) : '';
+  // The memory row has the raw company name and no domain: the page resolves it through the jobs when it can.
+  const company = known?.name || (row.company ? companyName(row.company) : '');
   const learned = row.source === 'learned';
 
   async function save() {
@@ -111,7 +113,7 @@ export const MemoryCard = forwardRef<HTMLLIElement, MemoryCardProps>(function Me
             {learned ? <IconSpark size={13} /> : <IconUser size={13} />}
             <span className="sr-only">{learned ? 'Learned' : 'Mine'}</span>
           </span>
-          {company ? <CompanyLogo name={company} size={22} /> : null}
+          {company ? <CompanyLogo name={company} domain={known?.domain} size={22} /> : null}
           {company ? <span className="memcard__where">{company}</span> : <span className="memcard__where">{learned ? 'Learned' : 'Mine'}</span>}
           {row.job_title ? <span className="memcard__job">{row.job_title}</span> : null}
           <span className="memcard__time num">{timeAgo(row.updated_at, now)}</span>

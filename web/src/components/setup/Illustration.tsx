@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { EASE_OUT, SPRING_SOFT } from '../../lib/motion';
 import { IconCheck } from '../Icons';
+import { Contours } from '../motif';
 
 /** The form fields and the resume piece each one comes from. */
 const FIELDS = [
@@ -63,6 +64,7 @@ export function Illustration({ done = false }: { done?: boolean }) {
 
   return (
     <div className="illo" ref={ref} style={{ height: H * scale }} aria-hidden="true">
+      <Contours className="illo__map" />
       <div className="illo__stage" style={{ width: W, height: H, transform: `scale(${scale})` } as CSSProperties}>
         <div className="illo__resume">
           <div className={piece(0)}>

@@ -98,13 +98,14 @@ function LetterRule({ rule, readOnly, busy, run, actions }: { rule: RuleRow; rea
       <div className="srow__main">
         <div className="srow__text">
           <p className="srow__title">
-            {rule.title}
-            {edited ? <span className="tag tag--violet">Edited</span> : null}
+            <span className="srow__name">{rule.title}</span>
+            {!rule.enabled ? <span className="tag tag--gray">Off</span> : null}
+            {edited ? <span className="tag tag--ember">Edited</span> : null}
             {!rule.builtin ? <span className="tag tag--gray">Yours</span> : null}
           </p>
           {rule.description ? <p className="srow__desc">{rule.description}</p> : null}
         </div>
-        <div className="srow__control">
+        <div className="srow__tools">
           {!readOnly ? (
             <button type="button" className={`btn btn--ghost btn--sm ${editing ? 'is-on' : ''}`} onClick={() => setEditing((v) => !v)} aria-expanded={editing}>
               <IconPencil size={14} />
@@ -122,6 +123,8 @@ function LetterRule({ rule, readOnly, busy, run, actions }: { rule: RuleRow; rea
               <IconTrash size={15} />
             </button>
           ) : null}
+        </div>
+        <div className="srow__switch">
           <Switch checked={rule.enabled} label={`${rule.title}, on`} disabled={readOnly} onChange={(on) => void run(rule.id, () => actions.save(write({ enabled: on })))} />
         </div>
       </div>
@@ -293,12 +296,13 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
                 <div className="srow__text">
                   <p className="srow__title">
                     <IconSpark size={14} className="srow__spark" />
-                    {slotTitle(slot)}
+                    <span className="srow__name">{slotTitle(slot)}</span>
+                    {rule && !rule.enabled ? <span className="tag tag--gray">Off</span> : null}
                   </p>
                   <p className="srow__desc">{note || 'Two to four sentences.'}</p>
                 </div>
                 {rule ? (
-                  <div className="srow__control">
+                  <div className="srow__switch">
                     <Switch
                       checked={rule.enabled}
                       label={`${slotTitle(slot)} rule, on`}
@@ -328,14 +332,19 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
             <div className={`srow srow--rule ${rule && !rule.enabled ? 'is-off' : ''}`} key={kind.id}>
               <div className="srow__main">
                 <div className="srow__text">
-                  <p className="srow__title">{kind.title}</p>
+                  <p className="srow__title">
+                    <span className="srow__name">{kind.title}</span>
+                    {rule && !rule.enabled ? <span className="tag tag--gray">Off</span> : null}
+                  </p>
                 </div>
-                <div className="srow__control">
-                  {rule && !ANSWER_KINDS.some((k) => answerRuleId(k.title) === kind.id) && !readOnly ? (
+                {rule && !ANSWER_KINDS.some((k) => answerRuleId(k.title) === kind.id) && !readOnly ? (
+                  <div className="srow__tools">
                     <button type="button" className="icon-btn icon-btn--danger" aria-label={`Delete ${kind.title}`} title="Delete" onClick={() => void run(kind.id, () => actions.remove(kind.id), 'Rule deleted')}>
                       <IconTrash size={15} />
                     </button>
-                  ) : null}
+                  </div>
+                ) : null}
+                <div className="srow__switch">
                   {rule ? (
                     <Switch
                       checked={rule.enabled}

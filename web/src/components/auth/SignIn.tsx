@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Logo } from '../Icons';
+import { Wolf } from '../mascot/Wolf';
+import { Contours } from '../motif';
 import './signin.css';
 
 interface SignInProps {
@@ -32,10 +34,17 @@ export function SignIn({ onSignIn, note }: SignInProps) {
 
   return (
     <main className="splash">
+      <Contours className="splash__map" />
       <form className="signin" onSubmit={submit} aria-labelledby="signin-title">
-        <Logo size={40} />
+        <span className="signin__wolf">
+          <Wolf mood={error ? 'thinking' : 'music'} size={84} motion={busy ? 'bob' : 'idle'} eager />
+        </span>
+        <span className="splash__brand">
+          <Logo size={20} />
+          Agent Automation
+        </span>
         <h1 id="signin-title" className="splash__title">
-          Sign in to Agent Automation
+          Sign in
         </h1>
         {note && !error ? <p className="signin__note">{note}</p> : null}
         <label className="field signin__field">

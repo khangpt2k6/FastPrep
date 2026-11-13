@@ -266,7 +266,10 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
     key = 'active';
     left = (
       <StatusCard tone="ok">
-        <DrawnCheck />
+        <span className="status__cheer">
+          <Wolf mood="cheer" size={76} motion="hop" eager />
+          <DrawnCheck />
+        </span>
         <p className="status__title">Resume ready</p>
         <p className="status__text">
           <strong>{tracked.name}</strong> is the resume the agent sends now.

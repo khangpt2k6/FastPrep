@@ -14,7 +14,7 @@ interface NotifyMenuProps {
   recent: JobRow[];
   now: number;
   onOpenRecent: (job: JobRow) => void;
-  /** sidebar: a nav row that opens a menu to its right; bar: a bell in the phone's top bar. */
+  /** sidebar: a row at the foot of the sidebar, its menu opens to the right; bar: a bell in the phone's top bar. */
   variant: 'sidebar' | 'bar';
 }
 
@@ -46,12 +46,12 @@ export function NotifyMenu({ prefs, recent, now, onOpenRecent, variant }: Notify
   return (
     <div className={`notify notify--${variant}`} ref={ref}>
       {variant === 'sidebar' ? (
-        <button type="button" className={`navitem ${open ? 'is-open' : ''}`} aria-expanded={open} aria-controls={id} onClick={toggle}>
-          <span className="navitem__icon" aria-hidden="true">
-            <IconBell size={18} />
+        <button type="button" className={`sfoot ${open ? 'is-open' : ''}`} aria-expanded={open} aria-controls={id} onClick={toggle}>
+          <span className="sfoot__icon" aria-hidden="true">
+            <IconBell size={16} />
           </span>
-          <span className="navitem__label">Alerts</span>
-          {on ? <span className="navitem__mark" aria-label="on"><span className="navdot navdot--blue" /></span> : null}
+          <span className="sfoot__label">Alerts</span>
+          <span className={`sfoot__state ${on ? 'is-on' : ''}`}>{on ? 'On' : 'Off'}</span>
         </button>
       ) : (
         <button type="button" className="icon-btn" aria-expanded={open} aria-controls={id} aria-label={on ? 'Alerts, on' : 'Alerts'} title="Alerts" onClick={toggle}>

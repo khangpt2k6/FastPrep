@@ -3,13 +3,13 @@ import { AnimatePresence, motion } from 'motion/react';
 import { EASE_OUT } from '../../lib/motion';
 
 /**
- * Text with ChatGPT's "thinking" sweep: a light band moves across gray text while `active`.
- * `tone` picks the colors: muted gray text, dark text, or white text on a dark button.
+ * Text with a "thinking" sweep: a light band moves across the text while `active`.
+ * `tone` picks the colors: muted gray text, dark text, white text on a dark button, or light text on granite.
  */
 export function Shimmer({ children, active = true, tone = 'muted', className = '' }: {
   children: ReactNode;
   active?: boolean;
-  tone?: 'muted' | 'strong' | 'inverse';
+  tone?: 'muted' | 'strong' | 'inverse' | 'granite';
   className?: string;
 }) {
   return <span className={`shimmer shimmer--${tone} ${active ? 'is-on' : ''} ${className}`}>{children}</span>;
