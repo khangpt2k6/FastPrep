@@ -21,11 +21,21 @@ interface InboxPageProps {
 
 type Lookup = ReturnType<typeof companyLookup>;
 
+/** The day the application went out, as "Aug 7", with the year only when it is not this year; empty when unknown. */
+function appliedDay(iso: string | null | undefined, now: number): string {
+  const then = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(then)) return '';
+  const date = new Date(then);
+  const sameYear = date.getFullYear() === new Date(now).getFullYear();
+  return date.toLocaleDateString(undefined, sameYear ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function Row({ row, now, index, lookup }: { row: InboxRow; now: number; index: number; lookup: Lookup }) {
   const status = statusOf(row.status);
   // The mail gives a name as the sender wrote it; the jobs give the name and logo the rest of the app uses.
   const hit = lookup(row.company);
   const name = hit?.name ?? row.company;
+  const applied = appliedDay(row.applied_at, now);
   return (
     <li className="inboxrow" style={{ animationDelay: `${Math.min(index, 10) * 30}ms` }}>
       <CompanyLogo name={name} domain={hit?.domain} size={36} className="inboxrow__logo" />
@@ -44,9 +54,16 @@ function Row({ row, now, index, lookup }: { row: InboxRow; now: number; index: n
           {status.label}
         </Tag>
       </span>
-      <time className="inboxrow__when num" dateTime={row.updated_at} title={`Applied ${dayOf(row.applied_at)}, ${plural(row.mails, 'mail')}`}>
-        {timeAgo(row.updated_at, now)}
-      </time>
+      <span className="inboxrow__when num">
+        {applied ? (
+          <time className="inboxrow__applied" dateTime={row.applied_at} title={`Applied ${dayOf(row.applied_at)}`}>
+            Applied {applied}
+          </time>
+        ) : null}
+        <time className="inboxrow__last" dateTime={row.updated_at} title={`Last mail ${dayOf(row.updated_at)}, ${plural(row.mails, 'mail')}`}>
+          {timeAgo(row.updated_at, now)}
+        </time>
+      </span>
       <span className={`inboxrow__by ${row.by_agent ? 'is-agent' : ''}`} title={row.by_agent ? 'Sent by the agent' : 'Sent by you'}>
         {row.by_agent ? <IconBot size={14} /> : <IconUser size={14} />}
         <span>{row.by_agent ? 'Agent' : 'You'}</span>

@@ -30,7 +30,7 @@
 /* One application: logo, company and role over the mail subject, then status, time and who sent it. */
 .inboxrow {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 128px 64px 64px;
+  grid-template-columns: 36px minmax(0, 1fr) 128px 116px 64px;
   grid-template-areas:
     'logo company status when by'
     'logo role status when by'
@@ -108,13 +108,27 @@
   justify-self: start;
 }
 
+/* When it went out (the date the person looks for) over when the last mail came. */
 .inboxrow__when {
   grid-area: when;
   justify-self: end;
-  color: var(--ink-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   font-family: var(--mono);
-  font-size: 11.5px;
   white-space: nowrap;
+}
+
+.inboxrow__applied {
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.inboxrow__last {
+  color: var(--ink-3);
+  font-size: 11.5px;
 }
 
 .inboxrow__by {
