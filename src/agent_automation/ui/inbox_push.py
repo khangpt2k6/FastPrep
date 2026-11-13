@@ -26,6 +26,8 @@ TABLE = "automation_inbox"
 # How often the agent reads the mailbox again while it runs.
 EVERY_SECONDS = 15 * 60
 SUBJECT_CHARS = 200
+# Columns added after the table was first made. A database that does not have one yet still gets the rest.
+LATER_COLUMNS = ("applied_known", "domain")
 
 Reading = Callable[[Path, int], tuple[int, list[Application]]]
 
@@ -43,7 +45,8 @@ class Database(Protocol):
 def row_id(item: Application) -> str:
     """The same application gets the same id at every sync, so its row is updated in place."""
     role = re.sub(r"[^a-z0-9]+", "-", item.role.lower()).strip("-")
-    return f"{company_key(item.company) or 'unknown'}_{role}"[:160]
+    # Two applications to one company that name no role are told apart by the day each began.
+    return f"{company_key(item.company) or 'unknown'}_{role or item.applied_at[:10]}"[:160]
 
 
 def rows_of(found: list[Application], user_id: str, synced_at: str) -> list[dict[str, Any]]:
@@ -54,8 +57,22 @@ def rows_of(found: list[Application], user_id: str, synced_at: str) -> list[dict
             "user_id": user_id, "id": row_id(item), "company": item.company, "role": item.role, "status": item.status,
             "applied_at": item.applied_at, "updated_at": item.updated_at, "subject": item.subject[:SUBJECT_CHARS], "mails": item.mails,
             "by_agent": item.by_agent, "synced_at": synced_at,
+            # Whether a receipt dated the application (else applied_at is only its first mail), and the employer's own
+            # site as its mail shows it, for the page's logo.
+            "applied_known": item.applied_known, "domain": getattr(item, "domain", "") or "",
         }
     return list(rows.values())
+
+
+async def _missing(db: Database) -> set[str]:
+    """The later columns this database does not have yet: asking for one that is not there is refused."""
+    missing = set()
+    for column in LATER_COLUMNS:
+        try:
+            await db.select(TABLE, {"select": column, "limit": "1"})
+        except Exception:  # noqa: BLE001  Not there, or not reachable: the row goes without it and the write says which.
+            missing.add(column)
+    return missing
 
 
 async def push(db: Database, workspace: Path, days: int = DEFAULT_DAYS, reading: Reading = sync) -> int:
@@ -64,6 +81,8 @@ async def push(db: Database, workspace: Path, days: int = DEFAULT_DAYS, reading:
     _, found = await asyncio.to_thread(reading, workspace, days)
     rows = rows_of(found, db.user_id, datetime.now(UTC).isoformat(timespec="seconds"))
     if rows:
+        if missing := await _missing(db):
+            rows = [{name: value for name, value in row.items() if name not in missing} for row in rows]
         await db.upsert(TABLE, rows, "user_id,id")
     kept = {row["id"] for row in rows}
     known = await db.select(TABLE, {"select": "id", "user_id": f"eq.{db.user_id}"})

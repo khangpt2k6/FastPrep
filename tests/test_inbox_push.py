@@ -17,16 +17,24 @@ class Table:
 
     user_id = "user-1"
 
-    def __init__(self, rows: list[dict[str, Any]] | None = None) -> None:
+    def __init__(self, rows: list[dict[str, Any]] | None = None, without: tuple[str, ...] = ()) -> None:
         self.rows = {row["id"]: row for row in rows or []}
+        # Columns this database was made before.
+        self.without = without
         self.deletes: list[dict[str, str]] = []
 
     async def upsert(self, table: str, rows: list[dict[str, Any]], conflict: str) -> None:
         assert table == TABLE and conflict == "user_id,id"
         assert len({row["id"] for row in rows}) == len(rows), "one statement cannot write a row twice"
+        assert not any(name in row for row in rows for name in self.without), "a column the table does not have"
         self.rows.update({row["id"]: row for row in rows})
 
     async def select(self, table: str, params: dict[str, str]) -> list[dict[str, Any]]:
+        if "user_id" not in params:
+            # The check for a column added later.
+            if params["select"] in self.without:
+                raise RuntimeError(f"column {params['select']} does not exist")
+            return []
         assert params["user_id"] == "eq.user-1"
         return [{"id": name} for name in self.rows]
 
@@ -52,7 +60,11 @@ def test_one_row_per_application_with_only_what_the_page_lists() -> None:
     row = db.rows[row_id(found[1])]
     assert (row["company"], row["role"], row["status"], row["by_agent"]) == ("Morgan Stanley", "Technology Summer Analyst", "interview", False)
     assert db.rows[row_id(found[0])]["by_agent"] is True
-    assert set(row) == {"user_id", "id", "company", "role", "status", "applied_at", "updated_at", "subject", "mails", "by_agent", "synced_at"}
+    assert set(row) == {
+        "user_id", "id", "company", "role", "status", "applied_at", "updated_at", "subject", "mails", "by_agent", "synced_at", "applied_known",
+        "domain",
+    }
+    assert (row["applied_known"], row["domain"]) == (True, "")
     assert row["user_id"] == "user-1"
 
 
@@ -65,7 +77,7 @@ def test_the_same_application_keeps_its_id_and_its_row_is_updated() -> None:
 
 
 def test_a_row_the_sync_no_longer_has_is_taken_away() -> None:
-    db = Table([{"id": "reddit_", "user_id": "user-1"}, {"id": 'odd"name_', "user_id": "user-1"}])
+    db = Table([{"id": "reddit_2026-11-01", "user_id": "user-1"}, {"id": 'odd"name_', "user_id": "user-1"}])
     asyncio.run(push(db, Path("."), reading=reading([application("Stripe")])))
     assert list(db.rows) == [row_id(application("Stripe"))]
     assert db.deletes and all(params["user_id"] == "eq.user-1" for params in db.deletes)
@@ -82,6 +94,22 @@ def test_two_applications_under_one_id_are_one_row_the_newest() -> None:
     new = application("Stripe Inc", status="interview", updated="2026-11-05T10:00:00+00:00")
     rows = rows_of([new, old], "user-1", "2026-11-06T00:00:00+00:00")
     assert len(rows) == 1 and rows[0]["status"] == "interview"
+
+
+def test_a_database_made_before_the_later_columns_still_gets_the_rest() -> None:
+    db = Table(without=("applied_known", "domain"))
+    unknown = Application("Stripe", "Intern", "rejected", "2026-06-18T10:00:00+00:00", "2026-06-18T10:00:00+00:00", "Update", 1, applied_known=False)
+    assert asyncio.run(push(db, Path("."), reading=reading([unknown]))) == 1
+    assert "applied_known" not in db.rows[row_id(unknown)] and db.rows[row_id(unknown)]["status"] == "rejected"
+    newer = Table()
+    asyncio.run(push(newer, Path("."), reading=reading([unknown])))
+    assert newer.rows[row_id(unknown)]["applied_known"] is False
+
+
+def test_two_applications_that_name_no_role_are_two_rows() -> None:
+    first = Application("Tesla", "", "rejected", "2026-05-17T10:00:00+00:00", "2026-06-01T10:00:00+00:00", "Thank you", 2)
+    second = Application("Tesla", "", "applied", "2026-09-03T10:00:00+00:00", "2026-09-03T10:00:00+00:00", "Received", 1)
+    assert [row["id"] for row in rows_of([first, second], "user-1", "now")] == ["tesla_2026-05-17", "tesla_2026-09-03"]
 
 
 def test_a_long_subject_is_cut() -> None:
