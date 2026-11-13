@@ -94,8 +94,10 @@ def _table(found: list[Application]) -> Table:
     for column in ("Company", "Role", "Status", "Applied", "Last mail", "Sent by"):
         table.add_column(column, overflow="fold")
     for item in found:
+        # With no receipt read, all that is known is that it was sent before the first mail about it.
+        applied = item.applied_at[:10] if item.applied_known else f"before {item.applied_at[:10]}"
         table.add_row(
-            item.company, item.role or "-", f"[{STATUS_STYLE[item.status]}]{STATUS_WORDS[item.status]}[/]", item.applied_at[:10], item.updated_at[:10],
+            item.company, item.role or "-", f"[{STATUS_STYLE[item.status]}]{STATUS_WORDS[item.status]}[/]", applied, item.updated_at[:10],
             "agent" if item.by_agent else "you",
         )
     return table

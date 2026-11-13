@@ -44,8 +44,10 @@ class InboxStore:
         self._db.execute("INSERT INTO meta (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value", (name, value))
 
     def keep_rules(self, version: int) -> None:
-        """Everything read under other rules is dropped, so the next read sorts the whole mailbox by these."""
-        if self._meta("rules") != str(version):
+        """Everything read under older rules is dropped, so the next read sorts the whole mailbox by these. What newer
+        rules kept is left alone: an agent still running yesterday's code must not undo today's sync at every round."""
+        kept = self._meta("rules")
+        if not kept.isdigit() or int(kept) < version:
             self.forget()
             self._set_meta("rules", str(version))
             self._db.commit()

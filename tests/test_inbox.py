@@ -27,7 +27,7 @@ CONFIRMATIONS = [
     # Lever.
     (mail("no-reply@hire.lever.co", "Thanks for applying to Figma!",
           "Thanks for applying to Figma! We've received your application for Software Engineering Intern, Summer 2027.", "Figma"),
-     "Figma", "Software Engineering Intern"),
+     "Figma", "Software Engineering Intern, Summer 2027"),
     # Workday writes as the tenant.
     (mail("cisco@myworkday.com", "Application Received",
           "Dear Khang,\nThank you for your interest in Cisco. Your application for the Software Engineer Full-Stack / Backend I (Intern) "
