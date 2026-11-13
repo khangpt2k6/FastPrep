@@ -403,3 +403,6 @@ alter table public.automation_resumes add column if not exists label text not nu
 alter table public.automation_inbox add column if not exists applied_known boolean not null default true;
 -- The employer's own domain, from the sender addresses of its mails (carriers left out), for the logo; '' when unknown.
 alter table public.automation_inbox add column if not exists domain text not null default '';
+
+-- When the source posted each job, for the page's "posted within" filter.
+alter table public.automation_jobs add column if not exists posted_at timestamptz;

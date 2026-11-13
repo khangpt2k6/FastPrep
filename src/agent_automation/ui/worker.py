@@ -53,9 +53,10 @@ STOP_SECONDS = 2
 # How often auto-fetch looks whether a round is due. A round that failed is tried again after FETCH_RETRY_SECONDS.
 FETCH_CHECK_SECONDS = 30
 FETCH_RETRY_SECONDS = 900
-# How many jobs get scored before the agent waits for the page to ask for more.
-SCORE_TARGET = 300
-SCORE_MORE = 200
+# How many jobs get scored before the agent waits for the page to ask for more. The search ranks them best first, so the
+# tail is what is left out; 150 and 100 a click keep the OpenAI bill down (the person asked, 2026-11-13).
+SCORE_TARGET = 150
+SCORE_MORE = 100
 PUSH_LIMIT = 300
 BUCKET = "automation-proofs"
 # After a failed try at naming the companies, the next try waits this long, so a model with no credit is not asked on
@@ -73,6 +74,7 @@ PARTS = {
     "settings": "automation_settings (pause and auto-fetch)",
     "fetch": "automation_agent.fetched_at (when new jobs were last fetched)",
     "found_at": "automation_jobs.found_at (when each job was found)",
+    "posted": "automation_jobs.posted_at (when each job was posted)",
     "resumes": "automation_resumes (resumes uploaded on the page)",
     "rules": "automation_rules (rules edited on the Rules page)",
     "documents": "automation_documents (a transcript uploaded on the page)",
@@ -221,7 +223,7 @@ class Support:
     once, and from then on the agent does what it did before that part came."""
 
     def __init__(self) -> None:
-        self.settings = self.fetch = self.found_at = self.resumes = self.rules = self.documents = self.calendar = True
+        self.settings = self.fetch = self.found_at = self.posted = self.resumes = self.rules = self.documents = self.calendar = True
 
     def drop(self, part: str) -> None:
         if getattr(self, part):
@@ -431,6 +433,8 @@ class Agent:
         }
         if self.support.found_at:
             row["found_at"] = _stamp(item.first_seen)
+        if self.support.posted:
+            row["posted_at"] = _stamp(job.posted)
         return row
 
     async def push_jobs(self) -> None:
@@ -438,13 +442,16 @@ class Agent:
         # Only the jobs not tried yet: a tried one's row is written when its application ends, and pushing it again would
         # only move its time to now.
         scored = [item for item in items if item.score is not None and item.status not in SENT_WORDS][:PUSH_LIMIT]
-        try:
-            await self._push(scored)
-        except Exception as error:
-            if not (self.support.found_at and schema_missing(error)):
-                raise
-            self.support.drop("found_at")
-            await self._push(scored)
+        # A column that turns out missing is left out, the newest first, until the push goes through.
+        while True:
+            try:
+                await self._push(scored)
+                break
+            except Exception as error:
+                part = next((part for part in ("posted", "found_at") if getattr(self.support, part)), None)
+                if part is None or not schema_missing(error):
+                    raise
+                self.support.drop(part)
         # The names come after the rows, so the page never waits on them.
         if self.naming is None or self.naming.done():
             tried = [item for item in items if item.status in SENT_WORDS]
@@ -658,6 +665,7 @@ class Agent:
             ("settings", AGENT_SETTINGS, "paused,auto_fetch,fetch_hours,fetch_limit"),
             ("fetch", "automation_agent", "fetched_at,next_fetch_at,fetched_new"),
             ("found_at", "automation_jobs", "found_at"),
+            ("posted", "automation_jobs", "posted_at"),
             ("resumes", RESUMES, "id,status,data"),
             ("rules", RULES, "id,kind,body,enabled"),
             ("calendar", calendar_push.TABLE, "id,starts_at,kind"),

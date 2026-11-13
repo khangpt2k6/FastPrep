@@ -195,6 +195,9 @@ class Store:
         if "reason" not in columns:
             self._db.execute("ALTER TABLE jobs ADD COLUMN reason TEXT")
             self._db.commit()
+        if "posted" not in columns:
+            self._db.execute("ALTER TABLE jobs ADD COLUMN posted TEXT")
+            self._db.commit()
         self._db.execute("CREATE INDEX IF NOT EXISTS jobs_key ON jobs (key)")
         if self._db.execute("PRAGMA user_version").fetchone()[0] < KEY_VERSION:
             self._rekey()
@@ -262,11 +265,14 @@ class Store:
             # Only a link has a key worth comparing: another address entirely is another job.
             known = "SELECT 1 FROM jobs WHERE id = ? OR (key = ? AND url LIKE 'http%')" if job.url.startswith("http") else "SELECT 1 FROM jobs WHERE id = ?"
             if self._db.execute(known, (job.id, key) if job.url.startswith("http") else (job.id,)).fetchone():
+                if job.posted:
+                    # A job found before posting dates were kept gets its date the next time a search finds it.
+                    self._db.execute("UPDATE jobs SET posted = ? WHERE id = ? AND (posted IS NULL OR posted = '')", (job.posted, job.id))
                 continue
             self._db.execute(
-                "INSERT INTO jobs (id, key, company, title, location, url, apply_url, description, lexical, first_seen, updated)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (job.id, key, job.company, job.title, job.location, job.url, job.apply_url, job.description, job.lexical, now, now),
+                "INSERT INTO jobs (id, key, company, title, location, url, apply_url, description, lexical, first_seen, updated, posted)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (job.id, key, job.company, job.title, job.location, job.url, job.apply_url, job.description, job.lexical, now, now, job.posted),
             )
             new += 1
         self._db.commit()
@@ -274,7 +280,10 @@ class Store:
 
     @staticmethod
     def _job(row: sqlite3.Row) -> Job:
-        return Job(row["id"], row["company"], row["title"], row["location"], row["url"], row["apply_url"], row["description"], row["lexical"])
+        return Job(
+            row["id"], row["company"], row["title"], row["location"], row["url"], row["apply_url"], row["description"], row["lexical"],
+            row["posted"] or "",
+        )
 
     @classmethod
     def _stored(cls, row: sqlite3.Row) -> Stored:

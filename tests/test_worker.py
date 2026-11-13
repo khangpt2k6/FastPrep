@@ -248,7 +248,7 @@ def test_file_names_from_the_page_are_kept_as_given_where_this_computer_allows()
 
 def test_without_the_newer_schema_the_agent_sends_what_it_sent_before(session: Session, capsys: pytest.CaptureFixture[str]) -> None:
     db = Remote(
-        "automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_resumes", "automation_rules", "automation_documents",
+        "automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_jobs.posted_at", "automation_resumes", "automation_rules", "automation_documents",
         "automation_calendar",
     )
     scored(session, 1)
@@ -828,3 +828,25 @@ def test_without_the_calendar_table_the_sync_never_starts(session: Session, monk
 
     asyncio.run(run())
     assert started == [] and not agent.support.calendar
+
+
+def test_the_posting_date_is_kept_filled_in_later_and_pushed(session: Session) -> None:
+    fresh = Job("https://jobs.example/p1", "Acme", "Software Intern", "Tampa, FL", "https://jobs.example/p1", "https://jobs.example/p1", "", 1.0,
+                "2026-11-10T08:00:00+00:00")
+    old = job(7)
+    session.store.add_all([fresh, old])
+    session.store.set_score(fresh.id, 4.0)
+    session.store.set_score(old.id, 3.0)
+    assert session.store.get(fresh.id).job.posted == "2026-11-10T08:00:00+00:00" and session.store.get(old.id).job.posted == ""
+    # Found again by a search that knows its date: the date is filled in, nothing else changes.
+    session.store.add_all([Job(old.id, old.company, old.title, old.location, old.url, old.apply_url, "", 1.0, "2026-11-01T00:00:00+00:00")])
+    assert session.store.get(old.id).job.posted == "2026-11-01T00:00:00+00:00" and session.store.get(old.id).score == 3.0
+    db = Remote()
+    asyncio.run(agent_for(session, db).push_jobs())
+    pushed = {row["id"]: row for row in db.tables["automation_jobs"]}
+    assert pushed[fresh.id]["posted_at"] == "2026-11-10T08:00:00+00:00"
+    # A database without the column takes the rows without it.
+    db = Remote("automation_jobs.posted_at")
+    agent = agent_for(session, db)
+    asyncio.run(agent.push_jobs())
+    assert "posted_at" not in db.tables["automation_jobs"][0] and not agent.support.posted and agent.support.found_at

@@ -9,7 +9,7 @@ import re
 import urllib.request
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from importlib import resources
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -46,6 +46,8 @@ class Job:
     description: str
     # How well the title and the place fit the search, from 0 to 1 against the best one found.
     lexical: float = 0.0
+    # When the source posted it, as an ISO time in UTC; empty when the source does not say.
+    posted: str = ""
 
 
 def posting_keys(urls: list[str]) -> list[str]:
@@ -96,6 +98,13 @@ def _place_pattern(words: tuple[str, ...]) -> str:
 def rarity(postings: int, holding: int) -> float:
     """How telling a word is, from 0.05 to 1: a word in one posting of 50 or fewer counts in full."""
     return min(1.0, max(0.05, math.log(1 + postings / (1 + holding)) / math.log(51)))
+
+
+def _utc(moment: datetime | None) -> str:
+    """A posting's time as an ISO string in UTC: the database keeps it without a zone, in UTC."""
+    if moment is None:
+        return ""
+    return (moment if moment.tzinfo else moment.replace(tzinfo=UTC)).isoformat(timespec="seconds")
 
 
 class _Posting(NamedTuple):
@@ -262,6 +271,9 @@ def search(library: Library, filters: Filters, max_age_days: int, limit: int = R
     best = max((score for score, _ in ranked), default=1.0) or 1.0
     # Some sources publish their names with HTML entities still in them.
     return [
-        Job(row.url, html.unescape(row.company), html.unescape(row.title), html.unescape(row.location), row.url, row.url, "", score / best)
+        Job(
+            row.url, html.unescape(row.company), html.unescape(row.title), html.unescape(row.location), row.url, row.url, "", score / best,
+            _utc(row.posted),
+        )
         for score, row in ranked
     ]
