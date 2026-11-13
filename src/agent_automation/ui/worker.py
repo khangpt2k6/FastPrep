@@ -40,6 +40,7 @@ from agent_automation.memory.profile import read_resume, set_search_places
 from agent_automation.memory.store import SENT_WORDS, SUBMITTED, Stored, safe_name
 from agent_automation.memory.web_profile import add_from_linkedin, mirror_to_home, prefill, profile_answers, writing_text
 from agent_automation.memory.web_rules import answer_rules_text, builtin_rules, mirror_rules
+from agent_automation.ui import calendar_push
 from agent_automation.ui.inbox_push import keep_current
 from agent_automation.ui.keeper import LOCK_FILE, STOP_FILE, keeper_running, release, take_lock
 
@@ -75,6 +76,7 @@ PARTS = {
     "resumes": "automation_resumes (resumes uploaded on the page)",
     "rules": "automation_rules (rules edited on the Rules page)",
     "documents": "automation_documents (a transcript uploaded on the page)",
+    "calendar": "automation_calendar (Google Calendar events for the Calendar page)",
 }
 CONTENT_TYPES = {
     ".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".txt": "text/plain",
@@ -219,7 +221,7 @@ class Support:
     once, and from then on the agent does what it did before that part came."""
 
     def __init__(self) -> None:
-        self.settings = self.fetch = self.found_at = self.resumes = self.rules = self.documents = True
+        self.settings = self.fetch = self.found_at = self.resumes = self.rules = self.documents = self.calendar = True
 
     def drop(self, part: str) -> None:
         if getattr(self, part):
@@ -658,6 +660,7 @@ class Agent:
             ("found_at", "automation_jobs", "found_at"),
             ("resumes", RESUMES, "id,status,data"),
             ("rules", RULES, "id,kind,body,enabled"),
+            ("calendar", calendar_push.TABLE, "id,starts_at,kind"),
             ("documents", DOCUMENTS, "id,kind,name,path"),
         ):
             try:
@@ -721,7 +724,7 @@ class Agent:
             return
         rows = await self.db.select(
             "automation_commands",
-            {"status": "eq.pending", "kind": "in.(apply,search,cover_letter,resume,linkedin)", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
+            {"status": "eq.pending", "kind": "in.(apply,search,cover_letter,resume,linkedin,calendar_add)", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
         )
         if rows and not self.settings.paused:
             await self.handle(rows[0])
@@ -743,6 +746,8 @@ class Agent:
                 await self.read_upload(command.get("payload") or {})
             elif command["kind"] == "linkedin":
                 await self.read_linkedin(command.get("payload") or {})
+            elif command["kind"] == "calendar_add":
+                await self.add_event(command.get("payload") or {})
             await self.db.update("automation_commands", {"id": f"eq.{command['id']}"}, {"status": "done"})
         except Paused as stop:
             click.echo(str(stop))
@@ -1032,6 +1037,22 @@ class Agent:
         }])
         click.echo(f"Resume {name} is on the page now.")
 
+    # The Calendar page: Google Calendar events, read and added by calendar_push.
+
+    async def calendar_loop(self) -> None:
+        """The person's Google Calendar on the Calendar page, every 10 minutes, while the table is there; said once and
+        ended when Google Calendar is not set up (no address or app password)."""
+        if self.support.calendar:
+            await calendar_push.keep_current(self.db, self.session.workspace)
+
+    async def add_event(self, payload: dict[str, Any]) -> None:
+        """An event the page asked for, put in Google Calendar and on the page. A failure is the command's error, in words
+        the person can act on."""
+        if not self.support.calendar:
+            raise ConfigError("the calendar is not in the database yet: run supabase/schema.sql")
+        row = await calendar_push.add(self.db, self.session.workspace, payload)
+        self.idle(f"Added to your calendar: {row.get('title') or 'event'}")
+
     async def recover(self) -> None:
         """What an earlier run left half done when it stopped: its command ends as failed, and a job it was applying to
         goes back to how this computer last recorded it, so nothing on the page says "applying" forever."""
@@ -1118,6 +1139,7 @@ class Agent:
                 self.heartbeat(), self.profile_loop(), self.settings_loop(), self.commands(), self.bring_jobs(), self.searching(), self.fetching(),
                 # The Gmail inbox on the page's Inbox: every 15 minutes, or said once and ended when Gmail is not set up.
                 keep_current(self.db, self.session.workspace),
+                self.calendar_loop(),
             )
         finally:
             self.state, self.message, self.download = "offline", "", ""

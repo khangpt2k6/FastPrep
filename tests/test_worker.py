@@ -247,7 +247,10 @@ def test_file_names_from_the_page_are_kept_as_given_where_this_computer_allows()
 
 
 def test_without_the_newer_schema_the_agent_sends_what_it_sent_before(session: Session, capsys: pytest.CaptureFixture[str]) -> None:
-    db = Remote("automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_resumes", "automation_rules", "automation_documents")
+    db = Remote(
+        "automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_resumes", "automation_rules", "automation_documents",
+        "automation_calendar",
+    )
     scored(session, 1)
     agent = agent_for(session, db)
 
@@ -747,3 +750,51 @@ def test_a_linkedin_command_for_a_file_outside_the_persons_folder_is_refused(ses
     asyncio.run(agent.next_command())
     command = db.tables["automation_commands"][0]
     assert command["status"] == "failed" and command["error"] == "the command names no LinkedIn file" and "automation_profile" not in db.tables
+
+
+# The Calendar page.
+
+
+def test_an_event_from_the_page_goes_to_google_and_the_command_says_how_it_went(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    made: list[dict[str, Any]] = []
+
+    async def add(db: Any, workspace: Path, payload: dict[str, Any]) -> dict[str, Any]:
+        made.append(payload)
+        return {"id": "u-1", "title": payload["title"]}
+
+    monkeypatch.setattr(worker.calendar_push, "add", add)
+    payload = {"title": "Call with Stripe", "starts_at": "2026-11-20T15:00:00-05:00", "kind": "call", "company": "Stripe"}
+    db = Remote(automation_commands=[{"id": 7, "user_id": "u1", "kind": "calendar_add", "status": "pending", "payload": payload, "job_ids": []}])
+    agent = agent_for(session, db)
+    asyncio.run(agent.next_command())
+    assert made == [payload]
+    assert db.row("automation_commands", id=7)["status"] == "done"
+    assert agent.message == "Added to your calendar: Call with Stripe"
+
+
+def test_a_calendar_error_fails_the_command_with_its_sentence(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def add(db: Any, workspace: Path, payload: dict[str, Any]) -> dict[str, Any]:
+        raise ConfigError("Google Calendar is not set up: add GMAIL_APP_PASSWORD to .env.")
+
+    monkeypatch.setattr(worker.calendar_push, "add", add)
+    db = Remote(automation_commands=[{"id": 8, "user_id": "u1", "kind": "calendar_add", "status": "pending", "payload": {"title": "x"}, "job_ids": []}])
+    asyncio.run(agent_for(session, db).next_command())
+    row = db.row("automation_commands", id=8)
+    assert row["status"] == "failed" and "GMAIL_APP_PASSWORD" in row["error"]
+
+
+def test_without_the_calendar_table_the_sync_never_starts(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    started: list[bool] = []
+
+    async def keep(*arguments: Any, **keywords: Any) -> None:
+        started.append(True)
+
+    monkeypatch.setattr(worker.calendar_push, "keep_current", keep)
+    agent = agent_for(session, Remote("automation_calendar"))
+
+    async def run() -> None:
+        await agent.detect()
+        await agent.calendar_loop()
+
+    asyncio.run(run())
+    assert started == [] and not agent.support.calendar
