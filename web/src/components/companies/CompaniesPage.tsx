@@ -73,7 +73,7 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
       <PageHeader
         title="Companies"
         count={shown.length}
-        subtitle="What intern and new grad postings ask for, company by company."
+        subtitle="Intern and new grad requirements by company."
         actions={
           <label className="searchfield">
             <span className="sr-only">Search companies</span>

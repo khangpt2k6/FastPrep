@@ -215,7 +215,7 @@ export function AddEventDialog({ open, onClose, onAdd, companies, now, online }:
           <label className="field__label" htmlFor={`${id}-notes`}>
             Notes
           </label>
-          <textarea id={`${id}-notes`} className="input textarea" rows={3} value={draft.notes} onChange={(e) => set({ notes: e.target.value })} placeholder="Who you meet, what to prepare" />
+          <textarea id={`${id}-notes`} className="input textarea" rows={3} value={draft.notes} onChange={(e) => set({ notes: e.target.value })} placeholder="Attendees, agenda, prep notes" />
         </div>
 
         <p className="caladd__note">{online ? 'The agent adds it to your Google Calendar, then it shows here.' : 'The agent adds it to your Google Calendar once it is online.'}</p>

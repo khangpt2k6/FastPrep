@@ -90,7 +90,7 @@ function TranscriptRow({ userId, now }: { userId: string; now: number }) {
               {fileSize(current.size) ? <span>{fileSize(current.size)}</span> : null}
             </>
           ) : (
-            <span>None yet. The agent attaches it only where a form asks for a transcript.</span>
+            <span>Not uploaded. Attached only when a form asks for one.</span>
           )}
         </p>
         {problem ? (
@@ -133,7 +133,7 @@ export function DocumentsCard({ now }: { now: number }) {
         </span>
         <div className="resume__info">
           <p className="resume__name">Cover letter</p>
-          <p className="resume__meta">Written for each job from your template, as a PDF.</p>
+          <p className="resume__meta">Generated per job as a PDF.</p>
         </div>
         <div className="resume__actions">
           <a className="btn btn--secondary btn--sm" href="#/letters">
@@ -150,7 +150,7 @@ export function DocumentsCard({ now }: { now: number }) {
           </span>
           <div className="resume__info">
             <p className="resume__name">Transcript</p>
-            <p className="resume__meta">The agent attaches it only where a form asks for a transcript.</p>
+            <p className="resume__meta">Attached only when a form asks for one.</p>
           </div>
         </div>
       )}

@@ -176,21 +176,21 @@ export function PreferencesView({ row, loading, error, reload, save: persist, on
               <SettingRow title="Tone" description="The voice of open answers.">
                 <PillSelect label="Tone" value={form.tone} options={TONES.some((t) => t.value === form.tone) ? TONES : [...TONES, { value: form.tone, label: form.tone }]} onChange={(v) => set('tone', v)} />
               </SettingRow>
-              <SettingRow title="Length" description="How long each answer runs.">
+              <SettingRow title="Length" description="Answer length.">
                 <PillSelect<AnswerLength> label="Length" value={form.length} options={LENGTHS} onChange={(v) => set('length', v)} />
               </SettingRow>
             </Group>
 
             <Group title="Custom instructions">
-              <AreaRow title="Emphasize" description="What to bring up when it fits." value={form.highlight} onChange={(v) => set('highlight', v)} placeholder="AI agents, distributed systems" />
-              <AreaRow title="Forbidden" description="What never to mention." value={form.avoid} onChange={(v) => set('avoid', v)} placeholder="Salary expectations" />
-              <AreaRow title="Notes" description="Anything else about how to write." value={form.notes} onChange={(v) => set('notes', v)} placeholder="First person, American spelling" />
+              <AreaRow title="Emphasize" description="Topics to highlight." value={form.highlight} onChange={(v) => set('highlight', v)} placeholder="AI agents, distributed systems" />
+              <AreaRow title="Forbidden" description="Topics to avoid." value={form.avoid} onChange={(v) => set('avoid', v)} placeholder="Salary expectations" />
+              <AreaRow title="Notes" description="Other writing instructions." value={form.notes} onChange={(v) => set('notes', v)} placeholder="First person, American spelling" />
               <AreaRow title="Writing sample" description="Used to match your style." value={form.sample} onChange={(v) => set('sample', v)} placeholder="Paste an answer you wrote" rows={5} />
             </Group>
 
             <Group title="Memory">
               <ToggleRow title="Learn from answers" description="Save new answers to Memory." checked={form.learn} onChange={(v) => set('learn', v)} />
-              <NavRow title="Saved answers" description="See, pin and edit what the agent reuses." onClick={onManageMemory} />
+              <NavRow title="Saved answers" description="View, pin and edit saved answers." onClick={onManageMemory} />
             </Group>
           </>
         )}

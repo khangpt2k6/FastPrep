@@ -29,19 +29,19 @@ export interface PageMeta {
 }
 
 export const PAGE_META: Record<Page, PageMeta> = {
-  overview: { page: 'overview', title: 'Overview', short: 'Overview', sub: 'How the hunt is going, at a glance.', Icon: IconGauge },
-  jobs: { page: 'jobs', title: 'Jobs', short: 'Jobs', sub: 'Internships the agent found, scored against your resume.', Icon: IconBriefcase },
-  applications: { page: 'applications', title: 'Applications', short: 'Applied', sub: 'Every form the agent filled or sent.', Icon: IconSend },
-  inbox: { page: 'inbox', title: 'Inbox', short: 'Inbox', sub: 'Where each application stands, read from your mail.', Icon: IconMail },
-  calendar: { page: 'calendar', title: 'Calendar', short: 'Calendar', sub: 'Interviews, calls and deadlines, from your Google Calendar.', Icon: IconCalendar },
-  agent: { page: 'agent', title: 'Agent', short: 'Agent', sub: 'The agent on your computer, live.', Icon: IconBot },
-  letters: { page: 'letters', title: 'Letters', short: 'Letters', sub: 'Templates, and the letters the agent wrote from them.', Icon: IconLetter },
-  companies: { page: 'companies', title: 'Companies', short: 'Companies', sub: 'What intern and new grad postings ask for, company by company.', Icon: IconBuilding },
-  profile: { page: 'profile', title: 'Profile', short: 'Profile', sub: 'What the agent puts on application forms.', Icon: IconUser },
-  preferences: { page: 'preferences', title: 'Preferences', short: 'Prefs', sub: 'How the agent writes open answers.', Icon: IconSliders },
-  rules: { page: 'rules', title: 'Rules', short: 'Rules', sub: 'What the agent follows when it writes letters and answers.', Icon: IconRules },
-  memory: { page: 'memory', title: 'Memory', short: 'Memory', sub: 'Answers the agent reuses on forms.', Icon: IconMemory },
-  setup: { page: 'setup', title: 'Set up', short: 'Set up', sub: 'Start with your resume.', Icon: IconFlag },
+  overview: { page: 'overview', title: 'Overview', short: 'Overview', sub: 'Search summary.', Icon: IconGauge },
+  jobs: { page: 'jobs', title: 'Jobs', short: 'Jobs', sub: 'Internships scored against your resume.', Icon: IconBriefcase },
+  applications: { page: 'applications', title: 'Applications', short: 'Applied', sub: 'Filled and submitted applications.', Icon: IconSend },
+  inbox: { page: 'inbox', title: 'Inbox', short: 'Inbox', sub: 'Application status from your mail.', Icon: IconMail },
+  calendar: { page: 'calendar', title: 'Calendar', short: 'Calendar', sub: 'Interviews, calls and deadlines.', Icon: IconCalendar },
+  agent: { page: 'agent', title: 'Agent', short: 'Agent', sub: 'Status and controls.', Icon: IconBot },
+  letters: { page: 'letters', title: 'Letters', short: 'Letters', sub: 'Templates and generated letters.', Icon: IconLetter },
+  companies: { page: 'companies', title: 'Companies', short: 'Companies', sub: 'Intern and new grad requirements by company.', Icon: IconBuilding },
+  profile: { page: 'profile', title: 'Profile', short: 'Profile', sub: 'Details used on application forms.', Icon: IconUser },
+  preferences: { page: 'preferences', title: 'Preferences', short: 'Prefs', sub: 'Writing style for open answers.', Icon: IconSliders },
+  rules: { page: 'rules', title: 'Rules', short: 'Rules', sub: 'Rules for letters and answers.', Icon: IconRules },
+  memory: { page: 'memory', title: 'Memory', short: 'Memory', sub: 'Saved form answers.', Icon: IconMemory },
+  setup: { page: 'setup', title: 'Set up', short: 'Set up', sub: 'Resume and search setup.', Icon: IconFlag },
 };
 
 /** The sidebar's first group. The Agent page opens from the agent card above it. */

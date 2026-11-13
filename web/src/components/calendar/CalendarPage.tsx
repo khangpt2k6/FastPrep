@@ -327,7 +327,7 @@ export function CalendarView({ table, commands, jobs, inbox, now, online, onAdd,
   const header = (
     <PageHeader
       title="Calendar"
-      subtitle="Interviews, calls and deadlines, from your Google Calendar."
+      subtitle="Interviews, calls and deadlines."
       actions={
         <>
           <PillGroup<Scope>

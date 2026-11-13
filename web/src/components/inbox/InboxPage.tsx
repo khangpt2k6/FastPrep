@@ -208,7 +208,7 @@ function Pane({ row, now, lookup, starred, onStar, onUnread, onClose, load }: {
     return (
       <div className="mpane mpane--empty">
         <Wolf mood="reading" size={96} motion="idle" />
-        <p className="mpane__hint">Pick an application to read its mail.</p>
+        <p className="mpane__hint">Select an application.</p>
         <p className="mpane__keys">
           <kbd>j</kbd> <kbd>k</kbd> to move, <kbd>Enter</kbd> to open, <kbd>/</kbd> to search
         </p>

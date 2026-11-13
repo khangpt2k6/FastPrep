@@ -107,7 +107,7 @@ function HowItWorks({ open, onClose, limit }: { open: boolean; onClose: () => vo
   return (
     <Dialog open={open} onClose={onClose} labelledBy="how-title" className="smalldialog howdialog">
       <header className="smalldialog__head">
-        <h2 id="how-title">How finding jobs works</h2>
+        <h2 id="how-title">Search process</h2>
         <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
           <IconX size={18} />
         </button>
@@ -287,7 +287,7 @@ export function AgentPage(props: AgentPageProps) {
           <IconClock size={14} />
           {checkLine(agent, settings, online, now)}
         </p>
-        <NavRow title="How finding jobs works" icon={<IconInfo size={18} />} onClick={() => setHow(true)} />
+        <NavRow title="Search process" icon={<IconInfo size={18} />} onClick={() => setHow(true)} />
       </Group>
       {settingsState.missing ? (
         <GroupNote tone="warn">

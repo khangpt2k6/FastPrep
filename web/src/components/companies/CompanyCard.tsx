@@ -89,13 +89,13 @@ export function CompanyCard({ company, tech, onPickTech, jobs, onSeeJobs }: {
         </span>
       </header>
 
-      <Row label="Need" title="What the intern and new-grad postings ask for">
+      <Row label="Need" title="Required in intern and new grad postings">
         {company.need.map((name) => (
           <TechChip key={name} name={name} tone="need" active={tech === name} onPick={onPickTech} />
         ))}
       </Row>
       {company.stack.length > 0 ? (
-        <Row label="Stack" title="What the company runs that you may touch">
+        <Row label="Stack" title="Company tech stack">
           {company.stack.map((name) => (
             <TechChip key={name} name={name} tone="stack" active={tech === name} onPick={onPickTech} />
           ))}

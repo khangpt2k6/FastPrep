@@ -230,8 +230,8 @@ export function OverviewPage(props: OverviewProps) {
       </section>
 
       <ChartCard
-        title="The trail"
-        sub="From a posting found to an interview, with the share that made it to the next stop."
+        title="Funnel"
+        sub="Found to interview, with stage conversion"
         className="ocard--trail"
         table={<VTable head={['Stage', 'Count']} rows={trail.map((s) => [s.label, s.count])} />}
       >
@@ -252,7 +252,7 @@ export function OverviewPage(props: OverviewProps) {
           {jobsLoading ? <ChartSkeleton rows={5} tall /> : <Heatmap weeks={heat} />}
         </ChartCard>
         <ChartCard
-          title="Match quality"
+          title="Match score"
           sub={scored ? `${plural(scored, 'job')} scored, ${strong} at 4 or more` : 'Scores from 1 to 5'}
           table={<VTable head={['Score', 'Jobs']} rows={bins.map((b) => [`${b.from.toFixed(1)} to ${(b.to - 0.1).toFixed(1)}`, b.count])} />}
         >
@@ -262,8 +262,8 @@ export function OverviewPage(props: OverviewProps) {
 
       <div className="ogrid">
         <ChartCard
-          title="Where the matches are"
-          sub="Scored jobs by company and by kind of role"
+          title="Matches by company"
+          sub="Scored jobs by company and role"
           table={<VTable head={['Company', 'Jobs', 'Best score']} rows={companies.map((c) => [c.name, c.count, c.best.toFixed(1)])} />}
         >
           {jobsLoading ? (
@@ -286,7 +286,7 @@ export function OverviewPage(props: OverviewProps) {
 
         <ChartCard
           title="Inbox"
-          sub={inboxTotal ? `${plural(inboxTotal, 'application')} tracked from your mail` : 'Replies, read from your mail'}
+          sub={inboxTotal ? `${plural(inboxTotal, 'application')} tracked` : 'Application replies'}
           table={inboxTotal ? <VTable head={['Status', 'Applications']} rows={inboxParts.map((p) => [p.label, p.count])} /> : undefined}
           aside={
             <button type="button" className="btn btn--ghost btn--xs" onClick={() => props.onNavigate('inbox')}>
@@ -339,8 +339,8 @@ export function OverviewPage(props: OverviewProps) {
 
       <div className="ogrid">
         <ChartCard
-          title="Best matches right now"
-          sub="The highest scores you have not applied to"
+          title="Top matches"
+          sub="Highest scores, not yet applied"
           aside={
             <button type="button" className="btn btn--ghost btn--xs" onClick={() => props.onNavigate('jobs')}>
               All jobs
@@ -397,7 +397,7 @@ export function OverviewPage(props: OverviewProps) {
           )}
         </ChartCard>
 
-        <ChartCard title="Recent activity" sub="Letters, applications, new jobs and what you asked for">
+        <ChartCard title="Recent activity" sub="Letters, applications, jobs and commands">
           {jobsLoading ? (
             <ChartSkeleton rows={6} />
           ) : activity.length ? (

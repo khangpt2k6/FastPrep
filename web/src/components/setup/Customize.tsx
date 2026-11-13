@@ -40,7 +40,7 @@ export function Customize({ row, busy, onBack, onApply }: {
           <h2 className="custom__title" id="custom-search">
             What to look for
           </h2>
-          <p className="custom__sub">The agent searches with these.</p>
+          <p className="custom__sub">Used for the job search.</p>
           <div className="custom__fields">
             <TagInput label="Job titles" values={search.titles} onChange={(titles) => setSearch((s) => ({ ...s, titles }))} placeholder="Software Engineer Intern" hint="Press Enter after each" />
             <TagInput label="Cities" values={search.cities} onChange={(cities) => setSearch((s) => ({ ...s, cities }))} placeholder="Tampa, FL" />
@@ -53,7 +53,7 @@ export function Customize({ row, busy, onBack, onApply }: {
           <h2 className="custom__title" id="custom-profile">
             For your profile
           </h2>
-          <p className="custom__sub">Education, experience and skills replace what is there. Personal fields fill only blanks.</p>
+          <p className="custom__sub">Replaces education, experience and skills. Fills empty personal fields only.</p>
           <div className="custom__fields">
             <div className="grid-fields">
               {PERSONAL.map(([key, label, type]) => (

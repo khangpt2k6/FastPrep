@@ -131,7 +131,7 @@ function Readout({ row, isDefault, jobsFound }: { row: ResumeRow; isDefault: boo
     <div className="readout rlib__readout">
       <p className="readout__title">
         <IconSpark size={14} />
-        What the agent read
+        Extracted details
       </p>
       {read.any ? (
         <dl className="props props--tight">
@@ -235,7 +235,7 @@ function ResumeItem({ row, isDefault, switching, now, online, jobsFound, onOpen,
               aria-controls={`${id}-read`}
               onClick={() => setOpen((v) => !v)}
               aria-label={open ? 'Hide what the agent read' : 'Show what the agent read'}
-              title="What the agent read"
+              title="Extracted details"
             >
               <IconChevronDown size={16} className={open ? 'is-flipped' : ''} />
             </button>
@@ -377,7 +377,7 @@ function UploadDialog({ open, onClose, onUpload, first }: {
         <input id={`${id}-label`} className="input" value={label} maxLength={40} onChange={(e) => setLabel(e.target.value)} placeholder="ML, Backend, Data" />
       </div>
       {first ? (
-        <p className="rupload__note">It becomes your default resume: applications send it and the agent searches with it.</p>
+        <p className="rupload__note">Becomes the default for applications and search.</p>
       ) : (
         <label className="check check--text rupload__default">
           <input type="checkbox" checked={activate} onChange={(e) => setActivate(e.target.checked)} />

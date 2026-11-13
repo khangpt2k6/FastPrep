@@ -40,10 +40,10 @@ function ImportRow({ userId }: { userId: string }) {
 
   let line;
   if (uploading) line = <Shimmer>Uploading</Shimmer>;
-  else if (state?.status === 'pending') line = <Shimmer>Waiting for the agent. It has to be running on your computer.</Shimmer>;
+  else if (state?.status === 'pending') line = <Shimmer>Waiting for the agent</Shimmer>;
   else if (state?.status === 'running') line = <Shimmer>The agent is reading it</Shimmer>;
-  else if (state?.status === 'done') line = 'Added to your profile. What you had written was kept. Check Details below.';
-  else line = 'On your LinkedIn profile choose More, then Save to PDF, and upload that file. The agent adds what your profile is missing.';
+  else if (state?.status === 'done') line = 'Added. Existing details unchanged.';
+  else line = 'LinkedIn profile PDF (More > Save to PDF). Adds missing details only.';
   const failed = problem || (state?.status === 'failed' ? state.error || 'The agent could not read it.' : '');
 
   return (
@@ -118,7 +118,7 @@ function ConnectRow() {
               <span className="tag tag--green">Connected</span>
             </>
           ) : (
-            'Sign in with LinkedIn to link it to this account. LinkedIn shares your name, email and photo, nothing else.'
+            'Links your LinkedIn account. Shares name, email and photo only.'
           )}
         </p>
         {problem ? (

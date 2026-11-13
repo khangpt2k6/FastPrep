@@ -339,7 +339,7 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
                 <Wolf mood="checklist" size={64} motion="pop" eager />
                 <div>
                   <h1 className="setup__title">Start with your resume</h1>
-                  <p className="setup__sub">We fill in the rest from it.</p>
+                  <p className="setup__sub">Your profile and search are built from it.</p>
                 </div>
               </div>
               <AnimatePresence mode="wait" initial={false}>
@@ -373,8 +373,8 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
             <div className="setup__hello">
               <Wolf mood="reading" size={64} motion="pop" eager />
               <div>
-                <h1 className="setup__title">Check what we read</h1>
-                <p className="setup__sub">Change anything, then use it in your profile.</p>
+                <h1 className="setup__title">Review extracted details</h1>
+                <p className="setup__sub">Edit, then apply to your profile.</p>
               </div>
             </div>
             {source ? (
@@ -407,7 +407,7 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
             <div className="setup__left setup__done">
               <Wolf mood="cheer" size={96} motion="hop" eager />
               <h1 className="setup__title">You are all set</h1>
-              <p className="setup__sub">The agent searches with your resume from now on.</p>
+              <p className="setup__sub">Searches now use this resume.</p>
               <div className="status__actions">
                 <button type="button" className="btn btn--brand" onClick={onSeeJobs}>
                   See jobs
