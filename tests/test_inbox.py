@@ -254,3 +254,18 @@ def test_a_second_sync_fetches_nothing_already_read_and_a_renumbered_mailbox_is_
     assert [(event.kind, event.company) for event in store.events()] == [("applied", "Stripe")]
     assert store.synced_at() == "2026-11-12T00:00:00+00:00"
     store.close()
+
+
+def test_an_application_carries_the_employers_own_site_and_never_a_carriers() -> None:
+    def from_(sender: str, kind: str, at: str) -> Event:
+        return Event(f"m{at}", "t1", at, kind, "Stripe", "Software Engineer Intern", sender, f"{kind} Stripe", "")
+
+    own = [
+        from_("no-reply@us.greenhouse-mail.io", "applied", "2026-07-01T10:00:00+00:00"),
+        from_("recruiting@mail.stripe.com", "interview", "2026-07-09T10:00:00+00:00"),
+        from_("dana@stripe.com", "interview", "2026-07-10T10:00:00+00:00"),
+        from_("someone@gmail.com", "interview", "2026-07-11T10:00:00+00:00"),
+    ]
+    assert applications(own)[0].domain == "stripe.com"
+    assert applications(own[:1])[0].domain == "", "only a carrier wrote: the site is not known"
+    assert applications([from_("jobs@careers.acme.co.uk", "applied", "2026-07-01T10:00:00+00:00")])[0].domain == "acme.co.uk"

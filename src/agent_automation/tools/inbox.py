@@ -99,6 +99,9 @@ class Application:
     by_agent: bool = False
     # False when no receipt was read: `applied_at` is then only the first mail about it, often the refusal itself.
     applied_known: bool = True
+    # The employer's own site, as the addresses of its mail show it: "stripe.com". Empty when every mail came through a
+    # carrier. The dashboard finds the company's logo by it.
+    domain: str = ""
 
 
 # Reading the mailbox.
@@ -653,6 +656,21 @@ def _carried(host: str) -> bool:
     return any(host == carrier or host.endswith("." + carrier) for carrier in CARRIERS)
 
 
+def _own_domain(senders: Iterable[str]) -> str:
+    """The employer's own site out of the addresses that wrote about one application: the one most of its mail came from,
+    never a carrier's or a mailbox provider's. mail.stripe.com and careers.stripe.com are stripe.com."""
+    counted: dict[str, int] = {}
+    for sender in senders:
+        host = sender.rpartition("@")[2].lower().strip(".")
+        if "." not in host or _carried(host):
+            continue
+        labels = host.split(".")
+        ending = 2 if len(labels) > 2 and labels[-2] in ("co", "com", "org", "ac") and len(labels[-1]) == 2 else 1
+        site = ".".join(labels[-ending - 1 :])
+        counted[site] = counted.get(site, 0) + 1
+    return max(counted, key=lambda site: counted[site], default="")
+
+
 def _host_core(host: str) -> str:
     """mail.stripe.com, careers.cisco.co.uk, hrt.careers: the label before the public ending."""
     labels = host.split(".")
@@ -996,7 +1014,7 @@ def applications(events: Iterable[Event], sent_by_agent: Iterable[str] = ()) -> 
         receipt = next((item for item in items if item.kind == "applied"), None)
         found.append(Application(
             company=shown[group.company], role=named.role, status=deciding.kind, applied_at=(receipt or items[0]).at, updated_at=items[-1].at, subject=deciding.subject, mails=len(items),
-            by_agent=group.company in agent, applied_known=receipt is not None,
+            by_agent=group.company in agent, applied_known=receipt is not None, domain=_own_domain(item.sender for item in items),
         ))
     return sorted(found, key=lambda item: item.updated_at, reverse=True)
 
