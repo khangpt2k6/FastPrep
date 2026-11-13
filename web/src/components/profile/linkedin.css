@@ -1,0 +1,10 @@
+/* The LinkedIn card on the Profile page. Its rows use the documents rows' look (documents.css). */
+
+.lnk__photo {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  object-fit: cover;
+}

@@ -55,7 +55,7 @@ Needs Python 3.11+, Node 20+ and a Supabase project.
 
 The first run downloads the job database (about 250 MB). Applications use the Google Chrome already on your computer.
 
-More: [web dashboard](docs/web.md), [configuration](docs/configuration.md), [supported sites](docs/sites.md), [data sources](docs/data-sources.md), [inbox sync](docs/inbox.md).
+More: [web dashboard](docs/web.md), [configuration](docs/configuration.md), [supported sites](docs/sites.md), [data sources](docs/data-sources.md), [inbox sync](docs/inbox.md), [LinkedIn](docs/linkedin.md).
 
 ## Terminal UI
 

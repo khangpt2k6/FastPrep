@@ -8,6 +8,7 @@ import { Callout } from '../common';
 import { Group } from '../settings';
 import { IconAlert, IconGithub, IconGlobe, IconLinkedin, IconMail, IconMapPin, IconPencil, IconPhone, IconPlus, IconSpark } from '../Icons';
 import { DocumentsCard } from './DocumentsCard';
+import { LinkedInCard } from './LinkedInCard';
 import { ResumeCard } from './ResumeCard';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
@@ -293,6 +294,7 @@ export function ProfilePage({ profile, row, onEdit, resume, now, onReplace }: Pr
 
       <ResumeCard {...resume} now={now} onReplace={onReplace} />
       <DocumentsCard now={now} />
+      <LinkedInCard />
 
       <Group title="Details" bare>
         <div className="panel profilecard">
