@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import logging
 import os
 import re
 import sys
@@ -961,6 +962,10 @@ class Agent:
 
     async def run(self) -> None:
         asyncio.get_running_loop().set_exception_handler(_quiet)
+        # A library the agent loads logs every HTTP request at INFO: with a poll every 2 s that alone would fill agent.log
+        # by tens of MB a day in the background.
+        for name in ("httpx", "httpcore"):
+            logging.getLogger(name).setLevel(logging.WARNING)
         await self.db.sign_in()
         click.echo(f"Signed in to Supabase as {self.db.email}")
         try:
