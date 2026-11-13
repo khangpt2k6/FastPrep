@@ -19,6 +19,7 @@ from click.testing import CliRunner
 
 from agent_automation.agent import session as session_module
 from agent_automation.agent.apply import Outcome
+from agent_automation.agent.cover_letter import load_skills
 from agent_automation.agent.session import Session
 from agent_automation.memory.config import ConfigError, load_config
 from agent_automation.memory.profile import install_resume
@@ -246,7 +247,7 @@ def test_file_names_from_the_page_are_kept_as_given_where_this_computer_allows()
 
 
 def test_without_the_newer_schema_the_agent_sends_what_it_sent_before(session: Session, capsys: pytest.CaptureFixture[str]) -> None:
-    db = Remote("automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_resumes")
+    db = Remote("automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_resumes", "automation_rules")
     scored(session, 1)
     agent = agent_for(session, db)
 
@@ -257,6 +258,8 @@ def test_without_the_newer_schema_the_agent_sends_what_it_sent_before(session: S
         await agent._beat()
         await agent.push_jobs()
         await agent.publish_resume()
+        await agent.publish_rules()
+        assert await agent.rules_text() == ""
 
     asyncio.run(run())
     assert not any(vars(agent.support).values())
@@ -643,3 +646,34 @@ def test_a_second_agent_for_the_same_home_ends_at_once_and_says_why(tmp_path: Pa
         keeper.release(first)
     assert isinstance(result.exception, ConfigError) and "already running" in str(result.exception)
     assert not (tmp_path / "data" / "jobs.db").exists()
+
+
+# The Rules page.
+
+
+def test_shipped_rules_go_on_the_page_and_an_edited_one_keeps_its_text(session: Session) -> None:
+    db = Remote(automation_rules=[
+        {"user_id": "u1", "id": "cover-letter/plain", "kind": "cover_letter", "body": "My own text.", "updated_by": "web", "enabled": True, "builtin": True},
+        {"user_id": "u1", "id": "cover-letter/voice", "kind": "cover_letter", "body": "old shipped", "updated_by": "agent", "enabled": True, "builtin": True},
+    ])
+    agent = agent_for(session, db)
+    asyncio.run(agent.publish_rules())
+    plain, voice = db.row("automation_rules", id="cover-letter/plain"), db.row("automation_rules", id="cover-letter/voice")
+    assert plain["body"] == "My own text." and "recruiter" in plain["default_body"]
+    assert voice["body"] == voice["default_body"] != "old shipped"
+    truth = db.row("automation_rules", id="cover-letter/truth")
+    assert truth["builtin"] and truth["updated_by"] == "agent" and truth["body"] == truth["default_body"]
+    assert db.row("automation_rules", id="always/builtin")["kind"] == "always"
+
+
+def test_rules_from_the_page_reach_the_letters_and_the_brief(session: Session) -> None:
+    db = Remote(automation_preferences=[], automation_memory=[], automation_rules=[
+        {"user_id": "u1", "id": "cover-letter/plain", "kind": "cover_letter", "title": "Keep it light on tech", "body": "No tool names at all.",
+         "updated_by": "web", "enabled": True, "builtin": True, "sort": 5},
+        {"user_id": "u1", "id": "answer/why", "kind": "answer", "title": "Why this company", "body": "One specific reason.", "enabled": True},
+    ])
+    agent = agent_for(session, db)
+    text, _ = asyncio.run(agent.writing())
+    assert "- Why this company: One specific reason." in text
+    skills = {skill.name: skill for skill in load_skills(session.home)}
+    assert skills["Keep it light on tech"].body == "No tool names at all."

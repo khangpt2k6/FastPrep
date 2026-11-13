@@ -39,6 +39,7 @@ from agent_automation.memory.config import DRY_RUN_ENV, Config, ConfigError, def
 from agent_automation.memory.profile import read_resume, set_search_places
 from agent_automation.memory.store import SENT_WORDS, SUBMITTED, Stored, safe_name
 from agent_automation.memory.web_profile import mirror_to_home, prefill, profile_answers, writing_text
+from agent_automation.memory.web_rules import answer_rules_text, builtin_rules, mirror_rules
 from agent_automation.ui.inbox_push import keep_current
 from agent_automation.ui.keeper import LOCK_FILE, STOP_FILE, keeper_running, release, take_lock
 
@@ -61,6 +62,7 @@ BUCKET = "automation-proofs"
 NAMING_PAUSE_SECONDS = 600
 AGENT_SETTINGS = "automation_settings"
 RESUMES = "automation_resumes"
+RULES = "automation_rules"
 PAUSED = "Paused from the dashboard"
 # Supabase's answer when a table or column is not there: supabase/schema.sql was not run again since it got it.
 MISSING = frozenset({"42703", "42P01", "PGRST204", "PGRST205"})
@@ -70,6 +72,7 @@ PARTS = {
     "fetch": "automation_agent.fetched_at (when new jobs were last fetched)",
     "found_at": "automation_jobs.found_at (when each job was found)",
     "resumes": "automation_resumes (resumes uploaded on the page)",
+    "rules": "automation_rules (rules edited on the Rules page)",
 }
 CONTENT_TYPES = {
     ".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".txt": "text/plain",
@@ -214,7 +217,7 @@ class Support:
     once, and from then on the agent does what it did before that part came."""
 
     def __init__(self) -> None:
-        self.settings = self.fetch = self.found_at = self.resumes = True
+        self.settings = self.fetch = self.found_at = self.resumes = self.rules = True
 
     def drop(self, part: str) -> None:
         if getattr(self, part):
@@ -650,6 +653,7 @@ class Agent:
             ("fetch", "automation_agent", "fetched_at,next_fetch_at,fetched_new"),
             ("found_at", "automation_jobs", "found_at"),
             ("resumes", RESUMES, "id,status,data"),
+            ("rules", RULES, "id,kind,body,enabled"),
         ):
             try:
                 await self.db.select(table, {"select": columns, "limit": "1"})
@@ -763,7 +767,54 @@ class Agent:
             mirror_to_home(self.session.home, preferences, memory)
         except Exception as error:  # noqa: BLE001  The copy is for reading; the applications use what was read above.
             click.echo(f"preferences and memory not copied to {self.session.home.personal}: {error}")
-        return writing_text(preferences, memory), preferences.get("learn", True) is not False
+        text = "\n\n".join(part for part in (writing_text(preferences, memory), await self.rules_text()) if part)
+        return text, preferences.get("learn", True) is not False
+
+    # The Rules page.
+
+    async def publish_rules(self) -> None:
+        """The rules the project ships, put on the Rules page: new ones added, and the shipped text of the others kept up to
+        date. A rule the person changed on the page keeps their text; one they never touched follows the project's."""
+        if not self.support.rules:
+            return
+        mine = {"user_id": f"eq.{self.db.user_id}"}
+        try:
+            known = {str(row["id"]): row for row in await self.db.select(RULES, {**mine, "select": "id,updated_by"})}
+        except Exception as error:
+            if not schema_missing(error):
+                raise
+            self.support.drop("rules")
+            return
+        fresh = []
+        for rule in builtin_rules(self.session.home):
+            if rule["id"] not in known:
+                fresh.append({**rule, "user_id": self.db.user_id, "body": rule["default_body"], "enabled": True, "updated_by": "agent", "updated_at": _now()})
+                continue
+            values = {name: rule[name] for name in ("title", "description", "default_body", "sort")}
+            if known[rule["id"]].get("updated_by") != "web":
+                values["body"] = rule["default_body"]
+            await self.db.update(RULES, {**mine, "id": f"eq.{rule['id']}"}, values)
+        if fresh:
+            await self.db.insert(RULES, fresh)
+
+    async def rules_text(self) -> str:
+        """The page's rules taken in before anything is written: the cover letter ones and the standing ones copied into the
+        person's home, where the letters read them, and the answer ones as text for the forms' brief."""
+        if not self.support.rules:
+            return ""
+        try:
+            rows = await self.db.select(RULES, {"user_id": f"eq.{self.db.user_id}"})
+        except Exception as error:  # noqa: BLE001  Letters and answers go on with the rules already copied.
+            if schema_missing(error):
+                self.support.drop("rules")
+            else:
+                click.echo(f"rules: {error}")
+            return ""
+        try:
+            mirror_rules(self.session.home, rows)
+        except Exception as error:  # noqa: BLE001  The copies are what letters read; the last ones stay.
+            click.echo(f"rules not copied to {self.session.home.personal}: {error}")
+        return answer_rules_text(rows)
 
     async def learn(self, item: Stored, written: tuple[tuple[str, str], ...]) -> None:
         """What the model wrote in its own words on this form, kept in Memory for the person to review and reuse."""
@@ -982,6 +1033,10 @@ class Agent:
                 await self.letters.publish()
             except Exception as error:  # noqa: BLE001  The page shows no templates until the next start; letters still work.
                 click.echo(f"cover letter templates not published: {error}")
+            try:
+                await self.publish_rules()
+            except Exception as error:  # noqa: BLE001  The Rules page shows what it had; letters still follow the files.
+                click.echo(f"rules not published: {error}")
             try:
                 # The page shows the resume in use: the one given on the command line, or one from before the page took them.
                 await self.publish_resume(again=self.resume is not None)

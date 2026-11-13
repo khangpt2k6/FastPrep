@@ -304,3 +304,34 @@ do $$
 begin
   begin alter publication supabase_realtime add table public.automation_inbox; exception when duplicate_object then null; end;
 end $$;
+
+-- Rules, edited on the Rules page; the agent writes them into the person's home before it writes anything
+-- (src/agent_automation/memory/web_rules.py). kind: 'cover_letter' (a rule for every part of a letter; the built-in ones
+-- are put here by the agent with builtin = true and default_body = the shipped text), 'section' (one part of the
+-- letter, by its slot name), 'answer' (one kind of open question on a form), 'always' (a standing instruction).
+-- updated_by 'web' marks a rule the person changed: the agent never puts the shipped text back over it.
+create table if not exists public.automation_rules (
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  id text not null,
+  kind text not null check (kind in ('cover_letter', 'section', 'answer', 'always')),
+  title text not null default '',
+  description text not null default '',
+  body text not null default '',
+  default_body text not null default '',
+  enabled boolean not null default true,
+  builtin boolean not null default false,
+  sort real not null default 99,
+  updated_by text not null default 'web' check (updated_by in ('web', 'agent')),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, id)
+);
+
+alter table public.automation_rules enable row level security;
+drop policy if exists "own rules" on public.automation_rules;
+create policy "own rules" on public.automation_rules for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.automation_rules; exception when duplicate_object then null; end;
+end $$;

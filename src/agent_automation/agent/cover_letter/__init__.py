@@ -148,10 +148,13 @@ def load_templates(home: Home) -> dict[str, Template]:
 
 
 def load_skills(home: Home) -> tuple[Skill, ...]:
-    """The rules every slot follows: skills/cover-letter/<name>/SKILL.md, in their `order`, the person's winning by name."""
+    """The rules every slot follows: skills/cover-letter/<name>/SKILL.md, in their `order`, the person's winning by name. One
+    whose front matter says `enabled: false` (a rule turned off on the dashboard) is left out."""
     docs = sorted(home.skills("cover-letter").values(), key=lambda doc: (float(99 if doc.meta.get("order") is None else doc.meta["order"]), doc.name))
     skills = []
     for doc in docs:
+        if doc.meta.get("enabled") is False:
+            continue
         if not doc.body.strip():
             raise CoverLetterError(f"cover letter skill {doc.path}: it has no instructions")
         skills.append(Skill(str(doc.meta.get("name") or doc.name), str(doc.meta.get("description") or ""), doc.body.strip()))
