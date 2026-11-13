@@ -515,12 +515,15 @@ class Agent:
             self.download = ""
 
     async def bring_jobs(self) -> None:
-        try:
-            await self.sync_jobs(self.wake.set)
-            self.fetched_at = time.time()
-        except Exception as error:  # noqa: BLE001  The jobs already here can still be searched.
-            click.echo(f"job database: {error}")
-            self.round_failed = True
+        # With auto-fetch off the person decides when new postings come: the job database is brought down at the start only
+        # when this computer has none yet, and otherwise when they press Find more.
+        if self.settings.auto_fetch or not self.session.library.has_postings():
+            try:
+                await self.sync_jobs(self.wake.set)
+                self.fetched_at = time.time()
+            except Exception as error:  # noqa: BLE001  The jobs already here can still be searched.
+                click.echo(f"job database: {error}")
+                self.round_failed = True
         # This first download counts as the first round of auto-fetch: the next one comes fetch_hours after it.
         self.last_round = time.time()
         self.wake.set()
@@ -579,6 +582,16 @@ class Agent:
             finally:
                 self.busy -= 1
                 self.last_round = time.time()
+
+    async def refresh_database(self) -> None:
+        """The job database brought to its newest build for a Find more, said on the page; a failure leaves the search to the
+        postings already here."""
+        self.say("searching", "Getting the newest postings")
+        try:
+            await self.sync_jobs(lambda: None)
+            self.fetched_at, self.round_from = time.time(), _now()
+        except Exception as error:  # noqa: BLE001  The postings already here are still searched.
+            click.echo(f"job database: {error}")
 
     async def fetch_round(self) -> None:
         """What is new in the job database brought down and searched, then the best of the jobs not scored yet scored,
@@ -744,6 +757,9 @@ class Agent:
         self.busy += 1
         try:
             if command["kind"] == "search":
+                if not self.settings.auto_fetch:
+                    # Auto-fetch off: Find more is when the newest postings come down.
+                    await self.refresh_database()
                 self.target = self.scored() + SCORE_MORE
                 self.wake.set()
             elif command["kind"] == "cover_letter":

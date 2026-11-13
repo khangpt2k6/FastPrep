@@ -68,18 +68,18 @@ export function checkLine(agent: AgentRow | null, settings: AgentSettings, onlin
   const parts: string[] = [];
   if (agent?.fetched_at) {
     const ago = timeAgo(agent.fetched_at, now);
-    parts.push(`Last check ${ago}, ${agent.fetched_new ?? 0} new.`);
+    parts.push(`Job list updated ${ago}, ${agent.fetched_new ?? 0} new.`);
   } else {
-    parts.push('No check yet.');
+    parts.push(settings.auto_fetch ? 'No check yet.' : 'Job list updated only when you press Find more.');
   }
-  if (!settings.auto_fetch) parts.push('Automatic checks are off.');
+  if (!settings.auto_fetch) parts.push(agent?.fetched_at ? 'Automatic checks are off: next update when you press Find more.' : '');
   else if (settings.paused) parts.push('Next check when the agent is on.');
   else if (!online) parts.push('Next check when the agent is online.');
   else {
     const until = untilText(agent?.next_fetch_at, now);
     parts.push(until ? `Next in ${until}.` : 'Next check soon.');
   }
-  return parts.join(' ');
+  return parts.filter(Boolean).join(' ');
 }
 
 function heroWord(state: string): string {
@@ -248,19 +248,16 @@ export function AgentPage(props: AgentPageProps) {
               <>
                 Offline now. Double-click <strong className="nowrap">{START_SHORTCUT}</strong> on your desktop to start it.
               </>
-            ) : (
-              'Takes jobs from this page. Paused, it finishes what it is doing and waits.'
-            )
+            ) : undefined
           }
         />
         <ToggleRow
           title="Find new jobs automatically"
-          description="Brings the newest postings on a schedule and scores the ones that fit."
           checked={settings.auto_fetch}
           onChange={(v) => onSettings({ auto_fetch: v })}
           disabled={off}
         />
-        <SettingRow title="Check every" description="How often it looks for new postings." className={!settings.auto_fetch ? 'is-dim' : ''}>
+        <SettingRow title="Check every" className={!settings.auto_fetch ? 'is-dim' : ''}>
           <PillSelect<number>
             label="Check every"
             value={settings.fetch_hours}
@@ -272,7 +269,6 @@ export function AgentPage(props: AgentPageProps) {
         </SettingRow>
         <SettingRow
           title="New jobs scored per round"
-          description="Each scored job uses a little AI credit."
           className={`srow--last ${!settings.auto_fetch ? 'is-dim' : ''}`}
         >
           <PillSelect<number>
@@ -288,7 +284,7 @@ export function AgentPage(props: AgentPageProps) {
           <IconClock size={14} />
           {checkLine(agent, settings, online, now)}
         </p>
-        <NavRow title="How finding jobs works" description="Where jobs come from and what it costs." icon={<IconInfo size={18} />} onClick={() => setHow(true)} />
+        <NavRow title="How finding jobs works" icon={<IconInfo size={18} />} onClick={() => setHow(true)} />
       </Group>
       {settingsState.missing ? (
         <GroupNote tone="warn">

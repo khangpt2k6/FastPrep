@@ -850,3 +850,26 @@ def test_the_posting_date_is_kept_filled_in_later_and_pushed(session: Session) -
     agent = agent_for(session, db)
     asyncio.run(agent.push_jobs())
     assert "posted_at" not in db.tables["automation_jobs"][0] and not agent.support.posted and agent.support.found_at
+
+
+def test_with_auto_fetch_off_the_database_comes_down_only_on_find_more(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    synced: list[str] = []
+
+    async def sync(progress: Any, arrived: Any, on_bytes: Any = None) -> None:
+        synced.append("sync")
+
+    monkeypatch.setattr(session, "sync", sync)
+    monkeypatch.setattr(session.library, "has_postings", lambda: True)
+    monkeypatch.setattr(session, "bring_engine", lambda: None)
+    db = Remote(automation_commands=[{"id": 9, "user_id": "u1", "kind": "search", "status": "pending", "payload": {}, "job_ids": []}])
+    agent = agent_for(session, db)
+    agent.settings = Settings(auto_fetch=False)
+    asyncio.run(agent.bring_jobs())
+    assert synced == [] and agent.fetched_at is None and agent.wake.is_set()
+    asyncio.run(agent.next_command())
+    assert synced == ["sync"] and agent.fetched_at is not None
+    assert db.row("automation_commands", id=9)["status"] == "done"
+    # On, the start brings it down as before.
+    agent.settings = Settings()
+    asyncio.run(agent.bring_jobs())
+    assert synced == ["sync", "sync"]
