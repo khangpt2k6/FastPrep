@@ -446,6 +446,35 @@ def _keep_latest_picture(messages: list[Any]) -> None:
             message["content"] = "A picture of the page was taken here; the latest one is below."
 
 
+# Every call sends the whole conversation again, so a long form paid for each page reading (a snapshot, the page's text or
+# HTML) once per later step: most of what applications cost. Readings older than the latest few become a short note; the
+# model acts on the latest page and reads it again when it needs to. They are shortened in batches, only once more than
+# READINGS_MAX are whole, so between two batches the start of the prompt stays the same and the provider's prompt cache
+# charges less for it.
+READING_CHARS = 1200
+READINGS_MAX = 4
+READINGS_KEPT = 2
+READING_HEAD = 240
+SHORTENED = "[An older page reading, shortened to save tokens]"
+
+
+def _shorten_readings(messages: list[Any]) -> int:
+    """Page readings older than the latest READINGS_KEPT, as a note with their start, once more than READINGS_MAX are whole;
+    how many were shortened. A tool answer of READING_CHARS or more is a reading; shorter ones stay as they are."""
+    whole = [
+        message for message in messages
+        if message.get("role") == "tool" and isinstance(message.get("content"), str)
+        and len(message["content"]) >= READING_CHARS and not message["content"].startswith(SHORTENED)
+    ]
+    if len(whole) <= READINGS_MAX:
+        return 0
+    for message in whole[:-READINGS_KEPT]:
+        text = message["content"]
+        head = " ".join(text[:READING_HEAD].split())
+        message["content"] = f"{SHORTENED} ({len(text)} characters of the page as it was then; read the page again if you need it): {head}..."
+    return len(whole) - READINGS_KEPT
+
+
 def _blocked(summary: str, reason: str, steps: int) -> Report:
     """A run that ends before the form is ready, as finish_form would report it, with why in one word."""
     return Report("blocked", summary, blocked_by=reason, steps=steps)
@@ -615,6 +644,7 @@ async def fill_form(session: Browser, tools: list[dict[str, Any]], client: Async
         if seen:
             _keep_latest_picture(messages)
             messages.append({"role": "user", "content": seen})
+        _shorten_readings(messages)
 
 
 async def _where(session: Browser, shot: Path) -> tuple[str, str]:

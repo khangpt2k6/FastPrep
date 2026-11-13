@@ -905,3 +905,30 @@ def test_a_send_the_guard_holds_back_is_told_to_the_model(monkeypatch: pytest.Mo
     told = [m["content"] for m in model.requests[-1]["messages"] if isinstance(m, dict) and m.get("role") == "tool"]
     assert any(DRY_RUN_HELD in text for text in told)
     assert browser.page["url"].endswith("/apply")
+
+
+# What a long form costs: older page readings are shortened.
+
+
+def test_older_page_readings_are_shortened_in_batches_and_the_latest_stay_whole() -> None:
+    from agent_automation.agent.apply import READING_CHARS, READINGS_KEPT, READINGS_MAX, SHORTENED, _shorten_readings
+
+    page = "x" * READING_CHARS
+    messages: list[dict[str, Any]] = [{"role": "system", "content": "rules"}, {"role": "user", "content": "brief " + page}]
+    for number in range(READINGS_MAX):
+        messages.append({"role": "tool", "tool_call_id": f"c{number}", "content": f"page {number} {page}"})
+        messages.append({"role": "tool", "tool_call_id": f"s{number}", "content": "Clicked."})
+    # Up to READINGS_MAX whole readings, nothing changes: the prompt's start stays the same for the cache.
+    assert _shorten_readings(messages) == 0
+    messages.append({"role": "tool", "tool_call_id": "last", "content": f"page last {page}"})
+    assert _shorten_readings(messages) == READINGS_MAX + 1 - READINGS_KEPT
+    tools = [message for message in messages if message["role"] == "tool"]
+    whole = [message for message in tools if not message["content"].startswith(SHORTENED)]
+    assert [message["tool_call_id"] for message in whole if len(message["content"]) >= READING_CHARS] == [f"c{READINGS_MAX - 1}", "last"]
+    # Short answers, the brief and the ids that pair answers with calls stay as they were.
+    assert all(message["content"] == "Clicked." for message in tools if message["tool_call_id"].startswith("s"))
+    assert messages[1]["content"].startswith("brief") and len(messages[1]["content"]) > READING_CHARS
+    shortened = next(message for message in tools if message["tool_call_id"] == "c0")
+    assert shortened["content"].startswith(SHORTENED) and "page 0" in shortened["content"] and len(shortened["content"]) < 400
+    # Shortened once is shortened for good: a second pass changes nothing.
+    assert _shorten_readings(messages) == 0
