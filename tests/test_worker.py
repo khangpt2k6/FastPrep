@@ -873,3 +873,35 @@ def test_with_auto_fetch_off_the_database_comes_down_only_on_find_more(session: 
     agent.settings = Settings()
     asyncio.run(agent.bring_jobs())
     assert synced == ["sync", "sync"]
+
+
+def test_the_page_can_take_a_job_out_or_cancel_the_command_while_it_runs(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    ids = scored(session, 1, 2, 3)
+    tried: list[str] = []
+    db = Remote(automation_commands=[{"id": 4, "user_id": "u1", "kind": "apply", "status": "pending", "payload": {}, "job_ids": ids, "dry_run": True}])
+    agent = agent_for(session, db)
+
+    async def writing() -> tuple[str, bool]:
+        return "", False
+
+    async def letter(item: Any, always: bool = False) -> None:
+        return None
+
+    async def apply(item: Any, *rest: Any, **keywords: Any) -> Any:
+        tried.append(item.job.id)
+        command = db.row("automation_commands", id=4)
+        if len(tried) == 1:
+            command["job_ids"] = [ids[0], ids[2]]  # the page took the second job out
+        else:
+            command["status"] = "failed"  # the page cancelled the rest
+            command["error"] = "Cancelled on the page"
+        return SimpleNamespace(status="blocked", summary="", reason="", written=(), proof=SimpleNamespace(screenshot=""))
+
+    monkeypatch.setattr(agent, "writing", writing)
+    monkeypatch.setattr(agent, "letter", letter)
+    monkeypatch.setattr(session, "apply", apply)
+    db.tables["automation_jobs"] = [{"user_id": "u1", "id": job_id, "status": "scored"} for job_id in ids]
+    asyncio.run(agent.next_command())
+    assert tried == [ids[0], ids[2]]
+    command = db.row("automation_commands", id=4)
+    assert command["status"] == "failed" and command["error"] == "Cancelled on the page"

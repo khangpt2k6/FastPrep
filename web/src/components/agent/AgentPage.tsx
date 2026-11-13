@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { CANCELLED } from '../../hooks/useAutomationData';
 import { AnimatePresence, motion } from 'motion/react';
 import type { AgentRow, AgentSettings, CommandRow, JobRow, LiveStatus, LoadError } from '../../lib/types';
 import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
@@ -54,6 +55,8 @@ interface AgentPageProps {
   now: number;
   tail: LogEntry[];
   commands: CommandRow[];
+  /** Cancels a command still waiting or running. */
+  onCancel?: (id: number) => void;
   live: LiveStatus;
   sent: number;
   /** The job being filled right now, if any. */
@@ -335,7 +338,13 @@ export function AgentPage(props: AgentPageProps) {
             <ul className="dblist__rows">
               <AnimatePresence initial={false}>
                 {recent.map((c, i) => {
-                  const status = c.status === 'pending' && !online ? { label: 'Waiting for agent', color: 'gray' as TagColor } : COMMAND_STATUS[c.status];
+                  const cancelled = c.status === 'failed' && c.error === CANCELLED;
+                  const status = cancelled
+                    ? { label: 'Cancelled', color: 'gray' as TagColor }
+                    : c.status === 'pending' && !online
+                      ? { label: 'Waiting for agent', color: 'gray' as TagColor }
+                      : COMMAND_STATUS[c.status];
+                  const open = c.status === 'pending' || c.status === 'running';
                   return (
                     <motion.li
                       className="dbrow cmd"
@@ -369,10 +378,20 @@ export function AgentPage(props: AgentPageProps) {
                             <span className="tag__dot" aria-hidden="true" />
                             <Swap id={`${status.label}`}>{status.label}</Swap>
                           </span>
+                          {open && props.onCancel ? (
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--sm cmd__cancel"
+                              onClick={() => props.onCancel?.(c.id)}
+                              title={c.status === 'running' ? 'Stops after the job in progress' : 'Take it out of the queue'}
+                            >
+                              Cancel
+                            </button>
+                          ) : null}
                         </span>
                         <time className="cmd__time num">{timeAgo(c.created_at, now)}</time>
                       </div>
-                      {c.status === 'failed' && c.error ? <p className="cmd__error">{c.error}</p> : null}
+                      {c.status === 'failed' && c.error && !cancelled ? <p className="cmd__error">{c.error}</p> : null}
                     </motion.li>
                   );
                 })}

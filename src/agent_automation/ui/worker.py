@@ -235,6 +235,11 @@ class Paused(Exception):
     """The page paused the agent in the middle of a command: what is done stays done, the rest waits for the person."""
 
 
+class Cancelled(Exception):
+    """The page cancelled the command under way: the application in progress finished, no other starts. The page already
+    marked the command, so it is left as the page wrote it."""
+
+
 class Supabase:
     """The few Supabase calls the agent needs, signed in as the person so RLS applies."""
 
@@ -341,6 +346,8 @@ class Agent:
         # Naming the companies runs beside the pushes, one at a time.
         self.naming: asyncio.Task[None] | None = None
         self.naming_paused_until = 0.0
+        # The command being handled, so a running apply can ask whether the page cancelled it.
+        self.command_id: int | None = None
         # The jobs tried before get their company's name once a run: they are not pushed again.
         self.tried_named = False
         # Which parts of the newer schema the database has, and the Agent page's switches.
@@ -755,6 +762,7 @@ class Agent:
         if not claimed:
             return
         self.busy += 1
+        self.command_id = command["id"]
         try:
             if command["kind"] == "search":
                 if not self.settings.auto_fetch:
@@ -772,7 +780,11 @@ class Agent:
                 await self.read_linkedin(command.get("payload") or {})
             elif command["kind"] == "calendar_add":
                 await self.add_event(command.get("payload") or {})
-            await self.db.update("automation_commands", {"id": f"eq.{command['id']}"}, {"status": "done"})
+            # Only one still running is done: one the page cancelled meanwhile keeps what the page wrote.
+            await self.db.update("automation_commands", {"id": f"eq.{command['id']}", "status": "eq.running"}, {"status": "done"})
+        except Cancelled as stop:
+            click.echo(str(stop))
+            self.idle(str(stop))
         except Paused as stop:
             click.echo(str(stop))
             await self.db.update("automation_commands", {"id": f"eq.{command['id']}"}, {"status": "failed", "error": str(stop)[:500]})
@@ -896,6 +908,9 @@ class Agent:
             # A pause from the page lets the application under way finish, and starts no other.
             if self.settings.paused:
                 raise Paused(f"Paused after {number - 1} of {len(job_ids)} jobs. Select the rest and apply again.")
+            # The page can cancel the command, or take single jobs out of it, while it runs.
+            if not await self.still_wanted(job_id, number - 1, len(job_ids)):
+                continue
             item = session.store.get(job_id)
             if item is None or item.status in SUBMITTED:
                 continue
@@ -985,6 +1000,22 @@ class Agent:
                 self.support.drop("documents")
             else:
                 click.echo(f"transcript not brought from the page: {error}")
+
+    async def still_wanted(self, job_id: str, done: int, total: int) -> bool:
+        """Whether this job of the running apply command is still asked for: the page may have cancelled the command
+        (Cancelled is raised) or taken the job out of its list (False). A command the page cannot be asked about goes on."""
+        command_id = getattr(self, "command_id", None)
+        if command_id is None:
+            return True
+        try:
+            rows = await self.db.select("automation_commands", {"id": f"eq.{command_id}", "select": "status,job_ids"})
+        except Exception:  # noqa: BLE001  No answer: the person asked for it, so it goes on.
+            return True
+        if not rows:
+            return True
+        if rows[0].get("status") != "running":
+            raise Cancelled(f"Cancelled on the page after {done} of {total} jobs.")
+        return job_id in (rows[0].get("job_ids") or [job_id])
 
     # Resumes on the page.
 

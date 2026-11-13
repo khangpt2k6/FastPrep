@@ -44,6 +44,8 @@ interface JobsPageProps {
   onRetry: () => void;
   selected: Set<string>;
   queued: Set<string>;
+  /** Takes a job out of the agent's queue. */
+  onUnqueue?: (id: string) => void;
   onToggle: (id: string) => void;
   onToggleAll: (ids: string[], select: boolean) => void;
   saved: Set<string>;
@@ -166,6 +168,7 @@ export function JobsPage(props: JobsPageProps) {
               now={now}
               selected={selected.has(job.id)}
               queued={queued.has(job.id)}
+              onUnqueue={props.onUnqueue}
               saved={props.saved.has(job.id)}
               onToggle={props.onToggle}
               onSave={props.onSave}

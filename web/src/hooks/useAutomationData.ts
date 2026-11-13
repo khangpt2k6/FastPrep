@@ -185,6 +185,29 @@ export async function sendApply(jobIds: string[], dryRun: boolean) {
   if (error) throw error;
 }
 
+/** What a command cancelled on the page says: the agent finishes the application under way and starts no other. */
+export const CANCELLED = 'Cancelled on the page';
+
+/** Cancels a command that has not finished. A running apply stops after the job in progress. */
+export async function cancelCommand(id: number) {
+  const { error } = await supabase.from(TABLES.commands).update({ status: 'failed', error: CANCELLED }).eq('id', id).in('status', ['pending', 'running']);
+  if (error) throw error;
+}
+
+/** Takes one job out of the commands still waiting or running; a command left with no job is cancelled. */
+export async function unqueueJob(jobId: string, commands: CommandRow[]) {
+  for (const c of commands) {
+    if ((c.kind !== 'apply' && c.kind !== 'cover_letter') || (c.status !== 'pending' && c.status !== 'running') || !c.job_ids.includes(jobId)) continue;
+    const rest = c.job_ids.filter((id) => id !== jobId);
+    if (rest.length === 0) {
+      await cancelCommand(c.id);
+      continue;
+    }
+    const { error } = await supabase.from(TABLES.commands).update({ job_ids: rest }).eq('id', c.id).in('status', ['pending', 'running']);
+    if (error) throw error;
+  }
+}
+
 export async function sendSearch() {
   const { error } = await supabase.from(TABLES.commands).insert({ kind: 'search' });
   if (error) throw error;

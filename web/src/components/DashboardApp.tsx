@@ -11,8 +11,10 @@ import {
   readSettings,
   saveAgentSettings,
   saveProfileRow,
+  cancelCommand,
   sendApply,
   sendSearch,
+  unqueueJob,
   useAgent,
   useAgentSettings,
   useCommands,
@@ -340,6 +342,26 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     else setConfirmJobs(chosen);
   }
 
+  async function cancel(id: number) {
+    try {
+      await cancelCommand(id);
+      push({ tone: 'ok', title: 'Cancelled' });
+      commandsT.reload();
+    } catch (error) {
+      push({ tone: 'error', title: 'Could not cancel', detail: errorText(error) });
+    }
+  }
+
+  async function unqueue(jobId: string) {
+    try {
+      await unqueueJob(jobId, commandsT.rows);
+      push({ tone: 'ok', title: 'Taken out of the queue' });
+      commandsT.reload();
+    } catch (error) {
+      push({ tone: 'error', title: 'Could not take it out', detail: errorText(error) });
+    }
+  }
+
   async function search() {
     setSearchBusy(true);
     try {
@@ -517,6 +539,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           onRetry={jobsT.reload}
           selected={selected}
           queued={queued}
+          onUnqueue={(id) => void unqueue(id)}
           onToggle={toggle}
           onToggleAll={toggleAll}
           saved={saved}
@@ -585,6 +608,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           now={now}
           tail={tail}
           commands={commandsT.rows}
+          onCancel={(id) => void cancel(id)}
           live={live}
           sent={sent}
           current={current}

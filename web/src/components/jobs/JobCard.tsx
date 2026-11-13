@@ -6,13 +6,15 @@ import { displayName, firstLocation, isNewJob, timeAgo } from '../../lib/format'
 import { foundAt, workMode } from '../../lib/jobs';
 import { CompanyLogo } from '../CompanyLogo';
 import { CheckBox, NewTag, Tag } from '../common';
-import { IconLink, IconStar } from '../Icons';
+import { IconLink, IconStar, IconX } from '../Icons';
 import { MatchMeter } from './MatchMeter';
 
 interface JobCardProps {
   job: JobRow;
   selected: boolean;
   queued: boolean;
+  /** Takes the job out of the agent's queue. */
+  onUnqueue?: (id: string) => void;
   saved: boolean;
   onToggle: (id: string) => void;
   onSave: (id: string) => void;
@@ -25,7 +27,7 @@ interface JobCardProps {
  * One job: the checkbox, the logo, the title over company, place and work mode, when it was found (with New for the
  * last day), the match meter, then save and open. The whole left part toggles the selection.
  */
-export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard({ job, selected, queued, saved, onToggle, onSave, now, index = 0 }, ref) {
+export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard({ job, selected, queued, onUnqueue, saved, onToggle, onSave, now, index = 0 }, ref) {
   const name = displayName(job);
   const place = firstLocation(job.location);
   const fresh = isNewJob(job, now);
@@ -53,7 +55,25 @@ export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard(
         <span className="jrow__main">
           <span className="jrow__titleline">
             <span className="jrow__title">{job.title}</span>
-            {queued ? <Tag color="gray">Queued</Tag> : null}
+            {queued ? (
+              <span className="jrow__queued">
+                <Tag color="gray">Queued</Tag>
+                {onUnqueue ? (
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--sm jrow__unqueue"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onUnqueue(job.id);
+                    }}
+                    aria-label={`Take ${job.title} out of the queue`}
+                    title="Take it out of the queue"
+                  >
+                    <IconX size={12} />
+                  </button>
+                ) : null}
+              </span>
+            ) : null}
           </span>
           <span className="jrow__meta">
             <span className="jrow__co">{name}</span>
