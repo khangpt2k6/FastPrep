@@ -397,3 +397,7 @@ end $$;
 -- A person keeps several resumes (one per kind of role, say): each can carry a short label set on the page ("ML",
 -- "Backend"). One is 'active', the one applications send; the others stay as 'old', read and ready to be made active.
 alter table public.automation_resumes add column if not exists label text not null default '';
+
+-- Whether the inbox found the receipt of the application: without one, applied_at is the first mail seen, not the day it
+-- went out, and the page says so.
+alter table public.automation_inbox add column if not exists applied_known boolean not null default true;
