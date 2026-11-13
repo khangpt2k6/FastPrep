@@ -210,6 +210,9 @@ export function AuthorizationStep({ profile, update }: StepProps) {
   const a = profile.authorization;
   const set = <K extends keyof Profile['authorization']>(key: K) => (value: Profile['authorization'][K]) =>
     update((d) => ({ ...d, authorization: { ...d.authorization, [key]: value } }));
+  const b = profile.background;
+  const setBackground = <K extends keyof Profile['background']>(key: K) => (value: Profile['background'][K]) =>
+    update((d) => ({ ...d, background: { ...d.background, [key]: value } }));
   return (
     <>
       <Section title="Countries">
@@ -238,6 +241,12 @@ export function AuthorizationStep({ profile, update }: StepProps) {
             <option key={v} value={v} />
           ))}
         </datalist>
+      </Section>
+      <Section title="Background">
+        <SelectField label="Security clearance" value={b.security_clearance} options={OPTIONS.clearance} onChange={setBackground('security_clearance')} />
+        <Segmented label="Foreign government ties" value={b.foreign_government_ties} options={OPTIONS.yesNo} onChange={setBackground('foreign_government_ties')} wide />
+        <Segmented label="Criminal conviction" value={b.criminal_conviction} options={OPTIONS.yesNo} onChange={setBackground('criminal_conviction')} wide />
+        <Segmented label="Let go or asked to resign" value={b.let_go_or_resigned} options={OPTIONS.yesNo} onChange={setBackground('let_go_or_resigned')} wide />
       </Section>
     </>
   );

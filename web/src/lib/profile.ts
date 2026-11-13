@@ -81,6 +81,13 @@ export interface Profile {
     lgbtq: YesNoPrivate;
     sexual_orientation: string[];
   };
+  /** Screening questions forms ask near the end. The agent answers them only as set here, and never guesses. */
+  background: {
+    security_clearance: '' | 'None' | 'Confidential' | 'Secret' | 'Top Secret' | 'Top Secret/SCI' | 'Prefer not to disclose';
+    foreign_government_ties: YesNo;
+    criminal_conviction: YesNo;
+    let_go_or_resigned: YesNo;
+  };
   extra: { how_heard: string; notes: string; custom: CustomAnswer[] };
 }
 
@@ -103,6 +110,7 @@ export const OPTIONS = {
     'Two or more races',
     'Prefer not to say',
   ],
+  clearance: ['None', 'Confidential', 'Secret', 'Top Secret', 'Top Secret/SCI', 'Prefer not to disclose'],
   orientation: ['Heterosexual', 'Gay', 'Lesbian', 'Bisexual', 'Asexual', 'Queer', 'Pansexual', 'Prefer not to say'],
 } as const;
 
@@ -161,6 +169,7 @@ export function emptyProfile(): Profile {
       lgbtq: '',
       sexual_orientation: [],
     },
+    background: { security_clearance: '', foreign_government_ties: '', criminal_conviction: '', let_go_or_resigned: '' },
     extra: { how_heard: '', notes: '', custom: [] },
   };
 }
@@ -215,6 +224,7 @@ export function mergeProfile(data: unknown): Profile {
   const prefs = mergeFlat(base.preferences, d.preferences);
   const auth = mergeFlat(base.authorization, authIn);
   const eeo = mergeFlat(base.eeo, eeoIn);
+  const background = mergeFlat(base.background, d.background);
   const orientation = strings(eeoIn.sexual_orientation)
     .map((s) => choice<string>(s, OPTIONS.orientation))
     .filter(Boolean);
@@ -245,6 +255,12 @@ export function mergeProfile(data: unknown): Profile {
       disability: choice(eeo.disability, OPTIONS.yesNoPrivate),
       lgbtq: choice(eeo.lgbtq, OPTIONS.yesNoPrivate),
       sexual_orientation: Array.from(new Set(orientation)),
+    },
+    background: {
+      security_clearance: choice(background.security_clearance, OPTIONS.clearance),
+      foreign_government_ties: choice(background.foreign_government_ties, OPTIONS.yesNo),
+      criminal_conviction: choice(background.criminal_conviction, OPTIONS.yesNo),
+      let_go_or_resigned: choice(background.let_go_or_resigned, OPTIONS.yesNo),
     },
     extra: {
       how_heard: str(extra.how_heard),

@@ -43,6 +43,7 @@ export const TABLES = {
   settings: 'automation_settings',
   resumes: 'automation_resumes',
   rules: 'automation_rules',
+  documents: 'automation_documents',
 } as const;
 
 export const PROOFS_BUCKET = 'automation-proofs';

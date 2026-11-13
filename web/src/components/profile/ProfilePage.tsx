@@ -7,6 +7,7 @@ import type { ProfileRow, ResumeRow } from '../../lib/types';
 import { Callout } from '../common';
 import { Group } from '../settings';
 import { IconAlert, IconGithub, IconGlobe, IconLinkedin, IconMail, IconMapPin, IconPencil, IconPhone, IconPlus, IconSpark } from '../Icons';
+import { DocumentsCard } from './DocumentsCard';
 import { ResumeCard } from './ResumeCard';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
@@ -117,7 +118,7 @@ function PersonalTab({ p }: { p: Profile['personal'] }) {
 }
 
 function TabBody({ tab, profile, onEdit }: { tab: TabKey; profile: Profile; onEdit: (step: number) => void }) {
-  const { preferences: pr, authorization: a, eeo: e, extra } = profile;
+  const { preferences: pr, authorization: a, eeo: e, background: b, extra } = profile;
   switch (tab) {
     case 'personal':
       return <PersonalTab p={profile.personal} />;
@@ -201,16 +202,27 @@ function TabBody({ tab, profile, onEdit }: { tab: TabKey; profile: Profile; onEd
       );
     case 'authorization':
       return (
-        <Rows
-          items={[
-            ['Countries', a.countries.join(', ')],
-            ['US citizen', a.citizen_us],
-            ['US work authorization', a.authorized_us],
-            ['Needs sponsorship', a.needs_sponsorship],
-            ['Authorization basis', a.authorization_basis],
-            ['Visa type', a.visa_type],
-          ]}
-        />
+        <div className="stack">
+          <Rows
+            items={[
+              ['Countries', a.countries.join(', ')],
+              ['US citizen', a.citizen_us],
+              ['US work authorization', a.authorized_us],
+              ['Needs sponsorship', a.needs_sponsorship],
+              ['Authorization basis', a.authorization_basis],
+              ['Visa type', a.visa_type],
+            ]}
+          />
+          <h3 className="section__label">Background</h3>
+          <Rows
+            items={[
+              ['Security clearance', b.security_clearance],
+              ['Foreign government ties', b.foreign_government_ties],
+              ['Criminal conviction', b.criminal_conviction],
+              ['Let go or asked to resign', b.let_go_or_resigned],
+            ]}
+          />
+        </div>
       );
     case 'eeo':
       return (
@@ -280,6 +292,7 @@ export function ProfilePage({ profile, row, onEdit, resume, now, onReplace }: Pr
       ) : null}
 
       <ResumeCard {...resume} now={now} onReplace={onReplace} />
+      <DocumentsCard now={now} />
 
       <Group title="Details" bare>
         <div className="panel profilecard">

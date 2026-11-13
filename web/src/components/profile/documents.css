@@ -1,0 +1,14 @@
+/* The Documents card on the Profile page: rows in the resume card's look, one under the other. */
+
+.docrow + .docrow {
+  border-top: 1px solid var(--line);
+}
+
+.docrow .resume__meta {
+  white-space: normal;
+}
+
+.docrow__problem {
+  color: var(--danger);
+  font-size: 13px;
+}

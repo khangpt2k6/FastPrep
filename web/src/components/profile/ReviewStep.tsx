@@ -29,7 +29,7 @@ function Block({ title, step, onEdit, children }: { title: string; step: number;
 const range = monthRange;
 
 export function ReviewStep({ profile, onEdit }: ReviewStepProps) {
-  const { personal: p, preferences: pr, authorization: a, eeo: e } = profile;
+  const { personal: p, preferences: pr, authorization: a, eeo: e, background: b } = profile;
   const name = [p.first_name, p.last_name].filter(Boolean).join(' ');
   const place = [p.address, p.city, p.state, p.zip, p.country].filter(Boolean).join(', ');
   const links = [p.linkedin, p.github, p.website].filter(Boolean);
@@ -117,6 +117,14 @@ export function ReviewStep({ profile, onEdit }: ReviewStepProps) {
           <Value>{a.needs_sponsorship}</Value>
           <dt>Basis, visa</dt>
           <Value>{[a.authorization_basis, a.visa_type].filter(Boolean).join(', ')}</Value>
+          <dt>Security clearance</dt>
+          <Value>{b.security_clearance}</Value>
+          <dt>Foreign government ties</dt>
+          <Value>{b.foreign_government_ties}</Value>
+          <dt>Criminal conviction</dt>
+          <Value>{b.criminal_conviction}</Value>
+          <dt>Let go or asked to resign</dt>
+          <Value>{b.let_go_or_resigned}</Value>
         </dl>
       </Block>
 
