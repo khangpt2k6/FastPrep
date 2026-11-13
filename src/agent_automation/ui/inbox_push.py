@@ -1,8 +1,9 @@
 """The inbox sync, shown on the dashboard: one row per application in `automation_inbox`, signed in as the person so RLS
 keeps the rows theirs.
 
-Only what the page lists leaves the computer: the company, the role, where the application stands, its two dates and the
-subject of the last mail about it. No message text, no sender, no address.
+What leaves the computer is what the page shows: the company, the role, where the application stands, its dates, and of
+each of its mails who wrote it, when, the subject and the first lines of its text (see PREVIEW_CHARS in tools/inbox.py).
+Never a whole mail, never an attachment, and only mail the rules read as news of an application.
 
 Run it once with `python -m agent_automation.ui.inbox_push`, or let the agent keep it current with `keep_current`.
 """
@@ -12,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import re
 from collections.abc import Callable
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
@@ -27,7 +29,7 @@ TABLE = "automation_inbox"
 EVERY_SECONDS = 15 * 60
 SUBJECT_CHARS = 200
 # Columns added after the table was first made. A database that does not have one yet still gets the rest.
-LATER_COLUMNS = ("applied_known", "domain")
+LATER_COLUMNS = ("applied_known", "domain", "messages")
 
 Reading = Callable[[Path, int], tuple[int, list[Application]]]
 
@@ -60,6 +62,9 @@ def rows_of(found: list[Application], user_id: str, synced_at: str) -> list[dict
             # Whether a receipt dated the application (else applied_at is only its first mail), and the employer's own
             # site as its mail shows it, for the page's logo.
             "applied_known": item.applied_known, "domain": getattr(item, "domain", "") or "",
+            # The application's mails for the page to open: who wrote, when, the subject, the start of the text and what
+            # it meant. The newest first, a dozen at most; never a whole mail, never an attachment.
+            "messages": [asdict(message) for message in getattr(item, "messages", ())],
         }
     return list(rows.values())
 

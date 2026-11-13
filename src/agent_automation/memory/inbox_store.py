@@ -1,5 +1,5 @@
 """What the inbox sync keeps, in its own SQLite file: the messages that are about an application, and the numbers of
-every message already read so none is fetched twice. No message's full text is kept."""
+every message already read so none is fetched twice. Of a message only its start is kept, never its full text."""
 
 from __future__ import annotations
 
@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS events (
     role TEXT NOT NULL,
     sender TEXT NOT NULL,
     subject TEXT NOT NULL,
-    snippet TEXT NOT NULL
+    snippet TEXT NOT NULL,
+    sender_name TEXT NOT NULL DEFAULT '',
+    preview TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS seen (uid INTEGER PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS meta (name TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -31,6 +33,11 @@ class InboxStore:
         self._db = sqlite3.connect(path)
         self._db.row_factory = sqlite3.Row
         self._db.executescript(SCHEMA)
+        # A file made before these were kept gets them, empty until the mailbox is read again.
+        have = {row["name"] for row in self._db.execute("PRAGMA table_info(events)")}
+        for column in ("sender_name", "preview"):
+            if column not in have:
+                self._db.execute(f"ALTER TABLE events ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
         self._db.commit()
 
     def close(self) -> None:
@@ -68,8 +75,9 @@ class InboxStore:
         self._db.executemany("INSERT OR IGNORE INTO seen (uid) VALUES (?)", [(uid,) for uid in uids])
         before = self._db.execute("SELECT count(*) FROM events").fetchone()[0]
         self._db.executemany(
-            "INSERT OR IGNORE INTO events (mail_id, thread, at, kind, company, role, sender, subject, snippet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [(e.mail_id, e.thread, e.at, e.kind, e.company, e.role, e.sender, e.subject, e.snippet) for e in events],
+            "INSERT OR IGNORE INTO events (mail_id, thread, at, kind, company, role, sender, subject, snippet, sender_name, preview)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(e.mail_id, e.thread, e.at, e.kind, e.company, e.role, e.sender, e.subject, e.snippet, e.sender_name, e.preview) for e in events],
         )
         self._set_meta("synced_at", synced_at)
         self._db.commit()
@@ -77,7 +85,10 @@ class InboxStore:
 
     def events(self) -> list[Event]:
         rows = self._db.execute("SELECT * FROM events ORDER BY at").fetchall()
-        return [Event(r["mail_id"], r["thread"], r["at"], r["kind"], r["company"], r["role"], r["sender"], r["subject"], r["snippet"]) for r in rows]
+        return [
+            Event(r["mail_id"], r["thread"], r["at"], r["kind"], r["company"], r["role"], r["sender"], r["subject"], r["snippet"], r["sender_name"], r["preview"])
+            for r in rows
+        ]
 
     def synced_at(self) -> str:
         return self._meta("synced_at")

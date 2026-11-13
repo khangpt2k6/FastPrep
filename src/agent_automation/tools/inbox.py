@@ -30,8 +30,12 @@ DEFAULT_DAYS = 365
 MESSAGE_BYTES = 60_000
 BATCH = 40
 SNIPPET_CHARS = 220
+# What the dashboard shows of a mail when it is opened: its start, with the lines kept as lines.
+PREVIEW_CHARS = 600
+# How many mails of one application go to the dashboard, the newest first.
+MESSAGES = 12
 # The version of the rules below. A sync under another version reads the mailbox again from the start.
-RULES = 5
+RULES = 6
 
 # What Gmail is asked for: mail that speaks of an application, not chats, spam or what the person sent. A calendar
 # booking for a first call says none of the usual words, only "appointment booked" or "meet and greet" and the role.
@@ -82,6 +86,21 @@ class Event:
     sender: str
     subject: str
     snippet: str
+    # For a person to read, not for the rules: who the mail says it is from, and its start with its own lines.
+    sender_name: str = ""
+    preview: str = ""
+
+
+@dataclass(frozen=True)
+class Message:
+    """One mail of an application, as the dashboard lists it. `status` is what the mail meant: one of KINDS."""
+
+    at: str
+    from_name: str
+    from_address: str
+    subject: str
+    snippet: str
+    status: str
 
 
 @dataclass(frozen=True)
@@ -102,6 +121,8 @@ class Application:
     # The employer's own site, as the addresses of its mail show it: "stripe.com". Empty when every mail came through a
     # carrier. The dashboard finds the company's logo by it.
     domain: str = ""
+    # Its mails, the newest first, MESSAGES at most; `mails` counts all of them.
+    messages: tuple[Message, ...] = ()
 
 
 # Reading the mailbox.
@@ -857,7 +878,34 @@ def classify(mail: Mail, me: str = "") -> Event | None:
     if not company:
         return None
     snippet = " ".join(mail.text.split())[:SNIPPET_CHARS]
-    return Event(mail.id, mail.thread, mail.at, kind, company, role_of(mail, company), mail.sender, mail.subject, snippet)
+    return Event(
+        mail.id, mail.thread, mail.at, kind, company, role_of(mail, company), mail.sender, mail.subject, snippet,
+        sender_name=mail.sender_name.strip(" \"'"), preview=preview_of(mail.text),
+    )
+
+
+QUOTED = re.compile(
+    r"(?im)^(?:>.*|on [^\n]{4,200}(?:\n[^\n]{0,120})?wrote:\s*|-{2,} ?(?:original|forwarded) message ?-{2,}.*|_{10,}|from: [^\n]+\n(?:sent|date): [^\n]+)$"
+)
+
+
+def preview_of(text: str) -> str:
+    """The start of a mail as a person reads it: its own lines, no run of blank ones, and nothing of the older mail it
+    answers."""
+    quoted = QUOTED.search(text)
+    own = text[: quoted.start()] if quoted and quoted.start() > 0 else text
+    return tidy_preview(own)[:PREVIEW_CHARS].rstrip()
+
+
+# What a mail program leaves where a picture was: "[Image]", "[cid:image002.jpg@01DD6D3E]".
+PICTURE_MARK = re.compile(r"(?i)^\[(?:image|inline image[^\]]*|cid:[^\]]*)\]$")
+
+
+def tidy_preview(text: str) -> str:
+    """Text for a person to read: each line's spaces closed up, no line that only marks a picture, no run of blank lines."""
+    lines = [" ".join(line.split()) for line in text.splitlines()]
+    kept = [line for line in lines if not PICTURE_MARK.match(line)]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
 
 
 # The applications the messages add up to.
@@ -1015,6 +1063,10 @@ def applications(events: Iterable[Event], sent_by_agent: Iterable[str] = ()) -> 
         found.append(Application(
             company=shown[group.company], role=named.role, status=deciding.kind, applied_at=(receipt or items[0]).at, updated_at=items[-1].at, subject=deciding.subject, mails=len(items),
             by_agent=group.company in agent, applied_known=receipt is not None, domain=_own_domain(item.sender for item in items),
+            messages=tuple(
+                Message(item.at, item.sender_name, item.sender, item.subject, tidy_preview(item.preview) or item.snippet, item.kind)
+                for item in sorted(items, key=lambda item: item.at, reverse=True)[:MESSAGES]
+            ),
         ))
     return sorted(found, key=lambda item: item.updated_at, reverse=True)
 

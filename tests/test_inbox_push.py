@@ -62,9 +62,9 @@ def test_one_row_per_application_with_only_what_the_page_lists() -> None:
     assert db.rows[row_id(found[0])]["by_agent"] is True
     assert set(row) == {
         "user_id", "id", "company", "role", "status", "applied_at", "updated_at", "subject", "mails", "by_agent", "synced_at", "applied_known",
-        "domain",
+        "domain", "messages",
     }
-    assert (row["applied_known"], row["domain"]) == (True, "")
+    assert (row["applied_known"], row["domain"], row["messages"]) == (True, "", [])
     assert row["user_id"] == "user-1"
 
 
