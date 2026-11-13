@@ -335,3 +335,27 @@ do $$
 begin
   begin alter publication supabase_realtime add table public.automation_rules; exception when duplicate_object then null; end;
 end $$;
+
+-- Other files a form may ask for, uploaded on the Profile page to automation-proofs under <user id>/documents/. For now
+-- one kind, the transcript: before it applies, the agent keeps the newest one beside the resume and gives it to a form
+-- only where the form asks for a transcript.
+create table if not exists public.automation_documents (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  kind text not null default 'transcript' check (kind in ('transcript')),
+  name text not null,
+  path text not null,
+  size int not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists automation_documents_user on public.automation_documents (user_id, kind, created_at desc);
+
+alter table public.automation_documents enable row level security;
+drop policy if exists "own documents" on public.automation_documents;
+create policy "own documents" on public.automation_documents for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.automation_documents; exception when duplicate_object then null; end;
+end $$;

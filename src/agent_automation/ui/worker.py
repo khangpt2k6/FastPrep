@@ -63,6 +63,7 @@ NAMING_PAUSE_SECONDS = 600
 AGENT_SETTINGS = "automation_settings"
 RESUMES = "automation_resumes"
 RULES = "automation_rules"
+DOCUMENTS = "automation_documents"
 PAUSED = "Paused from the dashboard"
 # Supabase's answer when a table or column is not there: supabase/schema.sql was not run again since it got it.
 MISSING = frozenset({"42703", "42P01", "PGRST204", "PGRST205"})
@@ -73,6 +74,7 @@ PARTS = {
     "found_at": "automation_jobs.found_at (when each job was found)",
     "resumes": "automation_resumes (resumes uploaded on the page)",
     "rules": "automation_rules (rules edited on the Rules page)",
+    "documents": "automation_documents (a transcript uploaded on the page)",
 }
 CONTENT_TYPES = {
     ".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".txt": "text/plain",
@@ -217,7 +219,7 @@ class Support:
     once, and from then on the agent does what it did before that part came."""
 
     def __init__(self) -> None:
-        self.settings = self.fetch = self.found_at = self.resumes = self.rules = True
+        self.settings = self.fetch = self.found_at = self.resumes = self.rules = self.documents = True
 
     def drop(self, part: str) -> None:
         if getattr(self, part):
@@ -327,6 +329,8 @@ class Agent:
         self.target = SCORE_TARGET
         self.profile_seen = ""
         self.letters = CoverLetters(db, session, click.echo)
+        # Where on the page the transcript kept here came from: one that is already here is not brought again.
+        self.transcript_from = ""
         # One search at a time: a change of places must not land in the middle of a round.
         self.search_lock = asyncio.Lock()
         self.fresh = True
@@ -654,6 +658,7 @@ class Agent:
             ("found_at", "automation_jobs", "found_at"),
             ("resumes", RESUMES, "id,status,data"),
             ("rules", RULES, "id,kind,body,enabled"),
+            ("documents", DOCUMENTS, "id,kind,name,path"),
         ):
             try:
                 await self.db.select(table, {"select": columns, "limit": "1"})
@@ -854,6 +859,7 @@ class Agent:
         session = self.session
         os.environ[DRY_RUN_ENV] = "1" if dry else ""
         writing, learning = await self.writing()
+        await self.sync_transcript()
         mode = " (dry run, nothing is sent)" if dry else ""
         for number, job_id in enumerate(job_ids, 1):
             # A pause from the page lets the application under way finish, and starts no other.
@@ -893,6 +899,34 @@ class Agent:
             if outcome.reason == "no_credit":
                 break
         self.say("ready", f"Done with {len(job_ids)} application(s){mode}.")
+
+    # The transcript on the page.
+
+    async def sync_transcript(self) -> None:
+        """The transcript uploaded on the page, kept beside the resume before forms are filled: the newest one, brought once.
+        With none on the page, the one kept here goes. A page that cannot be asked leaves what is kept as it is, and never
+        stops an application."""
+        if not self.support.documents:
+            return
+        session = self.session
+        where = {"user_id": f"eq.{self.db.user_id}", "kind": "eq.transcript", "select": "id,name,path", "order": "created_at.desc", "limit": "1"}
+        try:
+            rows = await self.db.select(DOCUMENTS, where)
+            if not rows:
+                session.drop_transcript()
+                self.transcript_from = ""
+                return
+            name, path = str(rows[0].get("name") or ""), str(rows[0]["path"])
+            if path == self.transcript_from and session.transcript() is not None:
+                return
+            session.keep_transcript(name if Path(name).suffix else path, await self.db.download(path))
+            self.transcript_from = path
+            click.echo(f"Transcript {name or path} is kept for the forms that ask for one.")
+        except Exception as error:  # noqa: BLE001  The forms are still filled, with the transcript as it was.
+            if schema_missing(error):
+                self.support.drop("documents")
+            else:
+                click.echo(f"transcript not brought from the page: {error}")
 
     # Resumes on the page.
 

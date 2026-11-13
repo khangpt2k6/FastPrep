@@ -247,7 +247,7 @@ def test_file_names_from_the_page_are_kept_as_given_where_this_computer_allows()
 
 
 def test_without_the_newer_schema_the_agent_sends_what_it_sent_before(session: Session, capsys: pytest.CaptureFixture[str]) -> None:
-    db = Remote("automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_resumes", "automation_rules")
+    db = Remote("automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_resumes", "automation_rules", "automation_documents")
     scored(session, 1)
     agent = agent_for(session, db)
 
@@ -677,3 +677,34 @@ def test_rules_from_the_page_reach_the_letters_and_the_brief(session: Session) -
     assert "- Why this company: One specific reason." in text
     skills = {skill.name: skill for skill in load_skills(session.home)}
     assert skills["Keep it light on tech"].body == "No tool names at all."
+
+
+def test_the_transcript_on_the_page_is_kept_before_applying_and_goes_when_the_page_has_none(session: Session, capsys: pytest.CaptureFixture[str]) -> None:
+    db = Remote(automation_documents=[{"id": 1, "user_id": "u1", "kind": "transcript", "name": "Fall 2026.pdf", "path": "u1/documents/1-Fall_2026.pdf"}])
+    db.files["u1/documents/1-Fall_2026.pdf"] = (b"%PDF-1.4 grades", "application/pdf")
+    agent = agent_for(session, db)
+    asyncio.run(agent.sync_transcript())
+    kept = session.transcript()
+    assert kept is not None and kept.name == "transcript.pdf" and kept.read_bytes() == b"%PDF-1.4 grades"
+
+    # Already here: not brought again, even with the file gone from the bucket.
+    db.files.clear()
+    capsys.readouterr()
+    asyncio.run(agent.sync_transcript())
+    assert session.transcript() == kept and "not brought" not in capsys.readouterr().out
+
+    # A new upload that cannot be brought leaves the old one, and says so.
+    db.tables["automation_documents"][0]["path"] = "u1/documents/2-new.pdf"
+    asyncio.run(agent.sync_transcript())
+    assert session.transcript() == kept and "transcript not brought from the page" in capsys.readouterr().out
+
+    db.tables["automation_documents"].clear()
+    asyncio.run(agent.sync_transcript())
+    assert session.transcript() is None
+
+
+def test_without_the_documents_table_the_transcript_kept_here_stays(session: Session) -> None:
+    kept = session.keep_transcript("mine.pdf", b"%PDF-1.4 mine")
+    agent = agent_for(session, Remote("automation_documents"))
+    asyncio.run(agent.sync_transcript())
+    assert session.transcript() == kept and not agent.support.documents
