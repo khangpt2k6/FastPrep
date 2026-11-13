@@ -173,9 +173,7 @@ export function NearbyFetch() {
                   </p>
                   <p className="nb__what">{c.what}</p>
                   <p className="nb__tags">
-                    <span className="nb__tag num">
-                      {c.city} · {c.miles.toFixed(0)} mi
-                    </span>
+                    <span className="nb__tag num">{c.miles >= 1 ? `${c.city} · ${c.miles.toFixed(0)} mi` : c.city}</span>
                     {c.internships === 'yes' ? <span className="nb__tag nb__tag--pine">Internships</span> : null}
                     {c.tech === 'large' ? <span className="nb__tag nb__tag--sky">Large tech team</span> : null}
                     {c.citizenship === 'required' ? <span className="nb__tag nb__tag--rose">US citizenship</span> : null}

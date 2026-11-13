@@ -9,6 +9,7 @@ import { EmptyState, PillGroup } from '../common';
 import { IconSearch, IconX } from '../Icons';
 import { PageHeader } from '../shell/PageHeader';
 import { CompanyCard } from './CompanyCard';
+import { NearbyFetch } from './NearbyFetch';
 import { TechIcon } from './TechChip';
 import './companies.css';
 
@@ -82,6 +83,8 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
           </label>
         }
       />
+
+      <NearbyFetch />
 
       <PillGroup<string>
         label="Kind of company"
