@@ -249,7 +249,7 @@ def test_file_names_from_the_page_are_kept_as_given_where_this_computer_allows()
 def test_without_the_newer_schema_the_agent_sends_what_it_sent_before(session: Session, capsys: pytest.CaptureFixture[str]) -> None:
     db = Remote(
         "automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_jobs.posted_at", "automation_resumes", "automation_rules", "automation_documents",
-        "automation_calendar",
+        "automation_calendar", "automation_jobs.place", "automation_jobs.points",
     )
     scored(session, 1)
     agent = agent_for(session, db)
@@ -905,3 +905,18 @@ def test_the_page_can_take_a_job_out_or_cancel_the_command_while_it_runs(session
     assert tried == [ids[0], ids[2]]
     command = db.row("automation_commands", id=4)
     assert command["status"] == "failed" and command["error"] == "Cancelled on the page"
+
+
+def test_each_job_goes_up_with_its_places_and_without_them_on_an_older_schema(session: Session) -> None:
+    session.store.add(Job("https://jobs.example/9", "Acme", "Software Engineer Intern", "USA - FL - Tampa; Remote", "https://jobs.example/9", "https://jobs.example/9", ""))
+    session.store.set_score("https://jobs.example/9", 4.0)
+    db = Remote()
+    agent = agent_for(session, db)
+    asyncio.run(agent.push_jobs())
+    row = db.tables["automation_jobs"][0]
+    assert row["place"] == "Remote; Tampa, FL" and row["points"] == [[27.95, -82.46]]
+
+    old = Remote("automation_jobs.place", "automation_jobs.points")
+    agent = agent_for(session, old)
+    asyncio.run(agent.push_jobs())
+    assert "place" not in old.tables["automation_jobs"][0] and not agent.support.places

@@ -409,3 +409,8 @@ alter table public.automation_jobs add column if not exists posted_at timestampt
 -- The application's mails (messages; mails is their count), newest first, at most 12: {at, from_name, from_address,
 -- subject, snippet, status}, for the Inbox page's reading pane. Pushed by ui/inbox_push.py; no full bodies.
 alter table public.automation_inbox add column if not exists messages jsonb not null default '[]'::jsonb;
+
+-- Where each job is, read by the agent from its location text (src/agent_automation/tools/places.py, US Census places):
+-- place as "City, ST; ..." with Remote first when allowed, points as [[lat, lon], ...], for the Jobs distance filter.
+alter table public.automation_jobs add column if not exists place text not null default '';
+alter table public.automation_jobs add column if not exists points jsonb not null default '[]'::jsonb;

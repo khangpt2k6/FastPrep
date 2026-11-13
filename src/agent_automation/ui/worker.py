@@ -40,6 +40,7 @@ from agent_automation.memory.profile import profile_titles, read_resume, search_
 from agent_automation.memory.store import SENT_WORDS, SUBMITTED, Stored, safe_name
 from agent_automation.memory.web_profile import add_from_linkedin, mirror_to_home, prefill, profile_answers, writing_text
 from agent_automation.memory.web_rules import answer_rules_text, builtin_rules, mirror_rules
+from agent_automation.tools.places import locate
 from agent_automation.ui import calendar_push
 from agent_automation.ui.inbox_push import keep_current
 from agent_automation.ui.keeper import LOCK_FILE, STOP_FILE, keeper_running, release, take_lock
@@ -75,6 +76,7 @@ PARTS = {
     "fetch": "automation_agent.fetched_at (when new jobs were last fetched)",
     "found_at": "automation_jobs.found_at (when each job was found)",
     "posted": "automation_jobs.posted_at (when each job was posted)",
+    "places": "automation_jobs.place and points (each job's US places, for the distance filter)",
     "resumes": "automation_resumes (resumes uploaded on the page)",
     "rules": "automation_rules (rules edited on the Rules page)",
     "documents": "automation_documents (a transcript uploaded on the page)",
@@ -223,7 +225,7 @@ class Support:
     once, and from then on the agent does what it did before that part came."""
 
     def __init__(self) -> None:
-        self.settings = self.fetch = self.found_at = self.posted = self.resumes = self.rules = self.documents = self.calendar = True
+        self.settings = self.fetch = self.found_at = self.posted = self.places = self.resumes = self.rules = self.documents = self.calendar = True
 
     def drop(self, part: str) -> None:
         if getattr(self, part):
@@ -442,6 +444,9 @@ class Agent:
             row["found_at"] = _stamp(item.first_seen)
         if self.support.posted:
             row["posted_at"] = _stamp(job.posted)
+        if self.support.places:
+            located = locate(job.location)
+            row["place"], row["points"] = located.label, located.points
         return row
 
     async def push_jobs(self) -> None:
@@ -455,7 +460,7 @@ class Agent:
                 await self._push(scored)
                 break
             except Exception as error:
-                part = next((part for part in ("posted", "found_at") if getattr(self.support, part)), None)
+                part = next((part for part in ("places", "posted", "found_at") if getattr(self.support, part)), None)
                 if part is None or not schema_missing(error):
                     raise
                 self.support.drop(part)
@@ -686,6 +691,7 @@ class Agent:
             ("fetch", "automation_agent", "fetched_at,next_fetch_at,fetched_new"),
             ("found_at", "automation_jobs", "found_at"),
             ("posted", "automation_jobs", "posted_at"),
+            ("places", "automation_jobs", "place,points"),
             ("resumes", RESUMES, "id,status,data"),
             ("rules", RULES, "id,kind,body,enabled"),
             ("calendar", calendar_push.TABLE, "id,starts_at,kind"),
