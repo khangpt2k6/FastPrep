@@ -55,6 +55,13 @@ export const IconX = (p: IconProps) => (
   </Svg>
 );
 
+export const IconEyeOff = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M10.6 6.2A9.8 9.8 0 0 1 12 6c5 0 8.5 4.2 9.5 6-.4.8-1.2 2-2.4 3.1M6.4 7.6C4.5 8.9 3.1 10.7 2.5 12c1 1.8 4.5 6 9.5 6 1.6 0 3-.4 4.2-1" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18" />
+  </Svg>
+);
+
 export const IconRadar = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="8.5" />

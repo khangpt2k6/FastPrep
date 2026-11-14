@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import nearby from '../../data/nearby/tampa.json';
-import { IconCheck, IconLink, IconMapPin, IconSearch } from '../Icons';
+import { IconCheck, IconChevronDown, IconEyeOff, IconLink, IconMapPin, IconSearch } from '../Icons';
 import './nearby.css';
 
 export interface NearbyCompany {
@@ -53,10 +53,32 @@ function saveFetched(at: string) {
 
 const reduced = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
+/** A remembered on/off for this card (folded, hidden), per browser; off when storage is refused. */
+function useFlag(key: string): [boolean, (on: boolean) => void] {
+  const [on, setOn] = useState(() => {
+    try {
+      return window.localStorage.getItem(key) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const set = (value: boolean) => {
+    setOn(value);
+    try {
+      window.localStorage.setItem(key, value ? '1' : '0');
+    } catch {
+      // Private windows refuse storage: it holds for this visit.
+    }
+  };
+  return [on, set];
+}
+
 export function NearbyFetch() {
   const [fetchedAt, setFetchedAt] = useState<string | null>(() => readFetched());
   const [step, setStep] = useState(-1);
   const [filter, setFilter] = useState<Filter>('all');
+  const [folded, setFolded] = useFlag('nearby:tampa:folded');
+  const [hidden, setHidden] = useFlag('nearby:tampa:hidden');
   const timers = useRef<number[]>([]);
   const running = step >= 0;
 
@@ -96,10 +118,22 @@ export function NearbyFetch() {
     [],
   );
 
-  const shown = Boolean(fetchedAt) && !running;
+  const shown = Boolean(fetchedAt) && !running && !folded;
+
+  if (hidden) {
+    return (
+      <button type="button" className="nb-show" onClick={() => setHidden(false)} title="Show the Tampa Bay employers">
+        <span className="ibadge ibadge--pine" aria-hidden="true">
+          <IconMapPin size={13} />
+        </span>
+        Tampa Bay
+        <span className="num nb-show__count">{DATA.companies.length}</span>
+      </button>
+    );
+  }
 
   return (
-    <section className="nb" aria-labelledby="nb-title">
+    <section className={`nb ${folded ? 'is-folded' : ''}`} aria-labelledby="nb-title">
       <header className="nb__head">
         <div className="nb__intro">
           <h2 id="nb-title" className="nb__title">
@@ -110,12 +144,36 @@ export function NearbyFetch() {
           </h2>
           <p className="nb__sub num">
             {DATA.radius} mi of {DATA.center}
+            {folded && fetchedAt ? <span className="nb__foldcount"> · {DATA.companies.length} companies</span> : null}
           </p>
         </div>
-        <button type="button" className="btn btn--primary btn--sm nb__go" onClick={run} disabled={running}>
-          {running ? <span className="spinner" aria-hidden="true" /> : <IconSearch size={14} />}
-          {fetchedAt ? 'Fetch again' : 'Fetch'}
-        </button>
+        <div className="nb__actions">
+          <button
+            type="button"
+            className="btn btn--primary btn--sm nb__go"
+            onClick={() => {
+              setFolded(false);
+              run();
+            }}
+            disabled={running}
+          >
+            {running ? <span className="spinner" aria-hidden="true" /> : <IconSearch size={14} />}
+            {fetchedAt ? 'Fetch again' : 'Fetch'}
+          </button>
+          <button
+            type="button"
+            className={`icon-btn nb__fold ${folded ? 'is-folded' : ''}`}
+            onClick={() => setFolded(!folded)}
+            aria-expanded={!folded}
+            aria-label={folded ? 'Expand Tampa Bay' : 'Collapse Tampa Bay'}
+            title={folded ? 'Expand' : 'Collapse'}
+          >
+            <IconChevronDown size={16} />
+          </button>
+          <button type="button" className="icon-btn nb__hide" onClick={() => setHidden(true)} aria-label="Hide Tampa Bay" title="Hide">
+            <IconEyeOff size={16} />
+          </button>
+        </div>
       </header>
 
       <AnimatePresence initial={false}>
@@ -141,8 +199,17 @@ export function NearbyFetch() {
         ) : null}
       </AnimatePresence>
 
+      <AnimatePresence initial={false}>
       {shown ? (
-        <div className="nb__body">
+        <motion.div
+          key="body"
+          className="nb__body"
+          initial={reduced() ? false : { opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={reduced() ? { opacity: 0 } : { opacity: 0, height: 0 }}
+          transition={{ duration: 0.28, ease: [0.2, 0.7, 0.3, 1] }}
+          style={{ overflow: 'hidden' }}
+        >
           <div className="nb__bar">
             <div className="nb__filters" role="group" aria-label="Filter">
               {(
@@ -201,8 +268,9 @@ export function NearbyFetch() {
               </motion.li>
             ))}
           </ul>
-        </div>
+        </motion.div>
       ) : null}
+      </AnimatePresence>
     </section>
   );
 }

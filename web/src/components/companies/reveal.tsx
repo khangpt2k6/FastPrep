@@ -20,7 +20,7 @@ export function useReveal<T extends Element>() {
           watch.disconnect();
         }
       },
-      { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
+      { rootMargin: '0px 0px 40px 0px', threshold: 0.01 },
     );
     watch.observe(node);
     return () => watch.disconnect();

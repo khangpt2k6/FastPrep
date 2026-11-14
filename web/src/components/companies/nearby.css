@@ -288,3 +288,53 @@
     padding-left: 48px;
   }
 }
+
+/* Fold and hide: the card can shrink to its header, or step aside to a small pill that brings it back. */
+.nb__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nb__fold svg {
+  transition: transform 240ms var(--ease);
+}
+
+.nb__fold.is-folded svg {
+  transform: rotate(-90deg);
+}
+
+.nb.is-folded .nb__head {
+  margin-bottom: 0;
+}
+
+.nb__foldcount {
+  color: var(--ink-3);
+}
+
+.nb-show {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  height: 36px;
+  padding: 0 12px 0 6px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.06);
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.nb-show:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -10px rgb(21 24 28 / 0.3);
+}
+
+.nb-show__count {
+  color: var(--ink-3);
+  font-weight: 500;
+}
