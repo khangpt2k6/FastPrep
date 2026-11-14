@@ -51,9 +51,11 @@ def row_of(event: Event, user_id: str, synced_at: str) -> dict[str, Any]:
 async def push(db: Database, workspace: Path, reading: Reading = upcoming) -> int:
     """Read the calendar and make the table say what is on it; how many events that is. An event that left the calendar,
     or fell out of the window, leaves the table. What the person chose for an event they added here (its kind, its
-    company, its notes) is kept: the calendar itself does not carry those."""
+    company, its notes) is kept: the calendar itself does not carry those. A meeting link or place written on the row
+    (found in a mail, say) stays while the calendar's own event has none: an invite often lacks the Zoom link."""
     events = await asyncio.to_thread(reading, workspace)
-    known = await db.select(TABLE, {"select": "id,kind,company,notes,source", "user_id": f"eq.{db.user_id}"})
+    known = await db.select(TABLE, {"select": "id,kind,company,notes,source,url,location", "user_id": f"eq.{db.user_id}"})
+    stored = {row["id"]: row for row in known}
     chosen = {row["id"]: row for row in known if row.get("source") in ("web", "agent")}
     synced_at = datetime.now(UTC).isoformat(timespec="seconds")
     rows: dict[str, dict[str, Any]] = {}
@@ -61,6 +63,11 @@ async def push(db: Database, workspace: Path, reading: Reading = upcoming) -> in
         kept = chosen.get(event.id[:300])
         if kept:
             event = replace(event, kind=kept["kind"], company=kept["company"], notes=kept["notes"], source=kept["source"])
+        old = stored.get(event.id[:300]) or {}
+        if not event.url and old.get("url"):
+            event = replace(event, url=old["url"])
+        if not event.location and old.get("location"):
+            event = replace(event, location=old["location"])
         rows[event.id[:300]] = row_of(event, db.user_id, synced_at)
     if rows:
         await db.upsert(TABLE, list(rows.values()), "user_id,id")

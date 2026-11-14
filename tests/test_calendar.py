@@ -281,6 +281,18 @@ def test_what_the_person_chose_for_an_event_they_added_is_kept() -> None:
     assert (db.rows[name]["kind"], db.rows[name]["company"], db.rows[name]["notes"], db.rows[name]["title"]) == ("deadline", "Northwind", "Sign by Friday", "Decide")
 
 
+def test_a_meeting_link_found_in_mail_stays_while_the_invite_has_none() -> None:
+    db = Table([{"id": "e1", "kind": "interview", "company": "Northwind", "notes": "", "source": "google",
+                 "url": "https://northwind.zoom.us/j/1", "location": "Zoom"}])
+    bare = event("Northwind interview", kind="interview", company="Northwind")
+    asyncio.run(push(db, Path("."), reading([bare])))
+    assert (db.rows["e1"]["url"], db.rows["e1"]["location"]) == ("https://northwind.zoom.us/j/1", "Zoom")
+    # The calendar's own link wins once the invite carries one.
+    linked = event("Northwind interview", kind="interview", company="Northwind", url="https://meet.google.com/abc")
+    asyncio.run(push(db, Path("."), reading([linked])))
+    assert db.rows["e1"]["url"] == "https://meet.google.com/abc"
+
+
 def test_adding_puts_the_event_on_the_calendar_first_and_then_on_the_table(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GMAIL_ADDRESS", "sam@gmail.com")
     monkeypatch.setenv("GMAIL_APP_PASSWORD", "abcd")
