@@ -8817,19 +8817,24 @@ code,
   transition: background-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
 }
 
-.snav--ember .snav__icon { color: #f6a868; }
-.snav--sky .snav__icon { color: #8db5e0; }
-.snav--pine .snav__icon { color: #7cc4a1; }
-.snav--plum .snav__icon { color: #c4a6db; }
-.snav--rose .snav__icon { color: #ee9aa8; }
-.snav--sand .snav__icon { color: #e3c071; }
+/* One color in the sidebar: every icon the label's muted gray; the current page white on a soft lift. */
+.snav .snav__icon {
+  color: var(--granite-muted);
+}
+
+.snav:hover .snav__icon,
+.snav.is-on .snav__icon {
+  color: #fff;
+}
 
 .snav.is-on .snav__icon {
   background: rgb(255 255 255 / 0.1);
 }
 
-/* The top bar: glass, sticky, across the page column. */
+/* The top bar: glass, sticky, across the page column. Its text color is set, not inherited: a browser that recolors
+   inherited text (a dark-mode extension) turned the clock white on the light glass. */
 .topbar {
+  color: var(--ink);
   position: sticky;
   top: 0;
   z-index: 35;
@@ -8884,6 +8889,7 @@ code,
 }
 
 .clock__time {
+  color: var(--ink);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -9292,4 +9298,20 @@ code,
   .friend:hover {
     animation: none;
   }
+}
+
+/* Sidebar marks in the same quiet tone as the rest of it: the set up ring and the profile dot are white, not ember. */
+.side .pdot__value {
+  stroke: rgb(255 255 255 / 0.85);
+}
+
+.side .navdot,
+.side .navdot--orange,
+.side .navdot--ember,
+.side .navdot--amber {
+  background: rgb(255 255 255 / 0.7);
+}
+
+.side .setupmark {
+  color: var(--granite-muted);
 }
