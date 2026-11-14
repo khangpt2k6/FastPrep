@@ -4,10 +4,8 @@
   display: grid;
   gap: 14px;
   padding: 18px 20px;
-  border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--card);
-  box-shadow: var(--shadow-card);
 }
 
 .nb__head {
@@ -27,21 +25,16 @@
 .nb__title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
-  font-family: var(--display);
-  font-size: 18px;
+  font-size: 16.5px;
   font-weight: 650;
   color: var(--ink);
 }
 
-.nb__title svg {
-  color: var(--ember-600);
-}
-
 .nb__sub {
-  margin: 0;
-  font-size: 13px;
+  margin: 0 0 0 38px;
+  font-size: 12.5px;
   color: var(--ink-3);
 }
 
@@ -53,9 +46,9 @@
   list-style: none;
   overflow: hidden;
   border-radius: 12px;
-  background: var(--frost);
-  font-family: var(--mono);
+  background: var(--tone);
   font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
 
@@ -79,18 +72,17 @@
   width: 16px;
   height: 16px;
   flex: none;
-  border: 1px solid var(--line-strong);
   border-radius: 50%;
+  background: rgb(21 24 28 / 0.1);
   color: #fff;
 }
 
 .nb__step.is-now .nb__dot {
-  border-color: var(--ember-500);
+  background: var(--ember-500);
   animation: nb-pulse 1s var(--ease) infinite;
 }
 
 .nb__step.is-done .nb__dot {
-  border-color: var(--pine-500);
   background: var(--pine-500);
 }
 
@@ -136,9 +128,9 @@
   gap: 6px;
   height: 28px;
   padding: 0 11px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--tone);
   color: var(--ink-2);
   font: inherit;
   font-size: 12.5px;
@@ -149,8 +141,11 @@
   color: var(--ink-3);
 }
 
+.nb__chip:hover {
+  background: rgb(21 24 28 / 0.08);
+}
+
 .nb__chip.is-on {
-  border-color: var(--ink);
   background: var(--ink);
   color: #fff;
 }
@@ -180,18 +175,26 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 2px;
-  border-top: 1px solid var(--line);
+  padding: 12px 8px;
+  border-radius: 12px;
+  transition: background-color var(--dur-2) var(--ease);
+}
+
+.nb__row:hover {
+  background: var(--tone);
+}
+
+.nb__row + .nb__row {
+  box-shadow: 0 -1px 0 rgb(21 24 28 / 0.05);
 }
 
 .nb__logo {
   width: 36px;
   height: 36px;
   flex: none;
-  padding: 5px;
-  border: 1px solid var(--line);
+  padding: 7px;
   border-radius: 10px;
-  background: #fff;
+  background: var(--tone);
   object-fit: contain;
 }
 
@@ -238,8 +241,8 @@
 
 .nb__tag {
   padding: 1px 8px;
-  border: 1px solid var(--line);
   border-radius: 999px;
+  background: var(--tone);
   font-size: 11.5px;
   color: var(--ink-2);
 }

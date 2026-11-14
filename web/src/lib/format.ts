@@ -1,3 +1,4 @@
+import { tampaFormat } from './time';
 import type { AgentState, JobRow } from './types';
 
 export const ONLINE_WINDOW_MS = 30_000;
@@ -21,11 +22,11 @@ export function timeAgo(iso: string | undefined, now: number): string {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
-  return new Date(then).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return tampaFormat({ month: 'short', day: 'numeric' }).format(then);
 }
 
 export function clock(ms: number): string {
-  return new Date(ms).toLocaleTimeString(undefined, { hour12: false });
+  return tampaFormat({ hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(ms);
 }
 
 /** How long until a time, as "2h 13m", "47m" or "under a minute"; '' when it is unknown or already past. */

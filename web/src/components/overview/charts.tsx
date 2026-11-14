@@ -4,6 +4,7 @@ import { useId, useRef, useState, type CSSProperties, type PointerEvent, type Re
 import { CompanyLogo } from '../CompanyLogo';
 import type { Bin, HeatDay, TrailStage } from '../../lib/overview';
 import { heatLevel } from '../../lib/overview';
+import { tampaFormat, tampaParts } from '../../lib/time';
 
 /** A tooltip that follows the hovered mark inside its card. Content is plain text, never HTML. */
 export function useTip() {
@@ -33,9 +34,12 @@ export function useTip() {
 }
 
 /** A card with a title, an optional line under it, and a Chart / Table switch when a table is given. */
-export function ChartCard({ title, sub, table, aside, className = '', children }: {
+export function ChartCard({ title, sub, icon, tone = 'ember', table, aside, className = '', children }: {
   title: string;
+  /** Kept as the title's tooltip: the card shows no helper line. */
   sub?: ReactNode;
+  icon?: ReactNode;
+  tone?: 'ember' | 'sky' | 'pine' | 'plum' | 'rose' | 'sand';
   table?: ReactNode;
   aside?: ReactNode;
   className?: string;
@@ -47,10 +51,14 @@ export function ChartCard({ title, sub, table, aside, className = '', children }
     <section className={`card ocard ${className}`} aria-labelledby={id}>
       <header className="ocard__head">
         <div className="ocard__titles">
-          <h2 className="ocard__title" id={id}>
+          {icon ? (
+            <span className={`ibadge ibadge--${tone}`} aria-hidden="true">
+              {icon}
+            </span>
+          ) : null}
+          <h2 className="ocard__title" id={id} title={typeof sub === 'string' ? sub : undefined}>
             {title}
           </h2>
-          {sub ? <p className="ocard__sub">{sub}</p> : null}
         </div>
         <div className="ocard__aside">
           {aside}
@@ -100,7 +108,7 @@ export function VTable({ head, rows }: { head: string[]; rows: (string | number)
   );
 }
 
-const SHORT_DAY = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' });
+const SHORT_DAY = tampaFormat({ month: 'short', day: 'numeric' });
 
 /** Fourteen days as a line: the first week in the quiet gray, this week in ember, a dot on today. Draws in. */
 export function Sparkline({ series, days, unit }: { series: number[]; days: string[]; unit: string }) {
@@ -135,8 +143,8 @@ export function Sparkline({ series, days, unit }: { series: number[]; days: stri
 }
 
 const WEEKDAYS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
-const MONTH = new Intl.DateTimeFormat('en', { month: 'short' });
-const LONG_DAY = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric' });
+const MONTH = tampaFormat({ month: 'short' });
+const LONG_DAY = tampaFormat({ weekday: 'short', month: 'short', day: 'numeric' });
 
 /** Twelve weeks, a cell a day, from frost to deep ember. Columns fade in one after another. Drawn at its own size. */
 export function Heatmap({ weeks }: { weeks: HeatDay[][] }) {
@@ -157,7 +165,7 @@ export function Heatmap({ weeks }: { weeks: HeatDay[][] }) {
       <div className="heat__plot">
         <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="heat__svg" role="img" aria-label="Applications and letters per day, last 12 weeks">
           {weeks.map((week, w) => {
-            const month = new Date(week[0].date).getMonth();
+            const month = tampaParts(week[0].date).month;
             const label = month !== lastMonth ? MONTH.format(week[0].date) : '';
             lastMonth = month;
             return label ? (

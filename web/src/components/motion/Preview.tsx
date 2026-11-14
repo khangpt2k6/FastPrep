@@ -5,7 +5,7 @@ import type { AgentRow, AgentSettings, CommandRow, JobRow, MemoryRow, Preference
 import type { CoverLetterRow, CoverSettings, CoverTemplate } from '../../lib/coverLetter';
 import { STARTER_BODY } from '../../lib/coverLetter';
 import type { InboxMessage, InboxRow } from '../../lib/inbox';
-import { nextInterviewLine, type CalendarCommand, type CalendarRow } from '../../lib/calendar';
+import { nextInterviewShort, type CalendarCommand, type CalendarRow } from '../../lib/calendar';
 import { companyLookup } from '../../lib/overview';
 import type { NotifyPrefs } from '../../hooks/useNotifyPrefs';
 import type { LiveTable } from '../../hooks/useLiveTable';
@@ -22,7 +22,7 @@ import { AgentPage } from '../agent/AgentPage';
 import { agentTone, useLogTail } from '../agent/live';
 import { ApplicationsPage } from '../applications/ApplicationsPage';
 import { UpcomingCard } from '../calendar/UpcomingCard';
-import { Callout, SkeletonPanel } from '../common';
+import { Callout, PageLoading, SkeletonPanel } from '../common';
 import { ConfirmSubmit } from '../ConfirmSubmit';
 import { IconUser } from '../Icons';
 import { InboxView } from '../inbox/InboxPage';
@@ -717,7 +717,7 @@ export default function Preview() {
   }
 
   const meta = PAGE_META[page];
-  let header: ReactNode = <PageHeader title={meta.title} subtitle={meta.sub} />;
+  let header: ReactNode = <PageHeader page={page} title={meta.title} />;
   let content: ReactNode;
   let pageBar: ReactNode = null;
   const finishBar = (
@@ -793,7 +793,7 @@ export default function Preview() {
             onToggle={toggleOne}
             notices={notices(false)}
             upcoming={oldDb ? null : <UpcomingCard rows={noEvents ? [] : events} now={now} loading={loading} lookup={companyLookup(jobs)} onOpen={() => setPage('calendar')} />}
-            briefExtra={noEvents ? '' : nextInterviewLine(events, now, (c) => companyLookup(jobs)(c)?.name ?? c)}
+            nextUp={noEvents ? '' : nextInterviewShort(events, now, (c) => companyLookup(jobs)(c)?.name ?? c)}
           />
           {dock}
         </>
@@ -802,7 +802,7 @@ export default function Preview() {
     case 'jobs': {
       pageBar = finishBar;
       const narrowed = filters.query !== '' || filters.minScore !== 0 || filters.newOnly || filters.savedOnly || Boolean(company);
-      header = <PageHeader title={meta.title} subtitle={meta.sub} count={loading ? undefined : narrowed ? `${visible.length} of ${candidates.length}` : candidates.length} />;
+      header = <PageHeader page={page} title={meta.title} count={loading ? undefined : narrowed ? `${visible.length} of ${candidates.length}` : candidates.length} />;
       content = (
         <JobsPage
               states={jobStates}
@@ -839,7 +839,7 @@ export default function Preview() {
       break;
     }
     case 'applications':
-      header = <PageHeader title={meta.title} subtitle={meta.sub} count={applications.length} />;
+      header = <PageHeader page={page} title={meta.title} count={applications.length} />;
       content = (
         <ApplicationsPage
           items={applications}
@@ -1161,7 +1161,7 @@ export default function Preview() {
       >
         <PageTransition pageKey={page}>
           {header}
-          <Suspense fallback={<SkeletonPanel count={5} />}>{content}</Suspense>
+          <Suspense fallback={<PageLoading />}>{content}</Suspense>
         </PageTransition>
       </Shell>
       {wizard.key > 0 ? (

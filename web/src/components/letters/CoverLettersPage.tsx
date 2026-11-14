@@ -817,13 +817,16 @@ export function LettersView({ data, actions, jobs, online, now, toast, profile }
         <section className="card cl-letters" aria-labelledby="letters-title">
           <div className="card__head">
             <h2 className="card__title" id="letters-title">
+              <span className="ibadge ibadge--sand" aria-hidden="true">
+                <IconLetter size={15} />
+              </span>
               Letters
             </h2>
             <span className="chip chip--count num">{letters.length}</span>
           </div>
           {lettersT.loading && letters.length === 0 ? <SkeletonCards count={3} check={false} /> : null}
           {!lettersT.loading && letters.length === 0 ? (
-            <EmptyState compact wolf="reading" title="No letters yet" text="Select jobs, then Write letters." />
+            <EmptyState compact friend="fox-laptop" title="No letters yet" text="Select jobs, then Write letters." />
           ) : (
             <ul className="cl-letter-list">
               {letters.map((letter, i) => (

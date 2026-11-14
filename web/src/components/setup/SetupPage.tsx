@@ -7,9 +7,10 @@ import { activeResume, byNewest, checkResumeFile, isPending, readResume, type Re
 import type { LoadError, ResumeRow } from '../../lib/types';
 import { Shimmer, WaitingLines } from '../motion';
 import { Wolf } from '../mascot/Wolf';
+import { Friend } from '../mascot/Friend';
 import { START_SHORTCUT } from '../agent/live';
 import type { ToastInput } from '../Toasts';
-import { IconAlert, IconArrowRight, IconResume, IconTrash } from '../Icons';
+import { IconAlert, IconArrowRight, IconFlag, IconResume, IconTrash } from '../Icons';
 import { Customize } from './Customize';
 import { DropZone } from './DropZone';
 import { Illustration } from './Illustration';
@@ -327,7 +328,12 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
   return (
     <div className="page setup">
       <div className="setup__top">
-        <span className="setup__kicker">Set up</span>
+        <span className="setup__kicker">
+          <span className="ibadge ibadge--sm ibadge--ember" aria-hidden="true">
+            <IconFlag size={13} />
+          </span>
+          Set up
+        </span>
         <StepDashes step={step} canGo={canGo} onGo={setStep} />
       </div>
 
@@ -336,11 +342,8 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
           <motion.div key="s1" className="setup__cols" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.24, ease: EASE_OUT }}>
             <div className="setup__left">
               <div className="setup__hello">
-                <Wolf mood="checklist" size={64} motion="pop" eager />
-                <div>
-                  <h1 className="setup__title">Start with your resume</h1>
-                  <p className="setup__sub">Your profile and search are built from it.</p>
-                </div>
+                <Friend name="bunny-laptop" size={60} />
+                <h1 className="setup__title">Start with your resume</h1>
               </div>
               <AnimatePresence mode="wait" initial={false}>
                 <div key={key}>{left}</div>
@@ -371,11 +374,8 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
         ) : step === 2 ? (
           <motion.div key="s2" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.24, ease: EASE_OUT }}>
             <div className="setup__hello">
-              <Wolf mood="reading" size={64} motion="pop" eager />
-              <div>
-                <h1 className="setup__title">Review extracted details</h1>
-                <p className="setup__sub">Edit, then apply to your profile.</p>
-              </div>
+              <Friend name="bunny-reading" size={60} />
+              <h1 className="setup__title">Review extracted details</h1>
             </div>
             {source ? (
               readResume(source.data).any ? (
@@ -405,7 +405,7 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
         ) : (
           <motion.div key="s3" className="setup__cols" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.24, ease: EASE_OUT }}>
             <div className="setup__left setup__done">
-              <Wolf mood="cheer" size={96} motion="hop" eager />
+              <Friend name="bunny-cheer" size={92} motion="bob" />
               <h1 className="setup__title">You are all set</h1>
               <p className="setup__sub">Searches now use this resume.</p>
               <div className="status__actions">

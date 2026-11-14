@@ -6,7 +6,7 @@ import { monthRange } from '../../lib/format';
 import type { ProfileRow } from '../../lib/types';
 import { Callout } from '../common';
 import { Group } from '../settings';
-import { IconAlert, IconGithub, IconGlobe, IconLinkedin, IconMail, IconMapPin, IconPencil, IconPhone, IconPlus, IconSpark } from '../Icons';
+import { IconAlert, IconGithub, IconGlobe, IconLinkedin, IconMail, IconMapPin, IconPencil, IconPhone, IconPlus, IconSpark, IconUser } from '../Icons';
 import { DocumentsCard } from './DocumentsCard';
 import { LinkedInCard } from './LinkedInCard';
 import { ResumeLibrary, type ResumeLibraryProps } from './ResumeLibrary';
@@ -289,7 +289,7 @@ export function ProfilePage({ profile, row, onEdit, resume, now, onReplace }: Pr
       <DocumentsCard now={now} />
       <LinkedInCard />
 
-      <Group title="Details" bare>
+      <Group title="Details" icon={<IconUser size={15} />} tone="plum" bare>
         <div className="panel profilecard">
           <div className="profilecard__bar">
             <div className="tabs viewtabs" role="tablist" aria-label="Profile sections">

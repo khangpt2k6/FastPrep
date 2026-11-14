@@ -208,7 +208,7 @@ export function ApplicationsPage({
     state = 'none';
     body = (
       <div className="panel">
-        <EmptyState icon={<IconSend size={20} />} title="No applications yet.">
+        <EmptyState friend="fox-checklist" title="No applications yet">
           Select jobs on the Jobs page, then Apply.
         </EmptyState>
       </div>

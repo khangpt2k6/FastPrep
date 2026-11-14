@@ -460,6 +460,85 @@ export const IconGoogle = (p: IconProps) => (
   </Svg>
 );
 
+export const IconSun = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M5.6 18.4l1.3-1.3M17.1 6.9l1.3-1.3" />
+  </Svg>
+);
+
+export const IconMoon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M19.5 14.6A7.6 7.6 0 0 1 9.4 4.5a7.6 7.6 0 1 0 10.1 10.1z" />
+  </Svg>
+);
+
+/** A target: strong matches. */
+export const IconTarget = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8" />
+    <circle cx="12" cy="12" r="4.5" />
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
+/** Nodes joined by a curve: the pipeline. */
+export const IconFlow = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="5" cy="7" r="2.2" />
+    <circle cx="19" cy="17" r="2.2" />
+    <circle cx="12" cy="12" r="2.2" />
+    <path d="M7 8.2c2 1 2.8 2 3 2.6M14 13.2c1.5.8 2.6 1.6 3.2 2.4" />
+  </Svg>
+);
+
+/** A ring cut in parts: a donut chart. */
+export const IconDonut = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 4a8 8 0 1 1-7.6 5.5" />
+    <path d="M12 4v4.5M5 8.5l3.8 1.9" />
+    <circle cx="12" cy="12" r="3.5" />
+  </Svg>
+);
+
+/** Columns: a bar chart. */
+export const IconBars = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5 19.5V12M10 19.5V7M15 19.5V10M20 19.5V4.5M3.5 19.5h18" />
+  </Svg>
+);
+
+/** Two speech bubbles: replies and interviews. */
+export const IconChat = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4.5 15.5V7a2.5 2.5 0 0 1 2.5-2.5h7.5A2.5 2.5 0 0 1 17 7v4.5a2.5 2.5 0 0 1-2.5 2.5H8z" />
+    <path d="M17 9.5h.5A2.5 2.5 0 0 1 20 12v7.5L16.5 17h-5a2.5 2.5 0 0 1-2.4-1.9" />
+  </Svg>
+);
+
+/** Circles of a few sizes: the company bubbles. */
+export const IconBubbles = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="9" cy="10" r="5" />
+    <circle cx="17" cy="15.5" r="3.5" />
+    <circle cx="16.5" cy="6" r="2" />
+  </Svg>
+);
+
+/** A small grid of days: the heatmap. */
+export const IconGridDays = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="4.5" height="4.5" rx="1.2" />
+    <rect x="10" y="4" width="4.5" height="4.5" rx="1.2" />
+    <rect x="16" y="4" width="4.5" height="4.5" rx="1.2" fill="currentColor" stroke="none" />
+    <rect x="4" y="10" width="4.5" height="4.5" rx="1.2" fill="currentColor" stroke="none" />
+    <rect x="10" y="10" width="4.5" height="4.5" rx="1.2" />
+    <rect x="16" y="10" width="4.5" height="4.5" rx="1.2" />
+    <rect x="4" y="16" width="4.5" height="4.5" rx="1.2" />
+    <rect x="10" y="16" width="4.5" height="4.5" rx="1.2" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
 /** The mark: a rounded tile with a cursor and a small ember spark. `light` is for the granite sidebar. */
 export function Logo({ size = 36, light = false }: { size?: number; light?: boolean }) {
   const tile = light ? '#F5F6F7' : '#15181C';

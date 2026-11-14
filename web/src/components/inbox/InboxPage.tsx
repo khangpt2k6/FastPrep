@@ -9,11 +9,12 @@ import { INBOX_STATUSES, latestOf, searchText, senderOf, statusOf, type InboxMes
 import { plural, timeAgo } from '../../lib/format';
 import { SPRING } from '../../lib/motion';
 import { companyLookup } from '../../lib/overview';
+import { tampaDate, tampaDayKey, tampaFormat, tampaParts, tampaTime } from '../../lib/time';
 import type { JobRow } from '../../lib/types';
 import { CompanyLogo } from '../CompanyLogo';
+import { Friend } from '../mascot/Friend';
 import { EmptyState, PillGroup, SkeletonCards, Tag } from '../common';
 import { IconArrowLeft, IconBot, IconLink, IconMail, IconSearch, IconStar, IconUser, IconX } from '../Icons';
-import { Wolf } from '../mascot/Wolf';
 import { PillSelect } from '../settings';
 import './inbox.css';
 
@@ -56,19 +57,17 @@ function useStored<T>(key: string, fallback: T): [T, (next: T) => void, boolean]
 function listDate(iso: string, now: number): string {
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return '';
-  const d = new Date(t);
-  const n = new Date(now);
-  if (d.toDateString() === n.toDateString()) return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  return d.toLocaleDateString(undefined, d.getFullYear() === n.getFullYear() ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
+  if (tampaDayKey(t) === tampaDayKey(now)) return tampaTime(t);
+  return tampaDate(t, now);
 }
 
 /** "Thu, Nov 12, 9:41 AM (2h ago)" for a mail. */
 function mailDate(iso: string, now: number): string {
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return '';
-  const d = new Date(t);
-  const day = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', ...(d.getFullYear() !== new Date(now).getFullYear() ? { year: 'numeric' } : {}) });
-  return `${day}, ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} (${timeAgo(iso, now)})`;
+  const sameYear = tampaParts(t).year === tampaParts(now).year;
+  const day = tampaFormat(sameYear ? { weekday: 'short', month: 'short', day: 'numeric' } : { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(t);
+  return `${day}, ${tampaTime(t)} (${timeAgo(iso, now)})`;
 }
 
 /** The company as the rest of the app shows it: the row's own domain first, then the jobs, then the name map. */
@@ -207,8 +206,8 @@ function Pane({ row, now, lookup, starred, onStar, onUnread, onClose, load }: {
   if (!row) {
     return (
       <div className="mpane mpane--empty">
-        <Wolf mood="reading" size={96} motion="idle" />
-        <p className="mpane__hint">Select an application.</p>
+        <Friend name="bunny-thinking" size={88} />
+        <p className="mpane__hint">Select an application</p>
         <p className="mpane__keys">
           <kbd>j</kbd> <kbd>k</kbd> to move, <kbd>Enter</kbd> to open, <kbd>/</kbd> to search
         </p>
@@ -218,7 +217,7 @@ function Pane({ row, now, lookup, starred, onStar, onUnread, onClose, load }: {
   const { name, domain } = companyOf(row, lookup);
   const applied = Date.parse(row.applied_at);
   const appliedText = Number.isFinite(applied)
-    ? `${row.applied_known === false ? 'Applied about ' : 'Applied '}${new Date(applied).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+    ? `${row.applied_known === false ? 'Applied about ' : 'Applied '}${tampaFormat({ month: 'short', day: 'numeric', year: 'numeric' }).format(applied)}`
     : '';
   return (
     <section className="mpane" aria-label={`Mail from ${name}`}>
@@ -440,9 +439,9 @@ export function InboxView({ table, now, jobs = NO_JOBS, loadThread = fetchInboxM
     return (
       <div className="card">
         <EmptyState
-          wolf="reading"
+          friend="bunny-reading"
           title="No mail read yet"
-          text="Set GMAIL_ADDRESS and GMAIL_APP_PASSWORD in .env on your computer and start the agent. It reads your Gmail read-only and lists here where each application stands."
+          text="Set GMAIL_ADDRESS and GMAIL_APP_PASSWORD in .env, then start the agent."
         />
       </div>
     );

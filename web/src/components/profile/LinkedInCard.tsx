@@ -118,7 +118,7 @@ function ConnectRow() {
               <span className="tag tag--green">Connected</span>
             </>
           ) : (
-            'Links your LinkedIn account. Shares name, email and photo only.'
+            'Shares name, email and photo only'
           )}
         </p>
         {problem ? (
@@ -146,7 +146,7 @@ function ConnectRow() {
 export function LinkedInCard() {
   const userId = useUserId();
   return (
-    <Group title="LinkedIn">
+    <Group title="LinkedIn" icon={<IconLinkedin size={15} />} tone="sky">
       <ImportRow userId={userId} />
       <ConnectRow />
     </Group>

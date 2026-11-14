@@ -5,7 +5,7 @@ import { errorText } from '../lib/errors';
 import { clock } from '../lib/format';
 import { dockVariants } from '../lib/motion';
 import { DEFAULT_PREFERENCES, savePreferences, usePreferences } from '../hooks/useAutomationData';
-import { IconAlert, IconCheck, IconSpark } from './Icons';
+import { IconAlert, IconChat, IconCheck, IconMemory, IconPencil, IconSpark } from './Icons';
 import { Callout, SkeletonRows } from './common';
 import { Group, NavRow, PillSelect, SettingRow, ToggleRow, type PillOption } from './settings';
 import { SetupCard } from './SetupCard';
@@ -172,25 +172,25 @@ export function PreferencesView({ row, loading, error, reload, save: persist, on
           </>
         ) : (
           <>
-            <Group title="Answer style">
-              <SettingRow title="Tone" description="The voice of open answers.">
+            <Group title="Answer style" icon={<IconChat size={15} />} tone="plum">
+              <SettingRow title="Tone">
                 <PillSelect label="Tone" value={form.tone} options={TONES.some((t) => t.value === form.tone) ? TONES : [...TONES, { value: form.tone, label: form.tone }]} onChange={(v) => set('tone', v)} />
               </SettingRow>
-              <SettingRow title="Length" description="Answer length.">
+              <SettingRow title="Length">
                 <PillSelect<AnswerLength> label="Length" value={form.length} options={LENGTHS} onChange={(v) => set('length', v)} />
               </SettingRow>
             </Group>
 
-            <Group title="Custom instructions">
-              <AreaRow title="Emphasize" description="Topics to highlight." value={form.highlight} onChange={(v) => set('highlight', v)} placeholder="AI agents, distributed systems" />
-              <AreaRow title="Forbidden" description="Topics to avoid." value={form.avoid} onChange={(v) => set('avoid', v)} placeholder="Salary expectations" />
-              <AreaRow title="Notes" description="Other writing instructions." value={form.notes} onChange={(v) => set('notes', v)} placeholder="First person, American spelling" />
-              <AreaRow title="Writing sample" description="Used to match your style." value={form.sample} onChange={(v) => set('sample', v)} placeholder="Paste an answer you wrote" rows={5} />
+            <Group title="Custom instructions" icon={<IconPencil size={15} />} tone="sand">
+              <AreaRow title="Emphasize" value={form.highlight} onChange={(v) => set('highlight', v)} placeholder="AI agents, distributed systems" />
+              <AreaRow title="Forbidden" value={form.avoid} onChange={(v) => set('avoid', v)} placeholder="Salary expectations" />
+              <AreaRow title="Notes" value={form.notes} onChange={(v) => set('notes', v)} placeholder="First person, American spelling" />
+              <AreaRow title="Writing sample" value={form.sample} onChange={(v) => set('sample', v)} placeholder="Paste an answer you wrote" rows={5} />
             </Group>
 
-            <Group title="Memory">
-              <ToggleRow title="Learn from answers" description="Save new answers to Memory." checked={form.learn} onChange={(v) => set('learn', v)} />
-              <NavRow title="Saved answers" description="View, pin and edit saved answers." onClick={onManageMemory} />
+            <Group title="Memory" icon={<IconMemory size={15} />} tone="rose">
+              <ToggleRow title="Learn from answers" checked={form.learn} onChange={(v) => set('learn', v)} />
+              <NavRow title="Saved answers" onClick={onManageMemory} />
             </Group>
           </>
         )}

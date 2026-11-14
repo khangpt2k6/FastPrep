@@ -20,7 +20,9 @@ export function UpcomingCard({ rows, now, loading, lookup, onOpen }: {
     <section className="card upcoming" aria-labelledby="upcoming-title">
       <header className="upcoming__head">
         <h2 className="upcoming__title" id="upcoming-title">
-          <IconCalendar size={16} />
+          <span className="ibadge ibadge--rose" aria-hidden="true">
+            <IconCalendar size={15} />
+          </span>
           Upcoming
         </h2>
         <button type="button" className="btn btn--ghost btn--xs" onClick={onOpen}>

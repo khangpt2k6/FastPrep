@@ -136,9 +136,9 @@ export function JobsPage(props: JobsPageProps) {
     state = 'none';
     body = (
       <EmptyState
-        wolf="music"
+        friend="raccoon-search"
         title="No scored jobs yet"
-        text={props.searching ? <Shimmer>The agent is looking now.</Shimmer> : 'Ask the agent to look for some.'}
+        text={props.searching ? <Shimmer>The agent is looking now.</Shimmer> : undefined}
         action={<FindButton searching={props.searching} onSearch={props.onSearch} />}
       />
     );
@@ -146,9 +146,8 @@ export function JobsPage(props: JobsPageProps) {
     state = 'filtered';
     body = (
       <EmptyState
-        wolf="thinking"
+        friend="raccoon-thinking"
         title="No jobs match these filters"
-        text="Try a lower score or clear the search."
         action={
           <button type="button" className="btn btn--secondary btn--sm" onClick={props.onClearFilters}>
             Clear filters

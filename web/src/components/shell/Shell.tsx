@@ -4,7 +4,8 @@ import type { Page } from '../../hooks/useRoute';
 import type { JobRow } from '../../lib/types';
 import { TopProgress } from '../motion';
 import { NotifyMenu } from './NotifyMenu';
-import { PhoneBar, Sidebar, TabBar, type AgentCardProps, type Marks, type SetupMark } from './Sidebar';
+import { Sidebar, TabBar, type AgentCardProps, type Marks, type SetupMark } from './Sidebar';
+import { TopBar } from './TopBar';
 import { DryRunSwitch } from './StatusControls';
 
 interface ShellProps {
@@ -45,24 +46,17 @@ export function Shell({ page, onNavigate, marks, setup, agent, working, dryRun, 
         Skip to the page
       </a>
       <aside className="app__side">
-        <Sidebar
-          page={page}
-          onNavigate={onNavigate}
-          marks={marks}
-          setup={setup}
-          agent={agent}
-          dryRun={<DryRunSwitch dryRun={dryRun} onChange={onDryRun} />}
-          alerts={alerts('sidebar')}
-          email={email}
-        />
+        <Sidebar page={page} onNavigate={onNavigate} marks={marks} setup={setup} />
       </aside>
-      <PhoneBar onNavigate={onNavigate} agent={agent} live={!dryRun} alerts={alerts('bar')} />
-      <main className="app__main" id="main" tabIndex={-1}>
-        <div className="column" data-page={page}>
-          {top}
-          {children}
-        </div>
-      </main>
+      <div className="app__col">
+        <TopBar onNavigate={onNavigate} agent={agent} dryRun={<DryRunSwitch dryRun={dryRun} onChange={onDryRun} compact />} alerts={alerts('bar')} email={email} />
+        <main className="app__main" id="main" tabIndex={-1}>
+          <div className="column" data-page={page}>
+            {top}
+            {children}
+          </div>
+        </main>
+      </div>
       <TabBar page={page} onNavigate={onNavigate} marks={marks} setup={setup} email={email} dryRun={<DryRunSwitch dryRun={dryRun} onChange={onDryRun} compact />} />
     </div>
   );

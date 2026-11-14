@@ -326,8 +326,8 @@ export function CalendarView({ table, commands, jobs, inbox, now, online, onAdd,
 
   const header = (
     <PageHeader
+      page="calendar"
       title="Calendar"
-      subtitle="Interviews, calls and deadlines."
       actions={
         <>
           <PillGroup<Scope>
@@ -383,9 +383,9 @@ export function CalendarView({ table, commands, jobs, inbox, now, online, onAdd,
     body = (
       <div className="card">
         <EmptyState
-          wolf="music"
+          friend="panda-idea"
           title="No events yet"
-          text="The agent reads your Google Calendar with the Gmail app password from .env on your computer, then lists here what is coming up."
+          text="The agent syncs your Google Calendar here."
           action={
             <button type="button" className="btn btn--secondary btn--sm" onClick={() => setAdding(true)}>
               <IconPlus size={14} />

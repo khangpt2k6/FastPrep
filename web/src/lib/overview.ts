@@ -4,27 +4,22 @@ import type { CoverLetterRow } from './coverLetter';
 import { APPLICATION_STATUSES, displayName, logoDomain, plural, statusInfo } from './format';
 import type { InboxRow } from './inbox';
 import { companyKey } from './jobs';
+import { tampaAddDays, tampaDayKey, tampaGreeting, tampaParts, tampaStartOfDay } from './time';
 import type { AgentRow, CommandRow, JobRow } from './types';
 
 const DAY = 86_400_000;
 
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** A local calendar day, yyyy-mm-dd. */
+/** A calendar day in Tampa, yyyy-mm-dd. */
 export function dayKey(ms: number): string {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return tampaDayKey(ms);
 }
 
-const startOfDay = (ms: number) => {
-  const d = new Date(ms);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-};
+const startOfDay = (ms: number) => tampaStartOfDay(ms);
 
-/** The last n local days, oldest first. */
+/** The last n Tampa days, oldest first. */
 export function lastDays(n: number, now: number): string[] {
   const today = startOfDay(now);
-  return Array.from({ length: n }, (_, i) => dayKey(today - (n - 1 - i) * DAY));
+  return Array.from({ length: n }, (_, i) => dayKey(tampaAddDays(today, -(n - 1 - i))));
 }
 
 /** How many of the times fall on each of the days. */
@@ -123,8 +118,8 @@ export interface HeatDay {
 /** Twelve weeks of applications and letters, one column per week (Monday first), the current week last. */
 export function buildHeatmap({ jobs, letters, now }: OverviewInput): HeatDay[][] {
   const today = startOfDay(now);
-  const weekday = (new Date(today).getDay() + 6) % 7; // Monday 0
-  const start = today - (weekday + 7 * 11) * DAY;
+  const weekday = (tampaParts(today).weekday + 6) % 7; // Monday 0
+  const start = tampaAddDays(today, -(weekday + 7 * 11));
   const apps = new Map<string, number>();
   const lets = new Map<string, number>();
   for (const j of jobs) if (isFinished(j)) {
@@ -137,7 +132,7 @@ export function buildHeatmap({ jobs, letters, now }: OverviewInput): HeatDay[][]
   }
   return Array.from({ length: 12 }, (_, w) =>
     Array.from({ length: 7 }, (_, d) => {
-      const date = start + (w * 7 + d) * DAY;
+      const date = tampaAddDays(start, w * 7 + d);
       const key = dayKey(date);
       const a = apps.get(key) ?? 0;
       const l = lets.get(key) ?? 0;
@@ -283,21 +278,18 @@ export function recentActivity({ jobs, letters, commands }: OverviewInput, n = 8
 }
 
 export function greeting(now: number): string {
-  const h = new Date(now).getHours();
-  if (h >= 5 && h < 12) return 'Good morning';
-  if (h >= 12 && h < 18) return 'Good afternoon';
-  return 'Good evening';
+  return tampaGreeting(now);
 }
 
-/** One sentence on how the hunt is going. */
-export function briefing({ jobs, inbox, now }: OverviewInput): string {
-  const scored = jobs.filter((j) => j.score !== null).length;
-  if (scored === 0) return 'The agent has not scored any internships yet. Ask it to find some.';
-  const strong = jobs.filter(isStrong).length;
+/** The briefing's numbers: jobs scored, strong ones, applications sent in the last 7 days, interviews and offers. */
+export function briefNumbers({ jobs, inbox, now }: OverviewInput) {
   const weekAgo = now - 7 * DAY;
-  const thisWeek = jobs.filter((j) => isSent(j) && Date.parse(j.updated_at) >= weekAgo).length;
-  const interviews = inbox.filter(isInterview).length;
-  return `${plural(scored, 'internship')} scored, ${plural(strong, 'strong match', 'strong matches')}. ${plural(thisWeek, 'application')} this week, ${plural(interviews, 'interview')}.`;
+  return {
+    scored: jobs.filter((j) => j.score !== null).length,
+    strong: jobs.filter(isStrong).length,
+    thisWeek: jobs.filter((j) => isSent(j) && Date.parse(j.updated_at) >= weekAgo).length,
+    interviews: inbox.filter(isInterview).length,
+  };
 }
 
 /** A company row in the inbox, resolved to a display name and a logo domain through the jobs when it can be. */

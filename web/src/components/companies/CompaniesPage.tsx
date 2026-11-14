@@ -81,9 +81,9 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
   return (
     <div className="page page--companies">
       <PageHeader
+        page="companies"
         title="Companies"
         count={shown.length}
-        subtitle="Intern and new grad requirements by company."
         actions={
           <label className="searchfield">
             <span className="sr-only">Search companies</span>
@@ -132,7 +132,7 @@ export default function CompaniesPage({ jobs, params, setParams, onSeeJobs }: Co
 
       {shown.length === 0 ? (
         <EmptyState
-          wolf="thinking"
+          friend="raccoon-thinking"
           title="No companies match"
           text={query ? `Nothing for "${query}" with these filters.` : 'Nothing with these filters.'}
           action={

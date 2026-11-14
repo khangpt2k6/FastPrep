@@ -1,7 +1,7 @@
 /* The Documents card on the Profile page: rows in the resume card's look, one under the other. */
 
 .docrow + .docrow {
-  border-top: 1px solid var(--line);
+  box-shadow: 0 -1px 0 rgb(21 24 28 / 0.05);
 }
 
 .docrow .resume__meta {

@@ -16,7 +16,6 @@
   padding: 26px 28px 26px 30px;
   overflow: hidden;
   border-radius: var(--r-card);
-  border: 1px solid var(--line);
   background: var(--card);
   animation: fade-up 300ms var(--ease) both;
 }
@@ -154,7 +153,6 @@
   min-width: 0;
   padding: 14px 14px 10px;
   border-radius: 14px;
-  border: 1px solid var(--line);
   background: var(--card);
   animation: fade-up 320ms var(--ease) both;
   animation-delay: calc(var(--i, 0) * 45ms + 60ms);
@@ -280,10 +278,9 @@
 }
 
 .ocard__title {
-  font-family: var(--display);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-size: 16.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .ocard__sub {
@@ -1388,4 +1385,517 @@
 /* Select and Selected keep one width, so the meters stay in a column. */
 .bestrow__actions .btn:last-child {
   min-width: 88px;
+}
+
+/* Iteration 3: the funnel graph and the rates side by side. */
+.ogrid--funnel {
+  grid-template-columns: minmax(0, 2.1fr) minmax(280px, 1fr);
+}
+
+/* The funnel as connected nodes; the vertical trail takes over on a phone. */
+.ocard--trail .trail {
+  display: none;
+}
+
+.pgraph {
+  position: relative;
+  aspect-ratio: 1000 / 250;
+  margin: 4px 0 18px;
+}
+
+.pgraph__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pgraph__track {
+  fill: none;
+  stroke: var(--frost);
+  stroke-linecap: round;
+}
+
+.pgraph__link {
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0.85;
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: pg-draw 1100ms var(--ease) forwards;
+  animation-delay: calc(var(--i, 0) * 140ms + 150ms);
+}
+
+.pgraph__dot {
+  fill: #fff;
+  stroke: var(--ember-600);
+  stroke-width: 1.5;
+}
+
+.pgraph__node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  translate: -50% -22px;
+  animation: fade-up 360ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 100ms);
+}
+
+.pgraph__ring {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ember-700);
+  box-shadow: 0 0 0 4px var(--ember-50), 0 6px 16px -8px rgb(240 123 31 / 0.6);
+}
+
+.pgraph__ring.is-goal {
+  background: var(--ember-600);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--ember-100), 0 8px 20px -8px rgb(217 100 12 / 0.7);
+}
+
+.pgraph.is-active .pgraph__ring {
+  animation: ring-breathe 2.6s ease-in-out infinite;
+}
+
+.pgraph__count {
+  margin-top: 4px;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pgraph__label {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pgraph__rate {
+  position: absolute;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px -4px rgb(21 24 28 / 0.25);
+  translate: -50% -50%;
+}
+
+/* Rates as rings */
+.gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gauge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.gauge__ring {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  flex: none;
+}
+
+.gauge__ring svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gauge__track {
+  fill: none;
+  stroke: var(--fill);
+  stroke-width: 10;
+}
+
+.gauge__value {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dasharray 900ms var(--ease);
+  animation: gauge-in 1100ms var(--ease) both;
+}
+
+.gauge--ember .gauge__value { stroke: var(--ember-500); }
+.gauge--plum .gauge__value { stroke: #8a68a8; }
+.gauge--rose .gauge__value { stroke: var(--rose-500); }
+.gauge--pine .gauge__value { stroke: var(--pine-500); }
+.gauge--sky .gauge__value { stroke: var(--sky-500); }
+.gauge--sand .gauge__value { stroke: var(--sand-500); }
+
+.gauge__pct {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge__pct small {
+  margin-left: 1px;
+  color: var(--ink-3);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.gauge__text {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+
+.gauge__label {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.gauge__parts {
+  grid-column: 2;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+/* Company bubbles */
+.where__col--bubbles {
+  min-width: 0;
+}
+
+.bubbles {
+  position: relative;
+  width: 100%;
+}
+
+.bubble {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--frost) 70%);
+  box-shadow: 0 10px 24px -14px rgb(21 24 28 / 0.35), inset 0 0 0 1px rgb(21 24 28 / 0.04);
+  translate: -50% -50%;
+  animation: bubble-in 520ms var(--spring) both, bubble-float 6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 70ms), calc(var(--i, 0) * -0.7s);
+  transition: box-shadow var(--dur-2) var(--ease);
+}
+
+.bubble:hover,
+.bubble:focus-visible {
+  box-shadow: 0 14px 30px -14px rgb(240 123 31 / 0.55), inset 0 0 0 2px var(--ember-300);
+}
+
+.bubble__count {
+  position: absolute;
+  right: 8%;
+  bottom: 6%;
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--granite);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* The inbox donut */
+.donut {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.donut__ring {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  flex: none;
+}
+
+.donut__ring svg {
+  width: 100%;
+  height: 100%;
+}
+
+.donut__track {
+  fill: none;
+  stroke: var(--fill);
+  stroke-width: 12;
+}
+
+.donut__seg {
+  fill: none;
+  stroke-width: 12;
+  transition: stroke-width var(--dur-2) var(--ease);
+  animation: fade-in 600ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 150ms);
+}
+
+.donut__seg:hover {
+  stroke-width: 15;
+}
+
+.stroke--rejected { stroke: var(--rose-500); }
+.stroke--applied { stroke: var(--sky-500); }
+.stroke--assessment { stroke: var(--sand-500); }
+.stroke--interview { stroke: var(--pine-500); }
+.stroke--offer { stroke: var(--ember-600); }
+
+.donut__total {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.donut__total small {
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.donut__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.donut__legend li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 150px;
+}
+
+.donut__legend .num {
+  font-weight: 600;
+}
+
+.kpi {
+  overflow: visible;
+}
+
+.kpi__label {
+  font-size: 12.5px;
+}
+
+@keyframes pg-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes gauge-in {
+  from {
+    stroke-dasharray: 0 999;
+  }
+}
+
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes bubble-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@media (max-width: 1179px) {
+  .ogrid--funnel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gauges {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 18px 28px;
+  }
+}
+
+@media (max-width: 719px) {
+  .ocard--trail .pgraph {
+    display: none;
+  }
+
+  .ocard--trail .trail {
+    display: block;
+  }
+
+  .donut {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pgraph__link {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The number and its percent on one line. */
+.gauge__num {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+/* Companies on top, the kinds of role under them. */
+.where {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.ocard--trail .pgraph {
+  margin-block: auto;
+}
+
+/* Room above the tiles (and between rows when they wrap) for the friends that sit on their corners. */
+.kpis {
+  margin-top: 10px;
+  row-gap: 28px;
+}
+
+/* The briefing types its greeting and one short line; the numbers sit in icon chips. */
+.brief__title {
+  min-height: 1.08em;
+}
+
+.brief__line {
+  min-height: 1.5em;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.brief__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brief__chips.is-waiting {
+  visibility: hidden;
+}
+
+.bchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 11px 4px 4px;
+  border-radius: 999px;
+  background: var(--tone);
+  font-size: 13px;
+  animation: fade-up 320ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+.brief__chips.is-waiting .bchip {
+  animation: none;
+}
+
+.bchip .ibadge--sm {
+  border-radius: 999px;
+}
+
+.bchip__value {
+  font-weight: 700;
+}
+
+.bchip__label {
+  color: var(--ink-3);
+}
+
+/* The caret: solid while it types, a blink and a fade once the line is out. */
+.tcaret {
+  display: inline-block;
+  width: 2.5px;
+  height: 0.92em;
+  margin-left: 3px;
+  border-radius: 2px;
+  background: var(--ember-500);
+  vertical-align: -0.1em;
+  animation: caret-blink 1s steps(1, end) infinite;
+}
+
+.brief__title .tcaret {
+  width: 3.5px;
+}
+
+.tcaret.is-done {
+  animation: caret-out 1.6s ease forwards;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes caret-out {
+  0%,
+  25% {
+    opacity: 1;
+  }
+  40%,
+  55% {
+    opacity: 0;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }

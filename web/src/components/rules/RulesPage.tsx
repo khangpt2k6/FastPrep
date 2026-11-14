@@ -9,7 +9,7 @@ import { deleteRule, resetRule, saveRule, useRules } from '../../hooks/useRules'
 import type { Page } from '../../hooks/useRoute';
 import { SkeletonRows } from '../common';
 import { Group, GroupNote, Switch } from '../settings';
-import { IconCheck, IconChevronDown, IconPencil, IconPlus, IconRepeat, IconSpark, IconTrash } from '../Icons';
+import { IconChat, IconCheck, IconChevronDown, IconHash, IconLetter, IconPencil, IconPlus, IconRepeat, IconRules, IconSpark, IconTrash } from '../Icons';
 import type { ToastInput } from '../Toasts';
 
 export interface RulesData {
@@ -176,7 +176,7 @@ function NewRule({ withDescription, onCreate, onCancel, busy, placeholder }: {
             </div>
             <div className="field">
               <label className="field__label" htmlFor={`${id}-d`}>
-                What it is for
+                Purpose
               </label>
               <input id={`${id}-d`} className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="One line, for this page" />
             </div>
@@ -246,10 +246,10 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
     );
   }
 
+  // The explanation lives in the title's tooltip; the page shows the label only.
   const header = (title: string, sub: string) => (
-    <span className="group__titlewrap">
+    <span className="group__titlewrap" title={sub}>
       {title}
-      <span className="group__sub">{sub}</span>
     </span>
   );
 
@@ -257,6 +257,8 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
     <>
       <Group
         title={header('Cover letter rules', 'How every letter is written.')}
+        icon={<IconLetter size={15} />}
+        tone="sand"
         aside={
           !readOnly ? (
             <button type="button" className="btn btn--secondary btn--sm" onClick={() => setAdding(adding === 'letter' ? null : 'letter')}>
@@ -285,7 +287,7 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
         ))}
       </Group>
 
-      <Group title={header('Letter sections', template ? `The generated parts of "${template.name}", the template in use.` : 'The generated parts of the template in use.')}>
+      <Group icon={<IconHash size={15} />} tone="pine" title={header('Letter sections', template ? `The generated parts of "${template.name}", the template in use.` : 'The generated parts of the template in use.')}>
         {slots.length === 0 ? <p className="srow__empty">The template in use has no generated parts.</p> : null}
         {slots.map(([slot, note]) => {
           const id = sectionRuleId(slot);
@@ -325,7 +327,7 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
         })}
       </Group>
 
-      <Group title={header('Form answers', 'A rule for each kind of open question on a form. Empty means no rule.')}>
+      <Group icon={<IconChat size={15} />} tone="plum" title={header('Form answers', 'A rule for each kind of open question on a form. Empty means no rule.')}>
         {answerKinds.map((kind) => {
           const rule = answerRules.get(kind.id);
           return (
@@ -389,6 +391,8 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
 
       <Group
         title={header('Always', 'Standing instructions for everything the agent writes.')}
+        icon={<IconRules size={15} />}
+        tone="ember"
         aside={
           !readOnly ? (
             <button type="button" className="btn btn--secondary btn--sm" onClick={() => setAdding(adding === 'always' ? null : 'always')}>

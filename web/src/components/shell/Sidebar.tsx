@@ -5,14 +5,10 @@ import type { AgentRow, AgentSettings } from '../../lib/types';
 import { SPRING, backdropVariants } from '../../lib/motion';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { SignOutButton } from '../auth/SignOutButton';
-import { IconChevronRight, IconGrid, IconPause, IconPlay, IconRadar, IconX, Logo } from '../Icons';
-import { WolfRing } from '../mascot/Wolf';
-import { Shimmer, Swap } from '../motion';
-import { agentTone, START_SHORTCUT } from '../agent/live';
+import { IconGrid, IconX, Logo } from '../Icons';
 import { linkClick } from './nav';
 import { MAIN_PAGES, MORE_PAGES, PAGE_META, TAB_PAGES, YOU_PAGES } from './pages';
 import { ProgressDot } from './ProgressDot';
-import { statusWords } from './StatusControls';
 
 /** Setup progress for the nav: how far along, and whether it is done. */
 export interface SetupMark {
@@ -38,65 +34,6 @@ export interface AgentCardProps {
   onSearch: () => void;
 }
 
-/** The agent at the top of the sidebar: the wolf in its status ring, its state, what it is doing, Pause and Find more. */
-export function AgentCard({ agent, online, loading, now, settings, settingsOff, onSettings, searching, onSearch, onNavigate, page }: AgentCardProps & {
-  onNavigate: (page: Page) => void;
-  page: Page;
-}) {
-  const state = online ? agent?.state ?? 'idle' : 'offline';
-  const tone = loading ? 'off' : agentTone(online, state);
-  const { word, line } = statusWords(agent, online, loading, now, tone);
-  const paused = settings.paused;
-  return (
-    <section className={`sagent sagent--${tone} ${page === 'agent' ? 'is-here' : ''}`} aria-label="Your agent">
-      <a
-        className="sagent__head"
-        href="#/agent"
-        onClick={linkClick(onNavigate, 'agent')}
-        aria-current={page === 'agent' ? 'page' : undefined}
-        aria-label={`Your agent: ${word}. ${line}. Open the agent page`}
-      >
-        <WolfRing tone={tone} state={state} size={44} />
-        <span className="sagent__who" aria-hidden="true">
-          <span className="sagent__name">Your agent</span>
-          <span className="sagent__word">
-            <span className="sagent__dot" />
-            <Swap id={word}>{word}</Swap>
-          </span>
-        </span>
-        <IconChevronRight size={16} className="sagent__chev" />
-      </a>
-      <p className="sagent__line" aria-live="polite">
-        {tone === 'off' && !loading ? (
-          <>
-            Double-click <strong className="nowrap">{START_SHORTCUT}</strong> on your desktop.
-          </>
-        ) : (
-          <Shimmer tone="granite" active={tone === 'busy'}>
-            {line}
-          </Shimmer>
-        )}
-      </p>
-      <div className="sagent__actions">
-        <button
-          type="button"
-          className="sbtn"
-          onClick={() => onSettings({ paused: !paused })}
-          disabled={settingsOff}
-          title={settingsOff ? 'Needs the latest supabase/schema.sql' : paused ? 'Let the agent take jobs again' : 'Finish the current job, then wait'}
-        >
-          {paused ? <IconPlay size={12} /> : <IconPause size={14} />}
-          {paused ? 'Resume' : 'Pause'}
-        </button>
-        <button type="button" className="sbtn sbtn--ember" onClick={onSearch} disabled={searching} title={tone === 'off' ? 'Runs when the agent is back' : 'Ask the agent for more jobs'}>
-          <IconRadar size={14} className={searching ? 'spin-slow' : ''} />
-          {searching ? <Shimmer tone="inverse">Finding</Shimmer> : 'Find more'}
-        </button>
-      </div>
-    </section>
-  );
-}
-
 /** A nav row's live marker: a count, a dot, or Set up's progress while it is unfinished. */
 function markFor(target: Page, marks: Marks, setup?: SetupMark) {
   if (target === 'setup' && setup && !setup.done) {
@@ -118,15 +55,10 @@ interface SidebarProps {
   onNavigate: (page: Page) => void;
   marks: Marks;
   setup?: SetupMark;
-  agent: AgentCardProps;
-  /** The dry run switch, the alerts menu and the account, at the bottom. */
-  dryRun: ReactNode;
-  alerts: ReactNode;
-  email: string;
 }
 
-/** The granite sidebar: the wordmark, the agent card, the pages in two groups, then dry run, alerts and the account. */
-export function Sidebar({ page, onNavigate, marks, setup, agent, dryRun, alerts, email }: SidebarProps) {
+/** The granite sidebar: the logo and the pages, icon and a short word each. It never scrolls. */
+export function Sidebar({ page, onNavigate, marks, setup }: SidebarProps) {
   const item = (target: Page) => {
     const meta = PAGE_META[target];
     const on = page === target;
@@ -135,17 +67,17 @@ export function Sidebar({ page, onNavigate, marks, setup, agent, dryRun, alerts,
       <li key={target}>
         <a
           href={`#/${target}`}
-          className={`snav ${on ? 'is-on' : ''}`}
+          className={`snav snav--${meta.tone} ${on ? 'is-on' : ''}`}
           aria-current={on ? 'page' : undefined}
           aria-label={mark ? `${meta.title}, ${mark.label}` : meta.title}
           onClick={linkClick(onNavigate, target)}
         >
           {on ? <motion.span className="snav__bg" layoutId="snav-bg" transition={SPRING} aria-hidden="true" /> : null}
           <span className="snav__icon" aria-hidden="true">
-            <meta.Icon size={17} />
+            <meta.Icon size={16} />
           </span>
           <span className="snav__label" aria-hidden="true">
-            {meta.title}
+            {meta.short}
           </span>
           {mark ? (
             <span className="snav__mark" aria-hidden="true">
@@ -156,7 +88,6 @@ export function Sidebar({ page, onNavigate, marks, setup, agent, dryRun, alerts,
       </li>
     );
   };
-  const initial = (email.trim()[0] ?? '?').toUpperCase();
 
   return (
     <div className="side">
@@ -166,7 +97,6 @@ export function Sidebar({ page, onNavigate, marks, setup, agent, dryRun, alerts,
           Agent Automation
         </span>
       </a>
-      <AgentCard {...agent} onNavigate={onNavigate} page={page} />
       <nav className="side__nav" aria-label="Pages">
         <ul className="side__list">{MAIN_PAGES.map(item)}</ul>
         <p className="side__label" aria-hidden="true">
@@ -176,50 +106,7 @@ export function Sidebar({ page, onNavigate, marks, setup, agent, dryRun, alerts,
           {YOU_PAGES.map(item)}
         </ul>
       </nav>
-      <div className="side__foot">
-        {dryRun}
-        {alerts}
-        <div className="side__acct">
-          <span className="side__avatar" aria-hidden="true">
-            {initial}
-          </span>
-          <span className="side__email" title={email}>
-            {email || 'Signed in'}
-          </span>
-          <SignOutButton email={email} className="signout side__signout" />
-        </div>
-      </div>
     </div>
-  );
-}
-
-/**
- * The phone's top bar: the wolf in its ring with what the agent is doing (the page's own title is right below, so it
- * is not repeated here), Live when it is on, and alerts. The wolf and its line open the agent page.
- */
-export function PhoneBar({ onNavigate, agent, live, alerts }: {
-  onNavigate: (page: Page) => void;
-  agent: Pick<AgentCardProps, 'agent' | 'online' | 'loading' | 'now'>;
-  live: boolean;
-  alerts: ReactNode;
-}) {
-  const state = agent.online ? agent.agent?.state ?? 'idle' : 'offline';
-  const tone = agent.loading ? 'off' : agentTone(agent.online, state);
-  const { word, line } = statusWords(agent.agent, agent.online, agent.loading, agent.now, tone);
-  return (
-    <header className="phonebar">
-      <a className="phonebar__agent" href="#/agent" onClick={linkClick(onNavigate, 'agent')} aria-label={`Your agent: ${word}. ${line}. Open the agent page`}>
-        <WolfRing tone={tone} state={state} size={34} />
-        <span className="phonebar__who" aria-hidden="true">
-          <span className="phonebar__name">Your agent</span>
-          <span className="phonebar__line">
-            <Shimmer active={tone === 'busy'}>{line}</Shimmer>
-          </span>
-        </span>
-      </a>
-      {live ? <span className="livetag">Live</span> : null}
-      {alerts}
-    </header>
   );
 }
 

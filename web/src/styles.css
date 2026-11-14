@@ -8595,3 +8595,701 @@ body {
   margin-left: 6px;
   color: var(--rose-700);
 }
+
+/* Iteration 3: a glass top bar with the Tampa clock and the agent, a sidebar that is only the logo and the pages,
+   icon badges everywhere, one text face (Inter) with Bricolage kept for page titles and big numbers, no borders or
+   edge bars, and the wolf's friends as small stickers. */
+
+:root {
+  --side-w: 212px;
+  --top-h: 64px;
+  /* Counters, dates and times are Inter with tabular figures; JetBrains Mono stays for code and log lines only. */
+  --mono: var(--font);
+  --code: 'JetBrains Mono', Consolas, 'Cascadia Mono', ui-monospace, monospace;
+}
+
+.num,
+time {
+  font-variant-numeric: tabular-nums;
+}
+
+code,
+.code,
+.logtail,
+.logline,
+.rulepre,
+.cmdchip code {
+  font-family: var(--code);
+}
+
+/* Section and card titles are Inter; Bricolage is for page titles and big numbers. */
+:root :is(
+  .ocard__title,
+  .group__title,
+  .upcoming__title,
+  .card__title,
+  .mgrid__title,
+  .agday__head,
+  .emptystate__title,
+  .mpane__hint,
+  .mpane__company,
+  .sheet__title,
+  .status__title,
+  .drop__title,
+  .custom__title,
+  .wizard__title,
+  .confirm__title,
+  .smalldialog h2,
+  .smalldialog__head h2,
+  .cocard__name,
+  .upnext__title,
+  .rlib__label,
+  .person__name,
+  .pdfpane__title,
+  .preview__q,
+  .illo__name,
+  .side__name,
+  .hero__state,
+  .nb__title,
+  .clock__time,
+  .acct__btn
+) {
+  font-family: var(--font);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+:root .hero__state {
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.rlib__label {
+  font-size: 15px;
+}
+
+/* Small uppercase labels lose their letter-spaced mono look. */
+.where__label,
+.asked__label,
+.cocard__rowlabel,
+.upnext__eyebrow,
+.brief__date,
+.hero__eyebrow,
+.listhead {
+  font-family: var(--font);
+  letter-spacing: 0.02em;
+}
+
+/* Icon badges: tinted rounded squares in a small palette. */
+.ibadge {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 9px;
+}
+
+.ibadge--sm {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+
+.ibadge--lg {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.ibadge--ember { background: var(--ember-50); color: var(--ember-700); }
+.ibadge--sky { background: var(--sky-50); color: var(--sky-700); }
+.ibadge--pine { background: var(--pine-50); color: var(--pine-700); }
+.ibadge--plum { background: #f2eef5; color: #654a7d; }
+.ibadge--rose { background: var(--rose-50); color: var(--rose-700); }
+.ibadge--sand { background: var(--sand-50); color: var(--sand-700); }
+
+/* The friends: small stickers that float a little and wiggle under the pointer. */
+.friend {
+  display: inline-block;
+  flex: none;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  transform-origin: 50% 90%;
+  filter: drop-shadow(0 4px 6px rgb(21 24 28 / 0.16));
+}
+
+.friend--idle {
+  animation: wolf-idle 4.4s ease-in-out infinite;
+}
+
+.friend--bob {
+  animation: wolf-bob 1.1s ease-in-out infinite;
+}
+
+.friend:hover {
+  animation: wolf-wiggle 520ms ease-in-out 1;
+}
+
+/* Page header: badge, title, count, the friend; actions on the right. */
+.pagehead {
+  align-items: center;
+}
+
+.pagehead__text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pagehead__friend {
+  margin-left: 2px;
+}
+
+.pagehead__sub {
+  display: none;
+}
+
+/* Helper lines under section titles go; the title says it. */
+.group__sub,
+.ocard__sub {
+  display: none;
+}
+
+.group__titlewrap {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.group__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+/* The shell */
+.app__col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app__main {
+  padding-top: 26px;
+}
+
+/* The sidebar: logo and pages, tight enough that it never scrolls. */
+.side {
+  gap: 14px;
+  padding: 16px 10px 14px;
+}
+
+.side::before {
+  display: none;
+}
+
+.side__nav {
+  flex: none;
+  overflow: visible;
+}
+
+.side__label {
+  margin: 12px 10px 4px;
+}
+
+.snav {
+  height: 34px;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 13.5px;
+}
+
+.snav__icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  transition: background-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+}
+
+.snav--ember .snav__icon { color: #f6a868; }
+.snav--sky .snav__icon { color: #8db5e0; }
+.snav--pine .snav__icon { color: #7cc4a1; }
+.snav--plum .snav__icon { color: #c4a6db; }
+.snav--rose .snav__icon { color: #ee9aa8; }
+.snav--sand .snav__icon { color: #e3c071; }
+
+.snav.is-on .snav__icon {
+  background: rgb(255 255 255 / 0.1);
+}
+
+/* The top bar: glass, sticky, across the page column. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: var(--top-h);
+  padding: 0 28px 0 24px;
+  background: rgb(255 255 255 / 0.58);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 -1px 0 rgb(21 24 28 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.topbar__rule {
+  width: 1px;
+  height: 28px;
+  flex: none;
+  background: rgb(21 24 28 / 0.08);
+}
+
+.topbar__space {
+  flex: 1;
+}
+
+.clock {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.clock__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--sand-50);
+  color: var(--sand-700);
+}
+
+.clock__icon.is-night {
+  background: #eceaf6;
+  color: #4f4a85;
+}
+
+.clock__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.clock__time {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock__sec {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.clock__ampm {
+  margin-left: 4px;
+  color: var(--ink-2);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.clock__date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.clock__place {
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--tone);
+  color: var(--ink-2);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* The agent in the top bar. */
+.tagent {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 4px;
+  border-radius: 14px;
+  background: var(--tone);
+}
+
+.tagent__who {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding-right: 6px;
+  border-radius: 11px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tagent__who .wring {
+  --ring-track: rgb(21 24 28 / 0.1);
+}
+
+.tagent__who .wring__alert {
+  box-shadow: 0 0 0 2px var(--card);
+}
+
+.tagent__text {
+  display: flex;
+  min-width: 0;
+  max-width: 280px;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.tagent__word {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.tagent__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8a929b;
+}
+
+.tagent--calm .tagent__dot { background: var(--pine-500); }
+.tagent--busy .tagent__dot { background: var(--ember-500); animation: dot-pulse 1.4s ease-in-out infinite; }
+.tagent--paused .tagent__dot { background: var(--sand-500); }
+.tagent--bad .tagent__dot { background: var(--rose-500); }
+
+.tagent__line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.tagent__btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink-2);
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.06);
+}
+
+.tagent__btn:hover:not(:disabled) {
+  background: var(--card);
+  color: var(--ink);
+}
+
+.tagent__find.is-live {
+  background: var(--ember-500);
+  color: var(--ink);
+}
+
+.tagent__find.is-live:hover:not(:disabled) {
+  background: var(--ember-300);
+}
+
+/* Dry run, light, in the top bar. */
+.topbar .dryrun {
+  gap: 8px;
+  padding: 6px 8px 6px 10px;
+  border-radius: 12px;
+  background: var(--tone);
+}
+
+.topbar .dryrun__hint {
+  display: none;
+}
+
+.topbar .dryrun.is-dry .dryrun__tag {
+  background: var(--sand-50);
+  color: var(--sand-700);
+}
+
+.topbar .dryrun.is-live .dryrun__tag {
+  background: var(--rose-50);
+  color: var(--rose-700);
+}
+
+.topbar .notify--bar .icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--tone);
+  color: var(--ink-2);
+}
+
+/* Menus in the bar are solid: a blur inside the glass bar cannot reach the page under it. */
+.topbar .menu {
+  background: var(--card);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The account */
+.acct {
+  position: relative;
+}
+
+.acct__btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--granite);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.acct__btn:focus-visible {
+  box-shadow: var(--focus);
+  outline: none;
+}
+
+.acct__menu {
+  top: calc(100% + 10px);
+  right: 0;
+  width: 260px;
+  transform-origin: top right;
+}
+
+.acct__who {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px 8px;
+}
+
+.acct__label {
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
+.acct__email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.acct__signout .signout__who {
+  display: none;
+}
+
+/* Sticky things sit under the top bar now. */
+:root .jtool {
+  top: var(--top-h);
+  border-bottom-color: transparent;
+}
+
+:root .mail__list {
+  top: calc(var(--top-h) + 14px);
+  max-height: calc(100vh - var(--top-h) - 28px);
+}
+
+:root .calside {
+  top: calc(var(--top-h) + 20px);
+}
+
+:root .agday {
+  scroll-margin-top: calc(var(--top-h) + 20px);
+}
+
+/* No edge bars and no borders on tiles and cards. */
+:root :is(.upcoming__item, .mmsg.is-open, .trail__rate, .newtag) {
+  box-shadow: none;
+}
+
+:root .upnext::before {
+  display: none;
+}
+
+:root .trail__rate {
+  background: var(--fill);
+}
+
+:root .newtag {
+  background: var(--ember-50);
+}
+
+:root .mmsg.is-open {
+  background: var(--card);
+}
+
+/* Overview cards carry an icon badge before their title. */
+.ocard__titles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kpi__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpi__friend {
+  position: absolute;
+  top: -25px;
+  right: 8px;
+}
+
+/* A page while it loads: a friend at work over placeholder rows. */
+.pageload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pageload__who {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-3);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* Letters: tonal tiles and buttons; the paper keeps its float. */
+.cl-tile,
+.cl-tile:hover,
+.cl-paper {
+  border-color: transparent;
+}
+
+.cl-tile__btn {
+  border-color: transparent;
+  background: var(--tone);
+}
+
+.cl-tile__btn:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgb(21 24 28 / 0.08);
+}
+
+/* The template on show: a warm tonal tile with a soft ring, no border line. */
+.cl-tile.is-focus {
+  border-color: transparent;
+  background: var(--ember-50);
+  box-shadow: 0 0 0 2px rgb(240 123 31 / 0.32);
+}
+
+.cl-tile--new {
+  border: 0;
+  background: var(--tone);
+  color: var(--ink-2);
+}
+
+.cl-tile--new:hover {
+  background: var(--ember-50);
+  color: var(--ember-700);
+}
+
+/* The sample answer on Preferences: a tonal block, no edge bar. */
+.preview__a {
+  padding: 10px 14px;
+  border-left: 0;
+  border-radius: 12px;
+  background: var(--tone);
+}
+
+/* Set up: the kicker carries a badge; the bunny sits by the step title. */
+.setup__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.04em;
+}
+
+.setup__hello .friend {
+  margin: -8px 0;
+}
+
+/* Tablets and phones: the top bar keeps the clock, the wolf and the bell. */
+@media (max-width: 1023px) {
+  :root {
+    --top-h: 58px;
+  }
+
+  .topbar {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .tagent {
+    padding: 2px;
+    background: none;
+  }
+
+  .tagent__text,
+  .tagent__btn,
+  .topbar__dry,
+  .topbar__acct,
+  .topbar__rule,
+  .clock__sec,
+  .clock__place {
+    display: none;
+  }
+
+  .clock__icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .clock__time {
+    font-size: 17px;
+  }
+
+  .app__main {
+    padding-top: 18px;
+  }
+
+  :root .jtool {
+    top: var(--top-h);
+  }
+}
+
+@media (max-width: 719px) {
+  .pagehead__friend {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .ibadge--lg {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .friend--idle,
+  .friend--bob,
+  .friend:hover {
+    animation: none;
+  }
+}

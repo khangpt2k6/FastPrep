@@ -90,7 +90,7 @@ function TranscriptRow({ userId, now }: { userId: string; now: number }) {
               {fileSize(current.size) ? <span>{fileSize(current.size)}</span> : null}
             </>
           ) : (
-            <span>Not uploaded. Attached only when a form asks for one.</span>
+            <span>Not uploaded. Sent only when a form asks</span>
           )}
         </p>
         {problem ? (
@@ -126,14 +126,14 @@ function TranscriptRow({ userId, now }: { userId: string; now: number }) {
 export function DocumentsCard({ now }: { now: number }) {
   const userId = useUserId();
   return (
-    <Group title="Documents">
+    <Group title="Documents" icon={<IconFile size={15} />} tone="sky">
       <div className="resume docrow">
         <span className="resume__icon" aria-hidden="true">
           <IconLetter size={22} />
         </span>
         <div className="resume__info">
           <p className="resume__name">Cover letter</p>
-          <p className="resume__meta">Generated per job as a PDF.</p>
+          <p className="resume__meta">PDF, one per job</p>
         </div>
         <div className="resume__actions">
           <a className="btn btn--secondary btn--sm" href="#/letters">
@@ -150,7 +150,7 @@ export function DocumentsCard({ now }: { now: number }) {
           </span>
           <div className="resume__info">
             <p className="resume__name">Transcript</p>
-            <p className="resume__meta">Attached only when a form asks for one.</p>
+            <p className="resume__meta">Sent only when a form asks</p>
           </div>
         </div>
       )}

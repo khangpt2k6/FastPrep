@@ -4,10 +4,14 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode 
 import { AnimatePresence, motion } from 'motion/react';
 import { menuVariants } from '../lib/motion';
 import { IconCheck, IconChevronDown, IconChevronRight } from './Icons';
+import type { Tone } from './shell/pages';
 
 /** A titled group: the heading, an optional aside on the right, then a white card (or bare content). */
-export function Group({ title, aside, children, bare = false, className = '' }: {
+export function Group({ title, icon, tone = 'ember', aside, children, bare = false, className = '' }: {
   title: ReactNode;
+  /** An icon in a tinted badge before the title. */
+  icon?: ReactNode;
+  tone?: Tone;
   aside?: ReactNode;
   children: ReactNode;
   /** No card around the content, for grids of their own. */
@@ -19,6 +23,11 @@ export function Group({ title, aside, children, bare = false, className = '' }: 
     <section className={`group ${className}`} aria-labelledby={id}>
       <div className="group__head">
         <h2 className="group__title" id={id}>
+          {icon ? (
+            <span className={`ibadge ibadge--${tone}`} aria-hidden="true">
+              {icon}
+            </span>
+          ) : null}
           {title}
         </h2>
         {aside ? <div className="group__aside">{aside}</div> : null}

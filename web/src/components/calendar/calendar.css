@@ -673,14 +673,10 @@ button.mgrid__day:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--display);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-}
-
-.upcoming__title svg {
-  color: var(--ember-600);
+  gap: 10px;
+  font-size: 16.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .upcoming__list {
@@ -697,20 +693,19 @@ button.mgrid__day:hover {
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  padding: 12px 14px 12px 16px;
+  padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid var(--line);
-  box-shadow: inset 3px 0 0 var(--kind);
+  background: var(--tone);
   animation: fade-up 300ms var(--ease) both;
   animation-delay: calc(var(--i, 0) * 50ms + 80ms);
 }
 
 .upcoming__when {
-  font-family: var(--display);
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
 }
 
 .upcoming__what {

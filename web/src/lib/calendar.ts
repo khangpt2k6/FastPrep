@@ -2,6 +2,7 @@
 // agent on their computer. Pure helpers, so the preview can feed them mock rows.
 import type { TagColor } from './format';
 import { dayKey } from './overview';
+import { tampaAddDays, tampaDayDiff, tampaFormat, tampaMidnight, tampaParts, tampaStartOfDay } from './time';
 
 /** Named in supabase/schema.sql. Kept here, next to its only users, until it joins TABLES in supabase.ts. */
 export const CALENDAR_TABLE = 'automation_calendar';
@@ -76,8 +77,8 @@ const DAY = 24 * HOUR;
  */
 function allDayStart(iso: string): number {
   const d = new Date(iso);
-  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0) return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).getTime();
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0) return tampaMidnight(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+  return tampaStartOfDay(d.getTime());
 }
 
 export function startOf(row: Pick<CalendarRow, 'starts_at' | 'all_day'>): number {
@@ -105,17 +106,14 @@ export function earlier<T extends Pick<CalendarRow, 'starts_at' | 'ends_at' | 'a
   return rows.filter((r) => endOf(r) <= now && endOf(r) > now - 7 * DAY).sort((a, b) => startOf(b) - startOf(a));
 }
 
-const startOfDay = (ms: number) => {
-  const d = new Date(ms);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-};
+const startOfDay = (ms: number) => tampaStartOfDay(ms);
 
-const WEEKDAY_DATE = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric' });
-const TIME = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+const WEEKDAY_DATE = tampaFormat({ weekday: 'short', month: 'short', day: 'numeric' });
+const TIME = tampaFormat({ hour: 'numeric', minute: '2-digit' });
 
 /** "Today", "Tomorrow", "Yesterday", or "Thu, Nov 14". */
 export function dayLabel(ms: number, now: number): string {
-  const diff = Math.round((startOfDay(ms) - startOfDay(now)) / DAY);
+  const diff = tampaDayDiff(now, ms);
   if (diff === 0) return 'Today';
   if (diff === 1) return 'Tomorrow';
   if (diff === -1) return 'Yesterday';
@@ -226,20 +224,23 @@ export function kindsByDay(rows: Pick<CalendarRow, 'starts_at' | 'all_day' | 'ki
 
 /** The weeks of a month, Monday first, as day starts; days of the next and previous month fill the edges. */
 export function monthWeeks(year: number, month: number): number[][] {
-  const lead = (new Date(year, month, 1).getDay() + 6) % 7;
-  const days = new Date(year, month + 1, 0).getDate();
+  // month is 0 to 11 here, like Date; the cells are Tampa day starts.
+  const first = tampaMidnight(year, month + 1, 1);
+  const lead = (tampaParts(first).weekday + 6) % 7;
+  const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   const count = Math.ceil((lead + days) / 7);
-  return Array.from({ length: count }, (_, w) => Array.from({ length: 7 }, (_, d) => new Date(year, month, 1 - lead + w * 7 + d).getTime()));
+  return Array.from({ length: count }, (_, w) => Array.from({ length: 7 }, (_, d) => tampaAddDays(first, -lead + w * 7 + d)));
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** A local date and time as ISO 8601 with its offset: 2026-11-14T10:00:00-05:00. */
+/** A moment as Tampa's wall clock in ISO 8601 with Tampa's offset: 2026-11-14T10:00:00-05:00. */
 export function isoWithOffset(d: Date): string {
-  const off = -d.getTimezoneOffset();
+  const p = tampaParts(d.getTime());
+  const off = Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(d.getTime() / 1000) * 1000) / 60000);
   const sign = off >= 0 ? '+' : '-';
   const abs = Math.abs(off);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}:00${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
 }
 
 /** What the add dialog holds. */
@@ -278,12 +279,12 @@ export function suggestTitle(kind: CalendarKind, company: string): string {
 }
 
 export function newDraft(now: number): EventDraft {
-  const tomorrow = new Date(now + DAY);
+  const tomorrow = tampaParts(tampaAddDays(tampaStartOfDay(now), 1));
   return {
     kind: 'interview',
     company: '',
     title: suggestTitle('interview', ''),
-    date: `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`,
+    date: `${tomorrow.year}-${pad(tomorrow.month)}-${pad(tomorrow.day)}`,
     time: '10:00',
     minutes: 45,
     allDay: false,
@@ -310,17 +311,18 @@ export function validateDraft(d: EventDraft, now: number): DraftErrors {
   return errors;
 }
 
+/** The draft's date and time, read as Tampa's wall clock. */
 function draftStart(d: EventDraft): Date | null {
   const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.date);
   if (!day) return null;
   const [h, m] = d.allDay ? [0, 0] : d.time.split(':').map(Number);
-  return new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3]), h, m);
+  return new Date(tampaMidnight(Number(day[1]), Number(day[2]), Number(day[3])) + (h * 60 + m) * 60000);
 }
 
 /** The command payload for a valid draft: local times with their offset. */
 export function toPayload(d: EventDraft): CalendarPayload {
   const start = draftStart(d) as Date;
-  const end = d.allDay ? new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1) : new Date(start.getTime() + d.minutes * 60000);
+  const end = d.allDay ? new Date(tampaAddDays(start.getTime(), 1)) : new Date(start.getTime() + d.minutes * 60000);
   return {
     title: d.title.trim(),
     starts_at: isoWithOffset(start),
@@ -355,6 +357,16 @@ export function pendingRow(c: CalendarCommand): CalendarRow | null {
 }
 
 /** One line for the Overview's briefing: the next interview, when there is one. */
+/** The next interview in a few words for the Overview: "Stripe tomorrow 10:00 AM", "Snap Mon, Nov 16". Empty when none. */
+export function nextInterviewShort(rows: CalendarRow[], now: number, name: (company: string) => string = (c) => c): string {
+  const next = upcoming(rows.filter((r) => r.kind === 'interview'), now)[0];
+  if (!next) return '';
+  const start = startOf(next);
+  const day = dayLabel(start, now);
+  const when = `${day === 'Today' || day === 'Tomorrow' ? day.toLowerCase() : day}${next.all_day ? '' : ` ${clockTime(start)}`}`;
+  return `${next.company ? name(next.company) : next.title} ${when}`;
+}
+
 export function nextInterviewLine(rows: CalendarRow[], now: number, name: (company: string) => string = (c) => c): string {
   const next = upcoming(rows.filter((r) => r.kind === 'interview'), now)[0];
   if (!next) return '';

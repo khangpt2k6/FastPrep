@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { dayKey } from '../../lib/overview';
 import { CALENDAR_KINDS, monthWeeks, shortDate, type CalendarKind } from '../../lib/calendar';
 import { IconChevronRight } from '../Icons';
+import { tampaFormat, tampaMidnight, tampaParts } from '../../lib/time';
 
-const MONTH = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' });
+const MONTH = tampaFormat({ month: 'long', year: 'numeric' });
 const WEEKDAYS: [string, string][] = [
   ['M', 'Monday'],
   ['T', 'Tuesday'],
@@ -25,8 +26,8 @@ export function MonthGrid({ kinds, now, picked, onPick }: {
   picked: string | null;
   onPick: (key: string) => void;
 }) {
-  const today = new Date(now);
-  const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() });
+  const today = tampaParts(now);
+  const [cursor, setCursor] = useState({ y: today.year, m: today.month - 1 });
   const weeks = monthWeeks(cursor.y, cursor.m);
   const todayKey = dayKey(now);
   const shift = (by: number) => setCursor((c) => {
@@ -36,7 +37,7 @@ export function MonthGrid({ kinds, now, picked, onPick }: {
   return (
     <section className="card mgrid" aria-label="Month">
       <header className="mgrid__head">
-        <p className="mgrid__title">{MONTH.format(new Date(cursor.y, cursor.m, 1))}</p>
+        <p className="mgrid__title">{MONTH.format(tampaMidnight(cursor.y, cursor.m + 1, 15))}</p>
         <div className="mgrid__nav">
           <button type="button" className="icon-btn icon-btn--sm" onClick={() => shift(-1)} aria-label="Previous month">
             <IconChevronRight size={15} className="is-flipped" />
@@ -61,9 +62,9 @@ export function MonthGrid({ kinds, now, picked, onPick }: {
             <tr key={week[0]}>
               {week.map((ms) => {
                 const key = dayKey(ms);
-                const day = new Date(ms);
+                const day = tampaParts(ms);
                 const list = kinds.get(key) ?? [];
-                const out = day.getMonth() !== cursor.m;
+                const out = day.month - 1 !== cursor.m;
                 const cls = `mgrid__day ${out ? 'is-out' : ''} ${key === todayKey ? 'is-today' : ''} ${picked === key ? 'is-picked' : ''}`;
                 const dots = (
                   <span className="mgrid__dots" aria-hidden="true">
@@ -76,12 +77,12 @@ export function MonthGrid({ kinds, now, picked, onPick }: {
                   <td key={ms}>
                     {list.length ? (
                       <button type="button" className={cls} onClick={() => onPick(key)} aria-label={`${shortDate(ms)}: ${list.length === 1 ? '1 event' : `${list.length} events`}`} aria-pressed={picked === key}>
-                        <span className="mgrid__num num">{day.getDate()}</span>
+                        <span className="mgrid__num num">{day.day}</span>
                         {dots}
                       </button>
                     ) : (
                       <span className={cls}>
-                        <span className="mgrid__num num">{day.getDate()}</span>
+                        <span className="mgrid__num num">{day.day}</span>
                       </span>
                     )}
                   </td>

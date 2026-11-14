@@ -35,7 +35,7 @@ import { useRoute } from '../hooks/useRoute';
 import { AgentPage } from './agent/AgentPage';
 import { agentTone, useLogTail } from './agent/live';
 import { ApplicationsPage } from './applications/ApplicationsPage';
-import { Callout, SkeletonPanel } from './common';
+import { Callout, PageLoading } from './common';
 import { ConfirmSubmit } from './ConfirmSubmit';
 import { ErrorBoundary } from './ErrorBoundary';
 import { IconPencil, IconUser } from './Icons';
@@ -54,7 +54,7 @@ import { statusWords } from './shell/StatusControls';
 import { Toasts, useToasts, type ToastTone } from './Toasts';
 import { PageTransition } from './motion';
 import { UpcomingCard } from './calendar/UpcomingCard';
-import { nextInterviewLine } from '../lib/calendar';
+import { nextInterviewShort } from '../lib/calendar';
 import { companyLookup } from '../lib/overview';
 
 // Heavier pages load on first visit, so the first page comes up fast.
@@ -107,7 +107,7 @@ function finishedMessage(job: JobRow): { title: string; detail?: string; tone: T
 
 /** A loading page in the shape of a card of rows. */
 function PageSkeleton() {
-  return <SkeletonPanel count={5} />;
+  return <PageLoading />;
 }
 
 export default function DashboardApp({ userId, email }: DashboardProps) {
@@ -482,7 +482,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     : null;
 
   const meta = PAGE_META[page];
-  let header: ReactNode = <PageHeader title={meta.title} subtitle={meta.sub} />;
+  let header: ReactNode = <PageHeader page={page} title={meta.title} />;
   let content: ReactNode;
   switch (page) {
     case 'overview':
@@ -521,7 +521,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
                 <UpcomingCard rows={calendarT.rows} now={now} loading={calendarT.loading} lookup={lookup} onOpen={() => navigate('calendar')} />
               )
             }
-            briefExtra={nextInterviewLine(calendarT.rows, now, (c) => lookup(c)?.name ?? c)}
+            nextUp={nextInterviewShort(calendarT.rows, now, (c) => lookup(c)?.name ?? c)}
           />
           {dock}
         </>
@@ -529,7 +529,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       break;
     case 'jobs': {
       const narrowed = filters.query !== '' || filters.minScore !== 0 || filters.newOnly || filters.savedOnly || Boolean(company);
-      header = <PageHeader title={meta.title} subtitle={meta.sub} count={jobsT.loading ? undefined : narrowed ? `${visible.length} of ${candidates.length}` : candidates.length} />;
+      header = <PageHeader page={page} title={meta.title} count={jobsT.loading ? undefined : narrowed ? `${visible.length} of ${candidates.length}` : candidates.length} />;
       content = (
         <JobsPage
           candidates={candidates}
@@ -567,7 +567,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       break;
     }
     case 'applications':
-      header = <PageHeader title={meta.title} subtitle={meta.sub} count={applications.length || undefined} />;
+      header = <PageHeader page={page} title={meta.title} count={applications.length || undefined} />;
       content = (
         <ApplicationsPage
           items={applications}
@@ -621,8 +621,8 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     case 'profile':
       header = (
         <PageHeader
+          page={page}
           title={meta.title}
-          subtitle={meta.sub}
           actions={
             profileReady ? (
               <button type="button" className="btn btn--secondary btn--sm" onClick={() => openWizard(profileComplete ? REVIEW_STEP : 0)}>

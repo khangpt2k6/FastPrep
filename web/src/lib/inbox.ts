@@ -1,4 +1,5 @@
 import type { TagColor } from './format';
+import { tampaFormat } from './time';
 
 /** Named in supabase/schema.sql. Kept here, next to its only users, until it joins TABLES in supabase.ts. */
 export const INBOX_TABLE = 'automation_inbox';
@@ -70,7 +71,7 @@ export function sortInbox(rows: InboxRow[]): InboxRow[] {
 
 export function dayOf(iso: string): string {
   const then = Date.parse(iso);
-  return Number.isFinite(then) ? new Date(then).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+  return Number.isFinite(then) ? tampaFormat({ month: 'short', day: 'numeric' }).format(then) : '';
 }
 
 /** The newest mail of a row, from the list's preview column or the full thread when a live update brought it. */

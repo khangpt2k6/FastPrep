@@ -6,7 +6,7 @@ import { readResume, type ResumeProfile, type ResumeSearch } from '../../lib/res
 import type { ResumeRow } from '../../lib/types';
 import { Shimmer } from '../motion';
 import { TagInput, TextArea, TextField } from '../profile/fields';
-import { IconArrowLeft, IconBuilding, IconCheck, IconGrad, IconX } from '../Icons';
+import { IconArrowLeft, IconBuilding, IconCheck, IconGrad, IconSearch, IconUser, IconX } from '../Icons';
 
 type Personal = Profile['personal'];
 
@@ -38,9 +38,11 @@ export function Customize({ row, busy, onBack, onApply }: {
       <div className="custom__grid">
         <section className="card custom__card" aria-labelledby="custom-search">
           <h2 className="custom__title" id="custom-search">
-            What to look for
+            <span className="ibadge ibadge--sky" aria-hidden="true">
+              <IconSearch size={15} />
+            </span>
+            Search
           </h2>
-          <p className="custom__sub">Used for the job search.</p>
           <div className="custom__fields">
             <TagInput label="Job titles" values={search.titles} onChange={(titles) => setSearch((s) => ({ ...s, titles }))} placeholder="Software Engineer Intern" hint="Press Enter after each" />
             <TagInput label="Cities" values={search.cities} onChange={(cities) => setSearch((s) => ({ ...s, cities }))} placeholder="Tampa, FL" />
@@ -51,7 +53,10 @@ export function Customize({ row, busy, onBack, onApply }: {
 
         <section className="card custom__card" aria-labelledby="custom-profile">
           <h2 className="custom__title" id="custom-profile">
-            For your profile
+            <span className="ibadge ibadge--plum" aria-hidden="true">
+              <IconUser size={15} />
+            </span>
+            Profile
           </h2>
           <p className="custom__sub">Replaces education, experience and skills. Fills empty personal fields only.</p>
           <div className="custom__fields">

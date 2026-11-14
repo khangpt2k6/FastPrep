@@ -8,7 +8,7 @@ import { displayName, firstLocation, plural, timeAgo } from '../../lib/format';
 import { statusOf, type InboxRow } from '../../lib/inbox';
 import { placeOf, workMode } from '../../lib/jobs';
 import {
-  briefing,
+  briefNumbers,
   buildHeatmap,
   buildKpis,
   buildTrail,
@@ -25,15 +25,19 @@ import {
   type OverviewInput,
 } from '../../lib/overview';
 import type { AgentRow, CommandRow, JobRow, LoadError } from '../../lib/types';
+import { tampaFormat } from '../../lib/time';
 import { CompanyLogo } from '../CompanyLogo';
 import { Tag } from '../common';
-import { IconAlert, IconCheck, IconLetter, IconLink, IconRadar, IconSend, IconTerminal, IconTrend } from '../Icons';
+import { IconAlert, IconBars, IconBubbles, IconCalendar, IconChat, IconCheck, IconClock, IconDonut, IconFlow, IconGridDays, IconLetter, IconLink, IconRadar, IconSend, IconStar, IconTarget, IconTerminal, IconTrend } from '../Icons';
 import { MatchMeter } from '../jobs/MatchMeter';
 import { Wolf, wolfForState } from '../mascot/Wolf';
 import { Contours, TrailDivider } from '../motif';
-import { AnimatedNumber, Shimmer } from '../motion';
+import { AnimatedNumber, Shimmer, useTypewriter } from '../motion';
 import type { AgentTone } from '../agent/live';
-import { BarList, ChartCard, Heatmap, Histogram, SegmentedBar, Sparkline, Trail, VTable } from './charts';
+import { BarList, ChartCard, Heatmap, Histogram, Sparkline, Trail, VTable } from './charts';
+import { BubbleCluster, Donut, Gauge, PipelineGraph } from './graphs';
+import { Friend } from '../mascot/Friend';
+import type { Tone } from '../shell/pages';
 import './overview.css';
 
 interface OverviewProps {
@@ -68,9 +72,12 @@ interface OverviewProps {
   notices?: ReactNode;
   /** The next events from the calendar, right under the briefing. */
   upcoming?: ReactNode;
-  /** A sentence added to the briefing, such as the next interview. */
-  briefExtra?: string;
+  /** The next interview in a few words, such as "Stripe tomorrow 10:00 AM". */
+  nextUp?: string;
 }
+
+/** The icon in each funnel node, in stage order. */
+const STAGE_ICONS = [<IconRadar key="f" size={18} />, <IconTarget key="s" size={18} />, <IconLetter key="l" size={18} />, <IconSend key="a" size={18} />, <IconChat key="r" size={18} />, <IconCalendar key="i" size={18} />];
 
 const STATUS_TONE: Record<string, string> = {
   rejected: 'rejected',
@@ -81,9 +88,10 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 /** A block with no data yet: one short line and the trail. */
-function ChartEmpty({ children }: { children: ReactNode }) {
+function ChartEmpty({ children, friend = 'bunny-thinking' }: { children: ReactNode; friend?: string }) {
   return (
     <div className="cempty">
+      <Friend name={friend} size={44} />
       <p>{children}</p>
       <TrailDivider />
     </div>
@@ -102,12 +110,28 @@ function ChartSkeleton({ rows = 4, tall = false }: { rows?: number; tall?: boole
 }
 
 /** A KPI: the number counting up, its change against the week before, and fourteen days as a line. */
+const KPI_LOOK: Record<Kpi['key'], { icon: ReactNode; tone: Tone; friend: string }> = {
+  found: { icon: <IconRadar size={15} />, tone: 'sky', friend: 'raccoon-search' },
+  strong: { icon: <IconTarget size={15} />, tone: 'ember', friend: 'fox-wink' },
+  letters: { icon: <IconLetter size={15} />, tone: 'sand', friend: 'fox-laptop' },
+  applied: { icon: <IconSend size={15} />, tone: 'pine', friend: 'bunny-thumbsup' },
+  replies: { icon: <IconChat size={15} />, tone: 'plum', friend: 'bunny-reading' },
+  interviews: { icon: <IconCalendar size={15} />, tone: 'rose', friend: 'panda-cheer' },
+};
+
 function KpiTile({ kpi, days, loading, index }: { kpi: Kpi; days: string[]; loading: boolean; index: number }) {
   const diff = kpi.thisWeek - kpi.lastWeek;
   const change = diff === 0 ? 'Same as last week' : `${diff > 0 ? '+' : ''}${diff} vs last week`;
+  const look = KPI_LOOK[kpi.key];
   return (
     <article className="kpi" style={{ '--i': index } as CSSProperties} aria-label={`${kpi.label}: ${kpi.value}. ${kpi.thisWeek} in the last 7 days, ${kpi.lastWeek} the 7 before.`}>
-      <p className="kpi__label">{kpi.label}</p>
+      <Friend name={look.friend} size={38} className="kpi__friend" />
+      <p className="kpi__head">
+        <span className={`ibadge ibadge--sm ibadge--${look.tone}`} aria-hidden="true">
+          {look.icon}
+        </span>
+        <span className="kpi__label">{kpi.label}</span>
+      </p>
       {loading ? (
         <span className="skeleton kpi__skel" />
       ) : (
@@ -131,6 +155,56 @@ function KpiTile({ kpi, days, loading, index }: { kpi: Kpi; days: string[]; load
         </>
       )}
     </article>
+  );
+}
+
+/** The greeting and one short line, typed once per page load; the numbers sit in icon chips under them. */
+function Briefing({ title, line, ready, chips }: {
+  title: string;
+  line: string;
+  ready: boolean;
+  chips: { key: string; icon: ReactNode; tone: Tone; value: number; label: string }[];
+}) {
+  const typing = useTypewriter('overview-brief', [title, line], [true, ready]);
+  const caret = (part: number) =>
+    typing.state !== 'still' && typing.caret === part ? <span className={`tcaret ${typing.state === 'done' ? 'is-done' : ''}`} aria-hidden="true" /> : null;
+  const settled = typing.state !== 'typing' && ready;
+  return (
+    <>
+      <h1 className="brief__title" id="brief-title">
+        <span className="sr-only">{title}</span>
+        <span aria-hidden="true">
+          {typing.shown[0]}
+          {caret(0)}
+        </span>
+      </h1>
+      <p className="brief__line">
+        {!ready && typing.state !== 'typing' ? (
+          <Shimmer>Reading the numbers</Shimmer>
+        ) : (
+          <>
+            <span className="sr-only">{line}</span>
+            <span aria-hidden="true">
+              {typing.shown[1]}
+              {caret(1)}
+            </span>
+          </>
+        )}
+      </p>
+      <ul className={`brief__chips ${settled ? '' : 'is-waiting'}`} aria-label="Numbers">
+        {chips.map((c, i) => (
+          <li key={c.key} className="bchip" style={{ '--i': i } as CSSProperties}>
+            <span className={`ibadge ibadge--sm ibadge--${c.tone}`} aria-hidden="true">
+              {c.icon}
+            </span>
+            <span className="bchip__value num">
+              <AnimatedNumber value={c.value} id={`bchip-${c.key}`} />
+            </span>
+            <span className="bchip__label">{c.label}</span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -181,10 +255,17 @@ export function OverviewPage(props: OverviewProps) {
   const openStrong = candidates.filter((j) => (j.score ?? 0) >= 4).length;
   const heatTotal = heat.flat().reduce((a, d) => a + d.total, 0);
   const inboxTotal = inbox.length;
+  const inboxReplies = inbox.filter((r) => r.status !== 'applied' && r.status !== 'withdrawn').length;
+  const inboxInterviews = inbox.filter((r) => r.status === 'interview' || r.status === 'offer').length;
   const busy = props.tone === 'busy';
   const quiet = props.tone === 'off' || props.tone === 'paused';
   const mood = quiet ? 'music' : props.tone === 'bad' ? 'thinking' : wolfForState(props.state);
-  const dateLine = new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(now);
+  const dateLine = tampaFormat({ weekday: 'long', month: 'long', day: 'numeric' }).format(now);
+  const numbers = useMemo(() => briefNumbers(input), [input]);
+  // One short line: the strong matches, then the next interview when there is one.
+  const briefLine = [numbers.scored ? plural(numbers.strong, 'strong match', 'strong matches') : 'No internships scored yet', props.nextUp ? `next: ${props.nextUp}` : '']
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div className="overview page">
@@ -192,13 +273,16 @@ export function OverviewPage(props: OverviewProps) {
         <Contours className="brief__map" />
         <div className="brief__text">
           <p className="brief__date">{dateLine}</p>
-          <h1 className="brief__title" id="brief-title">
-            {greeting(now)}
-            {props.firstName ? `, ${props.firstName}` : ''}
-          </h1>
-          <p className="brief__line">
-            {jobsLoading ? <Shimmer>Reading the numbers</Shimmer> : props.briefExtra ? `${briefing(input)} ${props.briefExtra}` : briefing(input)}
-          </p>
+          <Briefing
+            title={`${greeting(now)}${props.firstName ? `, ${props.firstName}` : ''}`}
+            line={briefLine}
+            ready={!jobsLoading}
+            chips={[
+              { key: 'scored', icon: <IconRadar size={12} />, tone: 'sky', value: numbers.scored, label: 'scored' },
+              { key: 'week', icon: <IconSend size={12} />, tone: 'pine', value: numbers.thisWeek, label: 'sent this week' },
+              { key: 'interviews', icon: <IconCalendar size={12} />, tone: 'rose', value: numbers.interviews, label: numbers.interviews === 1 ? 'interview' : 'interviews' },
+            ]}
+          />
           <div className="brief__actions">
             <button type="button" className="btn btn--ember" onClick={props.onReviewStrong} aria-label={`Review strong matches, ${openStrong} open`}>
               Review strong matches
@@ -229,23 +313,47 @@ export function OverviewPage(props: OverviewProps) {
         ))}
       </section>
 
-      <ChartCard
-        title="Funnel"
-        sub="Found to interview, with stage conversion"
-        className="ocard--trail"
-        table={<VTable head={['Stage', 'Count']} rows={trail.map((s) => [s.label, s.count])} />}
-      >
-        {jobsLoading ? <ChartSkeleton rows={2} /> : <Trail stages={trail} active={busy} />}
-      </ChartCard>
+      <div className="ogrid ogrid--funnel">
+        <ChartCard
+          title="Funnel"
+          sub="Found to interview, with stage conversion"
+          icon={<IconFlow size={15} />}
+          tone="ember"
+          className="ocard--trail"
+          table={<VTable head={['Stage', 'Count']} rows={trail.map((s) => [s.label, s.count])} />}
+        >
+          {jobsLoading ? (
+            <ChartSkeleton rows={2} />
+          ) : (
+            <>
+              <PipelineGraph stages={trail} active={busy} icons={STAGE_ICONS} />
+              <Trail stages={trail} active={busy} />
+            </>
+          )}
+        </ChartCard>
+        <ChartCard title="Rates" icon={<IconTrend size={15} />} tone="pine" className="ocard--rates">
+          {jobsLoading || inboxLoading ? (
+            <ChartSkeleton rows={3} />
+          ) : (
+            <div className="gauges">
+              <Gauge label="Strong share" part={strong} whole={scored} tone="ember" icon={<IconTarget size={12} />} hint="Scored jobs at 4 or more" />
+              <Gauge label="Reply rate" part={inboxReplies} whole={inboxTotal} tone="plum" icon={<IconChat size={12} />} hint="Tracked applications with a reply" />
+              <Gauge label="Interview rate" part={inboxInterviews} whole={inboxTotal} tone="rose" icon={<IconCalendar size={12} />} hint="Tracked applications that reached an interview" />
+            </div>
+          )}
+        </ChartCard>
+      </div>
 
       <div className="ogrid ogrid--wide">
         <ChartCard
           title="Activity"
+          icon={<IconGridDays size={15} />}
+          tone="sky"
           sub={heatTotal ? `${plural(heatTotal, 'application or letter', 'applications and letters')} in 12 weeks` : 'Applications and letters per day'}
           table={
             <VTable
               head={['Week of', 'Applications', 'Letters']}
-              rows={heat.map((w) => [new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(w[0].date), w.reduce((a, d) => a + d.applications, 0), w.reduce((a, d) => a + d.letters, 0)])}
+              rows={heat.map((w) => [tampaFormat({ month: 'short', day: 'numeric' }).format(w[0].date), w.reduce((a, d) => a + d.applications, 0), w.reduce((a, d) => a + d.letters, 0)])}
             />
           }
         >
@@ -253,10 +361,12 @@ export function OverviewPage(props: OverviewProps) {
         </ChartCard>
         <ChartCard
           title="Match score"
+          icon={<IconBars size={15} />}
+          tone="sand"
           sub={scored ? `${plural(scored, 'job')} scored, ${strong} at 4 or more` : 'Scores from 1 to 5'}
           table={<VTable head={['Score', 'Jobs']} rows={bins.map((b) => [`${b.from.toFixed(1)} to ${(b.to - 0.1).toFixed(1)}`, b.count])} />}
         >
-          {jobsLoading ? <ChartSkeleton rows={5} tall /> : scored ? <Histogram bins={bins} /> : <ChartEmpty>No scores yet. They show up as the agent reads postings.</ChartEmpty>}
+          {jobsLoading ? <ChartSkeleton rows={5} tall /> : scored ? <Histogram bins={bins} /> : <ChartEmpty friend="raccoon-thinking">No scores yet</ChartEmpty>}
         </ChartCard>
       </div>
 
@@ -264,29 +374,32 @@ export function OverviewPage(props: OverviewProps) {
         <ChartCard
           title="Matches by company"
           sub="Scored jobs by company and role"
+          icon={<IconBubbles size={15} />}
+          tone="sky"
           table={<VTable head={['Company', 'Jobs', 'Best score']} rows={companies.map((c) => [c.name, c.count, c.best.toFixed(1)])} />}
         >
           {jobsLoading ? (
             <ChartSkeleton rows={6} />
           ) : companies.length ? (
             <div className="where">
-              <div className="where__col">
-                <p className="where__label">Top companies</p>
-                <BarList unit="jobs" items={companies.map((c) => ({ key: c.key, label: c.name, value: c.count, extra: `best ${c.best.toFixed(1)}`, domain: c.domain, logo: true }))} />
+              <div className="where__col where__col--bubbles">
+                <BubbleCluster items={companies} />
               </div>
               <div className="where__col">
-                <p className="where__label">Kinds of role</p>
+                <p className="where__label">Roles</p>
                 <BarList unit="jobs" items={kinds.map((k) => ({ key: k.name, label: k.name, value: k.count }))} />
               </div>
             </div>
           ) : (
-            <ChartEmpty>No scored jobs yet.</ChartEmpty>
+            <ChartEmpty friend="raccoon-search">No scored jobs yet</ChartEmpty>
           )}
         </ChartCard>
 
         <ChartCard
           title="Inbox"
           sub={inboxTotal ? `${plural(inboxTotal, 'application')} tracked` : 'Application replies'}
+          icon={<IconDonut size={15} />}
+          tone="plum"
           table={inboxTotal ? <VTable head={['Status', 'Applications']} rows={inboxParts.map((p) => [p.label, p.count])} /> : undefined}
           aside={
             <button type="button" className="btn btn--ghost btn--xs" onClick={() => props.onNavigate('inbox')}>
@@ -300,7 +413,7 @@ export function OverviewPage(props: OverviewProps) {
             <ChartEmpty>Needs the latest supabase/schema.sql.</ChartEmpty>
           ) : inboxTotal ? (
             <>
-              <SegmentedBar
+              <Donut
                 label="Applications by status"
                 parts={[...inboxParts]
                   .sort((a, b) => ['rejected', 'applied', 'assessment', 'interview', 'offer'].indexOf(a.status) - ['rejected', 'applied', 'assessment', 'interview', 'offer'].indexOf(b.status))
@@ -332,7 +445,7 @@ export function OverviewPage(props: OverviewProps) {
               )}
             </>
           ) : (
-            <ChartEmpty>No replies yet. Answers from employers show up here.</ChartEmpty>
+            <ChartEmpty friend="bunny-reading">No replies yet</ChartEmpty>
           )}
         </ChartCard>
       </div>
@@ -340,6 +453,8 @@ export function OverviewPage(props: OverviewProps) {
       <div className="ogrid">
         <ChartCard
           title="Top matches"
+          icon={<IconStar size={15} />}
+          tone="ember"
           sub="Highest scores, not yet applied"
           aside={
             <button type="button" className="btn btn--ghost btn--xs" onClick={() => props.onNavigate('jobs')}>
@@ -393,11 +508,11 @@ export function OverviewPage(props: OverviewProps) {
               })}
             </ul>
           ) : (
-            <ChartEmpty>{candidates.length ? 'Every match is queued or applied.' : 'No scored jobs yet. Find more to start.'}</ChartEmpty>
+            <ChartEmpty friend="fox-thinking">{candidates.length ? 'Every match is queued or applied' : 'No scored jobs yet'}</ChartEmpty>
           )}
         </ChartCard>
 
-        <ChartCard title="Recent activity" sub="Letters, applications, jobs and commands">
+        <ChartCard title="Recent activity" sub="Letters, applications, jobs and commands" icon={<IconClock size={15} />} tone="pine">
           {jobsLoading ? (
             <ChartSkeleton rows={6} />
           ) : activity.length ? (
@@ -415,7 +530,7 @@ export function OverviewPage(props: OverviewProps) {
               ))}
             </ol>
           ) : (
-            <ChartEmpty>Nothing yet. What the agent does shows up here.</ChartEmpty>
+            <ChartEmpty friend="panda-reading">Nothing yet</ChartEmpty>
           )}
         </ChartCard>
       </div>

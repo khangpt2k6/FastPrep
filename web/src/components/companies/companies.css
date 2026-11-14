@@ -235,28 +235,26 @@
 
 .tech--need {
   background: var(--ember-50);
-  box-shadow: inset 0 0 0 1px var(--ember-100);
   color: var(--ink);
   font-weight: 600;
 }
 
 .tech--stack {
-  background: var(--frost);
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--tone);
   color: var(--ink-2);
 }
 
 .tech--niche {
-  border: 1px dashed var(--line-strong);
+  background: rgb(21 24 28 / 0.025);
   color: var(--ink-3);
 }
 
 button.tech:hover {
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  background: rgb(21 24 28 / 0.08);
 }
 
 button.tech--need:hover {
-  box-shadow: inset 0 0 0 1px var(--ember-300);
+  background: var(--ember-100);
 }
 
 .tech.is-on {

@@ -8,7 +8,7 @@ import { clock, plural, stateLabel, timeAgo, untilText, waitingLines, type TagCo
 import { Callout, Tag } from '../common';
 import { Dialog } from '../Dialog';
 import { Group, GroupNote, NavRow, PillSelect, SettingRow, ToggleRow, type PillOption } from '../settings';
-import { IconAlert, IconCheckCircle, IconClock, IconDownload, IconFile, IconFilter, IconInfo, IconSpark, IconX } from '../Icons';
+import { IconActivity, IconAlert, IconCheckCircle, IconClock, IconDownload, IconFile, IconFilter, IconInfo, IconSliders, IconSpark, IconTerminal, IconX } from '../Icons';
 import { WolfRing } from '../mascot/Wolf';
 import { Contours } from '../motif';
 import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
@@ -240,7 +240,7 @@ export function AgentPage(props: AgentPageProps) {
         </div>
       </section>
 
-      <Group title="Controls">
+      <Group title="Controls" icon={<IconSliders size={15} />} tone="ember">
         <ToggleRow
           title="Agent on"
           checked={!settings.paused}
@@ -297,7 +297,7 @@ export function AgentPage(props: AgentPageProps) {
         <GroupNote tone="warn">{settingsState.error}</GroupNote>
       ) : null}
 
-      <Group title="Activity" bare>
+      <Group title="Activity" icon={<IconActivity size={15} />} tone="sky" bare>
         <div className="card stats">
           <Stat label="Found" value={agent?.jobs_found ?? 0} id="agent-found" hint="Postings the agent has seen" />
           <Stat label="Scored" value={agent?.jobs_scored ?? 0} id="agent-scored" hint="Jobs scored against your resume" />
@@ -306,7 +306,7 @@ export function AgentPage(props: AgentPageProps) {
         </div>
       </Group>
 
-      <Group title="Log">
+      <Group title="Log" icon={<IconTerminal size={15} />} tone="sand">
         {lines.length === 0 ? (
           <p className="empty-line">No log lines yet.</p>
         ) : (
@@ -324,7 +324,7 @@ export function AgentPage(props: AgentPageProps) {
         )}
       </Group>
 
-      <Group title="History">
+      <Group title="History" icon={<IconClock size={15} />} tone="pine">
         {recent.length === 0 ? (
           <p className="empty-line">No commands yet.</p>
         ) : (

@@ -591,12 +591,9 @@ export function ResumeLibrary({ rows, loading, missing, agentName, jobsFound, no
   return (
     <>
       <Group
-        title={
-          <span className="group__titlewrap">
-            Resumes
-            <span className="group__sub">The default goes with every application. Keep others for different kinds of roles.</span>
-          </span>
-        }
+        title="Resumes"
+        icon={<IconResume size={15} />}
+        tone="ember"
         aside={
           !missing && !loading && list.length > 0 ? (
             <button type="button" className="btn btn--secondary btn--sm" onClick={() => setUploading(true)}>

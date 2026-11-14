@@ -103,14 +103,18 @@ export function NearbyFetch() {
       <header className="nb__head">
         <div className="nb__intro">
           <h2 id="nb-title" className="nb__title">
-            <IconMapPin size={18} />
-            Tampa Bay employers
+            <span className="ibadge ibadge--pine" aria-hidden="true">
+              <IconMapPin size={15} />
+            </span>
+            Tampa Bay
           </h2>
-          <p className="nb__sub">Within {DATA.radius} miles of {DATA.center}</p>
+          <p className="nb__sub num">
+            {DATA.radius} mi of {DATA.center}
+          </p>
         </div>
         <button type="button" className="btn btn--primary btn--sm nb__go" onClick={run} disabled={running}>
           {running ? <span className="spinner" aria-hidden="true" /> : <IconSearch size={14} />}
-          {fetchedAt ? 'Fetch again' : 'Fetch companies'}
+          {fetchedAt ? 'Fetch again' : 'Fetch'}
         </button>
       </header>
 

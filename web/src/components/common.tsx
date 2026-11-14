@@ -4,6 +4,8 @@ import { SPRING } from '../lib/motion';
 import { AnimatedNumber } from './motion/AnimatedNumber';
 import { matchInfo, scoreColor, type TagColor } from '../lib/format';
 import { Wolf, type WolfMood } from './mascot/Wolf';
+import { Friend } from './mascot/Friend';
+import { Shimmer } from './motion/Shimmer';
 import { TrailDivider } from './motif';
 
 /** A Notion-style tag: a pastel fill with matching text. */
@@ -67,9 +69,11 @@ export function CheckBox() {
 }
 
 /** An empty screen: the wolf (or an icon), a short title, one gray line at most, the trail, and one button. */
-export function EmptyState({ icon, wolf, title, children, text, action, compact = false }: {
+export function EmptyState({ icon, wolf, friend, title, children, text, action, compact = false }: {
   icon?: ReactNode;
   wolf?: WolfMood;
+  /** One of the wolf's friends (a file in public/mascot/friends), shown instead of the wolf or the icon. */
+  friend?: string;
   title: string;
   children?: ReactNode;
   text?: ReactNode;
@@ -80,7 +84,13 @@ export function EmptyState({ icon, wolf, title, children, text, action, compact 
   return (
     <div className={`emptystate ${compact ? 'emptystate--compact' : ''}`}>
       <span className="emptystate__art" aria-hidden="true">
-        {wolf ? <Wolf mood={wolf} size={compact ? 72 : 96} motion="idle" /> : <span className="emptystate__icon">{icon}</span>}
+        {friend ? (
+          <Friend name={friend} size={compact ? 64 : 88} motion="idle" />
+        ) : wolf ? (
+          <Wolf mood={wolf} size={compact ? 72 : 96} motion="idle" />
+        ) : (
+          <span className="emptystate__icon">{icon}</span>
+        )}
       </span>
       <p className="emptystate__title">{title}</p>
       {line ? <p className="emptystate__text">{line}</p> : null}
@@ -114,6 +124,19 @@ export function SkeletonPanel({ count = 4, ring = false, check = false }: { coun
   return (
     <div className="panel" aria-busy="true" aria-label="Loading">
       <SkeletonCards count={count} ring={ring} check={check} />
+    </div>
+  );
+}
+
+/** A page while its code or rows load: a friend at work over placeholder rows. */
+export function PageLoading({ friend = 'raccoon-laptop', count = 5 }: { friend?: string; count?: number }) {
+  return (
+    <div className="pageload">
+      <p className="pageload__who" role="status">
+        <Friend name={friend} size={40} motion="bob" />
+        <Shimmer>Loading</Shimmer>
+      </p>
+      <SkeletonPanel count={count} />
     </div>
   );
 }

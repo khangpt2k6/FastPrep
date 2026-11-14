@@ -5,3 +5,4 @@ export { Shimmer, WaitingLines } from './Shimmer';
 export { StateFade, Swap } from './Swap';
 export { TopProgress } from './TopProgress';
 export { useJustSettled } from './useJustSettled';
+export { useTypewriter, type Typing } from './useTypewriter';

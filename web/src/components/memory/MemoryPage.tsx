@@ -189,7 +189,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast, jobs = NO_JOBS
   } else if (scoped.length === 0) {
     body = (
       <EmptyState
-        wolf="thinking"
+        friend="panda-reading"
         title={job ? `No answers for ${job.company} yet` : 'No answers yet'}
         action={
           <button type="button" className="btn btn--primary btn--sm" onClick={() => setTeaching(true)}>
@@ -200,7 +200,7 @@ export function MemoryPage({ memory, now, job, onClearJob, toast, jobs = NO_JOBS
       />
     );
   } else if (shown.length === 0) {
-    body = <EmptyState compact wolf="thinking" title="No matches" />;
+    body = <EmptyState compact friend="panda-idea" title="No matches" />;
   } else {
     body = (
       <div className="card listcard">

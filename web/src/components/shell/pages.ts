@@ -18,34 +18,38 @@ import {
 
 export type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
+/** The small palette of icon badges, so pages read at a glance. */
+export type Tone = 'ember' | 'sky' | 'pine' | 'plum' | 'rose' | 'sand';
+
 export interface PageMeta {
   page: Page;
   title: string;
-  /** The tab bar's word. */
+  /** The nav's and tab bar's word. */
   short: string;
-  /** One gray line under the title. */
-  sub: string;
   Icon: Icon;
+  tone: Tone;
+  /** The animal friend on the page header (public/mascot/friends), if any. */
+  friend?: string;
 }
 
 export const PAGE_META: Record<Page, PageMeta> = {
-  overview: { page: 'overview', title: 'Overview', short: 'Overview', sub: 'Search summary.', Icon: IconGauge },
-  jobs: { page: 'jobs', title: 'Jobs', short: 'Jobs', sub: 'Internships scored against your resume.', Icon: IconBriefcase },
-  applications: { page: 'applications', title: 'Applications', short: 'Applied', sub: 'Filled and submitted applications.', Icon: IconSend },
-  inbox: { page: 'inbox', title: 'Inbox', short: 'Inbox', sub: 'Application status from your mail.', Icon: IconMail },
-  calendar: { page: 'calendar', title: 'Calendar', short: 'Calendar', sub: 'Interviews, calls and deadlines.', Icon: IconCalendar },
-  agent: { page: 'agent', title: 'Agent', short: 'Agent', sub: 'Status and controls.', Icon: IconBot },
-  letters: { page: 'letters', title: 'Letters', short: 'Letters', sub: 'Templates and generated letters.', Icon: IconLetter },
-  companies: { page: 'companies', title: 'Companies', short: 'Companies', sub: 'Intern and new grad requirements by company.', Icon: IconBuilding },
-  profile: { page: 'profile', title: 'Profile', short: 'Profile', sub: 'Details used on application forms.', Icon: IconUser },
-  preferences: { page: 'preferences', title: 'Preferences', short: 'Prefs', sub: 'Writing style for open answers.', Icon: IconSliders },
-  rules: { page: 'rules', title: 'Rules', short: 'Rules', sub: 'Rules for letters and answers.', Icon: IconRules },
-  memory: { page: 'memory', title: 'Memory', short: 'Memory', sub: 'Saved form answers.', Icon: IconMemory },
-  setup: { page: 'setup', title: 'Set up', short: 'Set up', sub: 'Resume and search setup.', Icon: IconFlag },
+  overview: { page: 'overview', title: 'Overview', short: 'Overview', Icon: IconGauge, tone: 'ember' },
+  jobs: { page: 'jobs', title: 'Jobs', short: 'Jobs', Icon: IconBriefcase, tone: 'sky', friend: 'raccoon-search' },
+  applications: { page: 'applications', title: 'Applications', short: 'Applied', Icon: IconSend, tone: 'pine', friend: 'fox-checklist' },
+  inbox: { page: 'inbox', title: 'Inbox', short: 'Inbox', Icon: IconMail, tone: 'plum', friend: 'bunny-reading' },
+  calendar: { page: 'calendar', title: 'Calendar', short: 'Calendar', Icon: IconCalendar, tone: 'rose', friend: 'panda-idea' },
+  agent: { page: 'agent', title: 'Agent', short: 'Agent', Icon: IconBot, tone: 'ember' },
+  letters: { page: 'letters', title: 'Letters', short: 'Letters', Icon: IconLetter, tone: 'sand', friend: 'fox-laptop' },
+  companies: { page: 'companies', title: 'Companies', short: 'Companies', Icon: IconBuilding, tone: 'sky', friend: 'raccoon-cool' },
+  profile: { page: 'profile', title: 'Profile', short: 'Profile', Icon: IconUser, tone: 'plum', friend: 'bear-graduate' },
+  preferences: { page: 'preferences', title: 'Preferences', short: 'Prefs', Icon: IconSliders, tone: 'pine', friend: 'penguin-music' },
+  rules: { page: 'rules', title: 'Rules', short: 'Rules', Icon: IconRules, tone: 'sand', friend: 'robot-laptop' },
+  memory: { page: 'memory', title: 'Memory', short: 'Memory', Icon: IconMemory, tone: 'rose', friend: 'panda-reading' },
+  setup: { page: 'setup', title: 'Set up', short: 'Set up', Icon: IconFlag, tone: 'ember', friend: 'bunny-laptop' },
 };
 
-/** The sidebar's first group. The Agent page opens from the agent card above it. */
-export const MAIN_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'calendar', 'letters', 'companies'];
+/** The sidebar's first group. The agent itself lives in the top bar; its page is here too. */
+export const MAIN_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'calendar', 'letters', 'companies', 'agent'];
 /** The person's own pages: the sidebar's second group. */
 export const YOU_PAGES: Page[] = ['setup', 'profile', 'preferences', 'rules', 'memory'];
 /** The phone's tab bar; everything else is in the More sheet. */
