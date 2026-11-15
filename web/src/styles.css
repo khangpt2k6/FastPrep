@@ -9042,7 +9042,8 @@ code,
   color: var(--rose-700);
 }
 
-.topbar .notify--bar .icon-btn {
+.topbar .notify--bar .icon-btn,
+.topbar .topbar__guide {
   width: 36px;
   height: 36px;
   border: 0;

@@ -45,7 +45,8 @@ export interface AgentSettings {
   budget_month: number | null;
 }
 
-export type AiEngine = 'api' | 'codex';
+/** The OpenAI API (paid per use), or a plan the person already pays for: Codex (ChatGPT) or Claude Code (Claude). */
+export type AiEngine = 'api' | 'codex' | 'claude';
 
 /** One day of automation_usage, as the agent writes it: what the API cost, and how often Codex was asked. */
 export interface UsageRow {

@@ -13,6 +13,8 @@ import { WolfRing } from '../mascot/Wolf';
 import { Contours } from '../motif';
 import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
 import { TasksCard } from './TasksCard';
+import { EnginePicker, type EngineOption } from './EnginePicker';
+import { BrandLogo } from '../BrandLogo';
 
 const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters', resume: 'Resume', linkedin: 'LinkedIn', calendar_add: 'Calendar' };
 
@@ -40,9 +42,10 @@ const hourOptions = (current: number): PillOption<number>[] =>
 const limitOptions = (current: number): PillOption<number>[] =>
   withCurrent(LIMITS, current).map((n) => ({ value: n, label: `${n} jobs`, hint: n <= 20 ? 'Least credit' : n >= 80 ? 'Most choice' : undefined }));
 
-const ENGINES: PillOption<AiEngine>[] = [
-  { value: 'api', label: 'OpenAI API', hint: 'Fast, paid per use' },
-  { value: 'codex', label: 'Codex', hint: 'Your ChatGPT plan, slower' },
+const ENGINES: EngineOption<AiEngine>[] = [
+  { value: 'api', brand: 'openai', name: 'OpenAI API', note: 'Pay per use' },
+  { value: 'codex', brand: 'openai', name: 'Codex', note: 'ChatGPT plan' },
+  { value: 'claude', brand: 'claude', name: 'Claude Code', note: 'Claude plan' },
 ];
 
 // A budget's options in dollars; NO_LIMIT stands for no limit (null in the database).
@@ -55,12 +58,12 @@ const budgetOptions = (values: number[], current: number | null): PillOption<num
   { value: NO_LIMIT, label: 'No limit' },
 ];
 
-/** What the AI cost against the budget: "Today $0.42 of $2.00 · this month $3.10 of $20 · Codex 12 today". */
+/** What the AI cost against the budget: "Today $0.42 / $2 · Month $3.10 / $20 · Codex 12". */
 export function usageLine(usage: Usage, settings: AgentSettings): string {
-  const of = (spent: number, limit: number | null) => (limit === null ? usd(spent) : `${usd(spent)} of ${usd(limit)}`);
-  const parts = [`Today ${of(usage.day, settings.budget_day)}`, `this month ${of(usage.month, settings.budget_month)}`];
-  if (settings.engine === 'codex' || usage.codexToday) parts.push(`Codex ${plural(usage.codexToday, 'question')} today`);
-  return `${parts.join(' · ')}.`;
+  const of = (spent: number, limit: number | null) => (limit === null ? usd(spent) : `${usd(spent)} / ${usd(limit)}`);
+  const parts = [`Today ${of(usage.day, settings.budget_day)}`, `Month ${of(usage.month, settings.budget_month)}`];
+  if (settings.engine === 'codex' || usage.codexToday) parts.push(`Codex ${usage.codexToday}`);
+  return parts.join(' · ');
 }
 
 /** What the API cost today and this month, how often Codex was asked today, and whether a budget is used up. */
@@ -98,6 +101,8 @@ interface AgentPageProps {
   onSettings: (patch: Partial<AgentSettings>) => void;
   /** What the AI cost; null while the usage table is not in the database. */
   usage?: Usage | null;
+  /** In place of the live Tasks card: the page's preview passes one with sample tasks. */
+  tasks?: ReactNode;
 }
 
 /** "Last check 47m ago, 12 new. Next in 2h 13m." */
@@ -251,7 +256,7 @@ export function AgentPage(props: AgentPageProps) {
             </li>
             {agent?.model ? (
               <li title="Model">
-                <IconSpark size={14} />
+                <BrandLogo brand="openai" size={14} />
                 {agent.model}
               </li>
             ) : null}
@@ -321,11 +326,8 @@ export function AgentPage(props: AgentPageProps) {
           <IconClock size={14} />
           {checkLine(agent, settings, online, now)}
         </p>
-        <SettingRow
-          title="AI engine"
-          description={settings.engine === 'codex' ? 'Scores, letters and resumes run on your ChatGPT plan. Forms stay on the API.' : undefined}
-        >
-          <PillSelect<AiEngine>
+        <SettingRow title="AI engine" className="srow--stack">
+          <EnginePicker<AiEngine>
             label="AI engine"
             value={settings.engine}
             options={ENGINES}
@@ -354,7 +356,7 @@ export function AgentPage(props: AgentPageProps) {
         {usage ? (
           <p className={`srow__note num ${usage.reached ? 'is-warn' : ''}`}>
             <IconGauge size={14} />
-            {usage.reached ? `Budget used up: no new API work until it starts again or you raise it. ${usageLine(usage, settings)}` : usageLine(usage, settings)}
+            {usage.reached ? `Budget used up · ${usageLine(usage, settings)}` : usageLine(usage, settings)}
           </p>
         ) : null}
         <NavRow title="Search process" icon={<IconInfo size={18} />} onClick={() => setHow(true)} />
@@ -367,7 +369,7 @@ export function AgentPage(props: AgentPageProps) {
         <GroupNote tone="warn">{settingsState.error}</GroupNote>
       ) : null}
 
-      <TasksCard now={now} />
+      {props.tasks ?? <TasksCard now={now} />}
 
       <Group title="Activity" icon={<IconActivity size={15} />} tone="sky" bare>
         <div className="card stats">

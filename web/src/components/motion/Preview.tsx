@@ -19,6 +19,8 @@ import { mergeProfile, profileProgress } from '../../lib/profile';
 import { activeResume } from '../../lib/resume';
 import { confetti } from '../../lib/confetti';
 import { AgentPage } from '../agent/AgentPage';
+import { TasksView } from '../agent/TasksCard';
+import type { TaskRow } from '../agent/TaskTimeline';
 import { agentTone, useLogTail } from '../agent/live';
 import { ApplicationsPage } from '../applications/ApplicationsPage';
 import { UpcomingCard } from '../calendar/UpcomingCard';
@@ -460,7 +462,55 @@ function mockRules(): RuleRow[] {
 
 const table = <T,>(rows: T[], loading: boolean, error: LiveTable<T>['error'] = null): LiveTable<T> => ({ rows, loading, error, live: 'live', reload: () => undefined });
 
+/** Two made-up tasks for the Tasks card: one Codex run under way, one Claude Code run with its answer. */
+function sampleTasks(now: number): TaskRow[] {
+  const at = (secondsAgo: number) => new Date(now - secondsAgo * 1000).toISOString();
+  return [
+    {
+      id: 2, engine: 'codex', prompt: 'Which skills do my top 20 jobs ask for that my resume does not show?', status: 'running', output: '',
+      step: 'Counting the skills each posting asks for', error: '', created_at: at(41), started_at: at(39), finished_at: null,
+      events: [
+        { kind: 'think', text: 'Compare the top 20 postings with the resume', at: at(37) },
+        { kind: 'read', text: 'resume.md', at: at(33) },
+        { kind: 'run', text: 'python -m agent_automation.tools.top_jobs --limit 20', at: at(28), detail: '20 jobs, scores 4.6 to 3.9' },
+        { kind: 'search', text: 'Docker|Kubernetes|Terraform|GraphQL in 20 postings', at: at(19) },
+        { kind: 'think', text: 'Docker comes up in 14 of 20, Kubernetes in 9', at: at(11) },
+      ],
+    },
+    {
+      id: 1, engine: 'claude', prompt: 'Prepare me for my next interview on the calendar: likely questions and short answers', status: 'done',
+      output: '', step: '6 steps', error: '', created_at: at(2400), started_at: at(2398), finished_at: at(2326),
+      events: [
+        { kind: 'think', text: 'Find the next interview on the calendar', at: at(2396) },
+        { kind: 'tool', text: 'calendar: next event', at: at(2390) },
+        { kind: 'read', text: 'Stripe posting: Software Engineer Intern', at: at(2380) },
+        { kind: 'web', text: 'stripe.com/jobs', at: at(2366) },
+        { kind: 'think', text: 'Pick the questions this team asks most', at: at(2350) },
+        {
+          kind: 'say', at: at(2327),
+          text: [
+            '### Stripe, Tuesday 10:00 AM',
+            '45 minutes, **technical**, with the payments team.',
+            '',
+            '1. **Walk me through an API you built.**',
+            '   The booking API: Python and Postgres, `2,000` requests a day.',
+            '2. **How would you find a slow endpoint?**',
+            '   Time it, read the query plan, add the index, time it again.',
+            '',
+            '| Topic | Bring up |',
+            '| --- | --- |',
+            '| Scale | Caching cut load 40% |',
+            '| Teamwork | Weekly demo with design |',
+          ].join('\n'),
+        },
+      ],
+    },
+  ];
+}
+
 export default function Preview() {
+  // Made once: steps keep their times, so they slide in once and stay put.
+  const [tasksSample] = useState(() => sampleTasks(Date.now()));
   const [page, setPage] = useState<Page>('overview');
   const [company, setCompany] = useState<string | null>(null);
   const [companyParams, setCompanyParams] = useState(() => new URLSearchParams());
@@ -922,6 +972,8 @@ export default function Preview() {
           settings={settings}
           settingsState={{ loading: false, missing: oldDb, error: null }}
           onSettings={agentCard.onSettings}
+          usage={{ day: 0.42, month: 3.1, codexToday: 12, reached: false }}
+          tasks={<TasksView tasks={tasksSample} now={now} onRun={async () => ''} onCancel={() => undefined} />}
         />
       );
       pageBar = (

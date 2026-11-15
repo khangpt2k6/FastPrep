@@ -6,98 +6,96 @@ import { timeAgo } from '../../lib/format';
 import { useLiveTable } from '../../hooks/useLiveTable';
 import { useUserId } from '../../hooks/useDocuments';
 import { Group } from '../settings';
-import { Shimmer } from '../motion';
-import { IconBot, IconPlay, IconX } from '../Icons';
+import { BrandLogo } from '../BrandLogo';
+import { IconBot, IconInfo, IconPlay, IconX } from '../Icons';
+import { GuideDialog } from '../guide/GuideDialog';
+import { EnginePicker, type EngineOption } from './EnginePicker';
+import { TaskTimeline, type Engine, type TaskRow } from './TaskTimeline';
 import './tasks.css';
 
-type Engine = 'claude' | 'codex';
-type TaskStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
+const ENGINE_LABEL: Record<Engine, string> = { claude: 'Claude Code', codex: 'Codex' };
+const ENGINES: EngineOption<Engine>[] = [
+  { value: 'claude', brand: 'claude', name: 'Claude Code', note: 'Claude plan' },
+  { value: 'codex', brand: 'openai', name: 'Codex', note: 'ChatGPT plan' },
+];
+const STATUS_LABEL: Record<string, string> = { pending: 'Queued', running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled' };
+// A short chip, and the task it types.
+const PRESETS = [
+  { label: 'New internships', prompt: 'Fetch new internship jobs, score them against my resume and add them to the dashboard' },
+  { label: 'Interview prep', prompt: 'Prepare me for my next interview on the calendar: likely questions and short answers' },
+  { label: 'Missing skills', prompt: 'Which skills do my top 20 jobs ask for that my resume does not show?' },
+];
+// The engine picked last, kept in this browser so the next task starts with it.
+const ENGINE_KEY = 'tasks:engine';
 
-interface TaskRow {
-  id: number;
-  engine: Engine;
-  prompt: string;
-  status: TaskStatus | string;
-  output: string;
-  step: string;
-  error: string;
-  created_at: string;
-  started_at: string | null;
-  finished_at: string | null;
+function lastEngine(): Engine {
+  try {
+    return window.localStorage.getItem(ENGINE_KEY) === 'codex' ? 'codex' : 'claude';
+  } catch {
+    return 'claude';
+  }
 }
 
-const ENGINE_LABEL: Record<Engine, string> = { claude: 'Claude Code', codex: 'Codex' };
-const STATUS_LABEL: Record<string, string> = { pending: 'Queued', running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled' };
-const PRESETS = [
-  'Fetch new internship jobs, score them against my resume and add them to the dashboard',
-  'Prepare me for my next interview on the calendar: likely questions and short answers',
-  'Which skills do my top 20 jobs ask for that my resume does not show?',
-];
+function keepEngine(engine: Engine) {
+  try {
+    window.localStorage.setItem(ENGINE_KEY, engine);
+  } catch {
+    // A browser that keeps nothing: the choice holds until the page reloads.
+  }
+}
 
 function useTasks(userId: string) {
+  // Every column: `events` is there only once the database has it, and naming it would fail the load before then.
   const load = useCallback(
-    () =>
-      supabase
-        .from(TABLES.tasks)
-        .select('id,engine,prompt,status,output,step,error,created_at,started_at,finished_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(15)
-        .returns<TaskRow[]>(),
+    () => supabase.from(TABLES.tasks).select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(15).returns<TaskRow[]>(),
     [userId],
   );
   return useLiveTable<TaskRow>({ table: TABLES.tasks, userId, load, keyOf: (row) => (row.id === undefined ? undefined : String(row.id)), pollMs: 5000 });
 }
 
-function TaskItem({ task, now }: { task: TaskRow; now: number }) {
-  const [open, setOpen] = useState(task.status === 'running');
+function TaskItem({ task, now, onCancel }: { task: TaskRow; now: number; onCancel: (id: number) => void }) {
   const live = task.status === 'pending' || task.status === 'running';
-  async function cancel() {
-    await supabase.from(TABLES.tasks).update({ status: 'cancelled', finished_at: new Date().toISOString() }).eq('id', task.id).in('status', ['pending', 'running']);
-  }
+  const engine = task.engine === 'codex' ? 'codex' : 'claude';
   return (
     <li className={`task task--${task.status}`}>
       <div className="task__head">
         <span className={`task__status task__status--${task.status}`}>{STATUS_LABEL[task.status] ?? task.status}</span>
-        <span className="task__engine">{ENGINE_LABEL[task.engine as Engine] ?? task.engine}</span>
+        <span className="task__engine">
+          <BrandLogo brand={engine === 'codex' ? 'openai' : 'claude'} size={13} />
+          {ENGINE_LABEL[engine]}
+        </span>
         <span className="task__time num">{timeAgo(task.created_at, now)}</span>
         {live ? (
-          <button type="button" className="btn btn--ghost btn--sm task__cancel" onClick={cancel}>
+          <button type="button" className="btn btn--ghost btn--sm task__cancel" onClick={() => onCancel(task.id)}>
             <IconX size={13} />
             Cancel
           </button>
         ) : null}
       </div>
-      <button type="button" className="task__prompt" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        {task.prompt}
-      </button>
-      {task.status === 'running' && task.step ? (
-        <p className="task__step">
-          <Shimmer>{task.step}</Shimmer>
-        </p>
-      ) : null}
-      {task.status === 'pending' ? <p className="task__step">Waiting for the task runner on your computer</p> : null}
-      {open && (task.output || task.error) ? (
-        <div className="task__body">
-          {task.output ? <pre className="task__output">{task.output}</pre> : null}
-          {task.error && task.status === 'failed' ? <p className="task__error">{task.error}</p> : null}
-          {task.status !== 'running' && task.step ? <p className="task__meta num">{task.step}</p> : null}
-        </div>
-      ) : null}
+      <p className="task__prompt">{task.prompt}</p>
+      <TaskTimeline task={task} now={now} />
     </li>
   );
 }
 
-/** Type a task, pick the engine, and watch it run on your computer. */
-export function TasksCard({ now }: { now: number }) {
-  const userId = useUserId();
-  const { rows, error } = useTasks(userId);
+export interface TasksViewProps {
+  tasks: TaskRow[];
+  /** The tasks table is not in the database yet. */
+  missing?: boolean;
+  now: number;
+  /** Adds the task; resolves to an error message, or '' when it was added. */
+  onRun: (engine: Engine, prompt: string) => Promise<string>;
+  onCancel: (id: number) => void;
+}
+
+/** Pick the AI, say what to do, run it, and watch it work. */
+export function TasksView({ tasks, missing = false, now, onRun, onCancel }: TasksViewProps) {
   const [prompt, setPrompt] = useState('');
-  const [engine, setEngine] = useState<Engine>('claude');
+  const [engine, setEngine] = useState<Engine>(lastEngine);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
-  const missing = error?.kind === 'missing-table';
-  const tasks = [...rows].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+  const [guide, setGuide] = useState(false);
+  const sorted = [...tasks].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -105,45 +103,55 @@ export function TasksCard({ now }: { now: number }) {
     if (!text) return;
     setBusy(true);
     setProblem('');
-    if (!userId) return;
-    const { error: insertError } = await supabase.from(TABLES.tasks).insert({ engine, prompt: text });
+    const error = await onRun(engine, text);
     setBusy(false);
-    if (insertError) setProblem(insertError.message);
+    if (error) setProblem(error);
     else setPrompt('');
   }
 
   return (
-    <Group title="Tasks" icon={<IconBot size={15} />} tone="plum">
+    <Group
+      title="Tasks"
+      icon={<IconBot size={15} />}
+      tone="plum"
+      aside={
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => setGuide(true)}>
+          <IconInfo size={14} />
+          Guide
+        </button>
+      }
+    >
       {missing ? (
         <p className="tasks__note">Needs the latest supabase/schema.sql.</p>
       ) : (
         <form className="tasks__form" onSubmit={submit}>
+          <EnginePicker
+            label="Engine"
+            value={engine}
+            options={ENGINES}
+            onChange={(value) => {
+              setEngine(value);
+              keepEngine(value);
+            }}
+          />
           <textarea
             id="task-prompt"
             className="input tasks__input"
-            rows={3}
+            rows={2}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Fetch new AI intern jobs in Florida and add them to the dashboard"
+            placeholder="What should it do?"
             aria-label="Task"
           />
-          <div className="tasks__presets">
-            {PRESETS.map((p) => (
-              <button key={p} type="button" className="tasks__preset" onClick={() => setPrompt(p)}>
-                {p}
-              </button>
-            ))}
-          </div>
           <div className="tasks__bar">
-            <div className="tasks__engines" role="radiogroup" aria-label="Engine">
-              {(['claude', 'codex'] as Engine[]).map((value) => (
-                <button key={value} type="button" role="radio" aria-checked={engine === value} className={`tasks__engine ${engine === value ? 'is-on' : ''}`} onClick={() => setEngine(value)}>
-                  {ENGINE_LABEL[value]}
+            <div className="tasks__presets">
+              {PRESETS.map((p) => (
+                <button key={p.label} type="button" className="tasks__preset" onClick={() => setPrompt(p.prompt)} title={p.prompt}>
+                  {p.label}
                 </button>
               ))}
             </div>
-            <span className="tasks__hint">Runs on your computer, on your own plan</span>
-            <button type="submit" className="btn btn--primary btn--sm" disabled={busy || !prompt.trim()}>
+            <button type="submit" className="btn btn--primary btn--sm tasks__run" disabled={busy || !prompt.trim()}>
               <IconPlay size={13} />
               Run
             </button>
@@ -151,13 +159,32 @@ export function TasksCard({ now }: { now: number }) {
           {problem ? <p className="tasks__error">{problem}</p> : null}
         </form>
       )}
-      {tasks.length > 0 ? (
+      {sorted.length > 0 ? (
         <ul className="tasks__list">
-          {tasks.map((task) => (
-            <TaskItem key={task.id} task={task} now={now} />
+          {sorted.map((task) => (
+            <TaskItem key={task.id} task={task} now={now} onCancel={onCancel} />
           ))}
         </ul>
       ) : null}
+      <GuideDialog open={guide} onClose={() => setGuide(false)} start="tasks" />
     </Group>
   );
+}
+
+/** The Tasks card wired to the database. */
+export function TasksCard({ now }: { now: number }) {
+  const userId = useUserId();
+  const { rows, error } = useTasks(userId);
+
+  async function run(engine: Engine, prompt: string): Promise<string> {
+    if (!userId) return 'Not signed in';
+    const { error: insertError } = await supabase.from(TABLES.tasks).insert({ engine, prompt });
+    return insertError ? insertError.message : '';
+  }
+
+  async function cancel(id: number) {
+    await supabase.from(TABLES.tasks).update({ status: 'cancelled', finished_at: new Date().toISOString() }).eq('id', id).in('status', ['pending', 'running']);
+  }
+
+  return <TasksView tasks={rows} missing={error?.kind === 'missing-table'} now={now} onRun={run} onCancel={(id) => void cancel(id)} />;
 }

@@ -1,78 +1,51 @@
-/* Tasks on the Agent page: a prompt box, the engine, and the tasks as they run. */
+/* Tasks on the Agent page: the engine, a prompt box, and each task's run as a timeline. */
 
 .tasks__form {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding: 16px 18px;
 }
 
 .tasks__input {
   width: 100%;
-  min-height: 72px;
+  min-height: 60px;
   resize: vertical;
   font: inherit;
 }
 
-.tasks__presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tasks__preset {
-  max-width: 100%;
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--frost);
-  color: var(--ink-2);
-  font: inherit;
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.tasks__preset:hover {
-  border-color: var(--line-strong);
-  color: var(--ink);
-}
-
 .tasks__bar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
 }
 
-.tasks__engines {
-  display: inline-flex;
-  padding: 2px;
-  border-radius: 999px;
-  background: var(--frost);
+.tasks__presets {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
 }
 
-.tasks__engine {
-  padding: 4px 12px;
+.tasks__preset {
+  padding: 5px 12px;
   border: 0;
   border-radius: 999px;
-  background: transparent;
-  color: var(--ink-3);
+  background: var(--frost);
+  color: var(--ink-2);
   font: inherit;
   font-size: 12.5px;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.tasks__engine.is-on {
-  background: var(--card);
-  color: var(--ink);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+.tasks__preset:hover {
+  background: var(--ember-50);
+  color: var(--ember-700);
 }
 
-.tasks__hint {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-  color: var(--ink-3);
+.tasks__run {
+  flex: none;
 }
 
 .tasks__note,
@@ -96,8 +69,8 @@
 
 .task {
   display: grid;
-  gap: 6px;
-  padding: 12px 18px;
+  gap: 8px;
+  padding: 14px 18px;
   border-top: 1px solid var(--line);
   min-width: 0;
 }
@@ -109,6 +82,15 @@
   gap: 8px;
   font-size: 12px;
   color: var(--ink-3);
+}
+
+/* The engine a task ran on: its logo and its name. */
+.task__engine {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-2);
+  font-weight: 600;
 }
 
 .task__status {
@@ -139,49 +121,233 @@
 }
 
 .task__prompt {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ink);
-  font: inherit;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  overflow-wrap: anywhere;
-}
-
-.task__step,
-.task__meta {
   margin: 0;
-  font-size: 12.5px;
-  color: var(--ink-3);
+  color: var(--ink);
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
-.task__body {
+/* The run: a summary line (shimmering while it works), the steps on a thread, the answer. */
+
+.tl {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
-.task__output {
-  margin: 0;
-  max-height: 360px;
-  overflow: auto;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--frost);
-  color: var(--ink);
-  font-family: var(--font);
+.tl__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
   font-size: 13px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+  cursor: pointer;
+}
+
+.tl__summary:disabled {
+  cursor: default;
+}
+
+.tl__summary:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.tl__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--pine-500);
+}
+
+.tl__dot.is-live {
+  background: var(--ember-500);
+  animation: tl-pulse 1.4s ease-in-out infinite;
+}
+
+.tl__count {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--frost);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.tl__chev {
+  transition: transform 0.2s ease;
+}
+
+.tl__chev.is-flipped {
+  transform: rotate(180deg);
+}
+
+.tl__fold {
+  overflow: hidden;
+}
+
+.tl__steps {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 2px 0 2px 0;
+  list-style: none;
+}
+
+/* The thread the steps hang on. */
+.tl__steps::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 11px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(var(--line), var(--frost));
+}
+
+.tl__step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 3px 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.tl__node {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink-3);
+  box-shadow: 0 0 0 3px var(--card), 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.tl__step--think .tl__node {
+  color: var(--plum-500, #7c5cc4);
+}
+
+.tl__step--run .tl__node {
+  color: var(--ink);
+}
+
+.tl__step--edit .tl__node {
+  color: var(--ember-600);
+}
+
+.tl__step--web .tl__node {
+  color: var(--sky-500, #2f7fd0);
+}
+
+.tl__step--error .tl__node {
+  color: var(--rose-500);
+}
+
+.tl__step--think .tl__line {
+  color: var(--ink-3);
+  font-style: italic;
+}
+
+.tl__node--now {
+  background: var(--ember-500);
+  box-shadow: 0 0 0 3px var(--card), 0 0 0 7px rgba(240, 123, 31, 0.18);
+  animation: tl-pulse 1.4s ease-in-out infinite;
+}
+
+.tl__node--now::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.tl__line {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 3px;
   overflow-wrap: anywhere;
 }
 
-.task__error {
+.tl__code {
+  justify-self: start;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #15181c;
+  color: #e9edf2;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.tl__detail summary {
+  color: var(--ink-3);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tl__detail pre {
+  margin: 4px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--frost);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.tl__answer {
+  max-height: 460px;
+  overflow: auto;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--frost);
+  overflow-wrap: anywhere;
+}
+
+.tl__error {
   margin: 0;
   font-size: 12.5px;
   color: var(--rose-500);
   white-space: pre-wrap;
+}
+
+@keyframes tl-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.88);
+  }
+}
+
+@media (max-width: 560px) {
+  .tasks__bar {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl__dot.is-live,
+  .tl__node--now {
+    animation: none;
+  }
 }

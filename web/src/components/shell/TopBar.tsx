@@ -6,6 +6,7 @@ import { isTampaNight, tampaFormat, tampaParts } from '../../lib/time';
 import { SignOutButton } from '../auth/SignOutButton';
 import { IconMoon, IconPause, IconPlay, IconRadar, IconSun } from '../Icons';
 import { WolfRing } from '../mascot/Wolf';
+import { GuideButton } from '../guide/GuideDialog';
 import { Shimmer } from '../motion';
 import { agentTone, START_SHORTCUT } from '../agent/live';
 import { linkClick } from './nav';
@@ -162,6 +163,7 @@ export function TopBar({ onNavigate, agent, dryRun, alerts, email }: {
       </div>
       <span className="topbar__space" />
       <div className="topbar__dry">{dryRun}</div>
+      <GuideButton className="topbar__guide" />
       {alerts}
       <div className="topbar__acct">
         <AccountMenu email={email} />

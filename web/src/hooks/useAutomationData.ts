@@ -239,7 +239,7 @@ export function readSettings(row: Partial<AgentSettingsRow> | null | undefined):
     auto_fetch: typeof row.auto_fetch === 'boolean' ? row.auto_fetch : d.auto_fetch,
     fetch_hours: Number.isFinite(hours) && hours >= 1 && hours <= 48 ? hours : d.fetch_hours,
     fetch_limit: Number.isFinite(limit) && limit >= 0 && limit <= 200 ? limit : d.fetch_limit,
-    engine: row.engine === 'codex' ? 'codex' : 'api',
+    engine: row.engine === 'codex' || row.engine === 'claude' ? row.engine : 'api',
     budget_day: dollars(row, 'budget_day'),
     budget_month: dollars(row, 'budget_month'),
   };
