@@ -1,7 +1,7 @@
 // Dev-only preview at #/__preview: the real pages with mock data, plus buttons that fake live events.
 // App.tsx only loads this behind import.meta.env.DEV, so it never ships in a production build.
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { AgentRow, AgentSettings, CommandRow, JobRow, MemoryRow, PreferencesRow, ProfileRow, ResumeRow } from '../../lib/types';
+import type { AgentRow, AgentSettings, CommandRow, JobRow, MemoryRow, PreferencesRow, ProfileRow, ResumeRow, UsageRow } from '../../lib/types';
 import type { CoverLetterRow, CoverSettings, CoverTemplate } from '../../lib/coverLetter';
 import { STARTER_BODY } from '../../lib/coverLetter';
 import type { InboxMessage, InboxRow } from '../../lib/inbox';
@@ -19,7 +19,7 @@ import { mergeProfile, profileProgress } from '../../lib/profile';
 import { activeResume } from '../../lib/resume';
 import { confetti } from '../../lib/confetti';
 import { AgentPage } from '../agent/AgentPage';
-import { TasksView } from '../agent/TasksCard';
+import { AutomationView } from '../automation/AutomationPage';
 import type { TaskRow } from '../agent/TaskTimeline';
 import { agentTone, useLogTail } from '../agent/live';
 import { ApplicationsPage } from '../applications/ApplicationsPage';
@@ -462,7 +462,22 @@ function mockRules(): RuleRow[] {
 
 const table = <T,>(rows: T[], loading: boolean, error: LiveTable<T>['error'] = null): LiveTable<T> => ({ rows, loading, error, live: 'live', reload: () => undefined });
 
-/** Two made-up tasks for the Tasks card: one Codex run under way, one Claude Code run with its answer. */
+/** A made-up week of what the AI cost, for the Agent page's billing. */
+function sampleUsage(now: number): UsageRow[] {
+  const dayOf = (back: number) => new Date(now - back * 86_400_000).toISOString().slice(0, 10);
+  const row = (back: number, usd: number, runs: number, kinds: Record<string, number>): UsageRow => ({
+    user_id: 'me', day: dayOf(back), api_usd: usd, api_calls: 40, codex_runs: runs, tokens_in: 0, tokens_out: 0, updated_at: new Date(now).toISOString(),
+    breakdown: { usd: kinds, runs: { scoring: runs } },
+  });
+  return [
+    row(0, 0.42, 12, { forms: 0.29, scoring: 0.08, letters: 0.05 }),
+    row(1, 1.1, 5, { forms: 0.81, scoring: 0.17, letters: 0.09, companies: 0.03 }),
+    row(3, 0.65, 0, { forms: 0.4, scoring: 0.2, resume: 0.05 }),
+    row(9, 0.93, 0, { forms: 0.7, scoring: 0.23 }),
+  ];
+}
+
+/** Two made-up tasks for the Automation page: one Codex run under way, one Claude Code run with its answer. */
 function sampleTasks(now: number): TaskRow[] {
   const at = (secondsAgo: number) => new Date(now - secondsAgo * 1000).toISOString();
   return [
@@ -955,6 +970,9 @@ export default function Preview() {
         />
       );
       break;
+    case 'automation':
+      content = <AutomationView tasks={tasksSample} now={now} online={online} onRun={async () => ''} onCancel={() => undefined} />;
+      break;
     case 'agent':
       content = (
         <AgentPage
@@ -972,8 +990,7 @@ export default function Preview() {
           settings={settings}
           settingsState={{ loading: false, missing: oldDb, error: null }}
           onSettings={agentCard.onSettings}
-          usage={{ day: 0.42, month: 3.1, codexToday: 12, reached: false }}
-          tasks={<TasksView tasks={tasksSample} now={now} onRun={async () => ''} onCancel={() => undefined} />}
+          billing={{ settings, rows: sampleUsage(now), today: new Date(now).toISOString().slice(0, 10), email: 'alex@example.com', model: agent.model }}
         />
       );
       pageBar = (

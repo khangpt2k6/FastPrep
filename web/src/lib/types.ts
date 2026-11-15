@@ -59,6 +59,8 @@ export interface UsageRow {
   tokens_in: number;
   tokens_out: number;
   updated_at: string;
+  /** What the day went on, by kind of work: the API's dollars and the plan's questions. Absent on an older database. */
+  breakdown?: { usd?: Record<string, number>; runs?: Record<string, number> } | null;
 }
 
 export interface AgentSettingsRow extends AgentSettings {

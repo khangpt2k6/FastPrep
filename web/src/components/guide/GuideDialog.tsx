@@ -18,8 +18,8 @@ export const GUIDE_STEPS: Step[] = [
   { key: 'jobs', title: 'Find', text: 'Find more pulls new internships and scores them.', image: '/guide/jobs.webp' },
   { key: 'pick', title: 'Pick', text: 'Tick jobs, then write letters or apply.', image: '/guide/pick.webp' },
   { key: 'track', title: 'Track', text: 'Every application and reply, in one list.', image: '/guide/track.webp' },
-  { key: 'agent', title: 'Engine', text: 'API or Codex, and a budget it never passes.', image: '/guide/agent.webp' },
-  { key: 'tasks', title: 'Tasks', text: 'Ask Claude Code or Codex. Watch it work.', image: '/guide/tasks.webp' },
+  { key: 'automation', title: 'Automation', text: 'Ask Claude Code or Codex. It runs on this PC.', image: '/guide/automation.webp' },
+  { key: 'agent', title: 'Billing', text: 'Engine, budget, and what it went on.', image: '/guide/agent.webp' },
 ];
 
 export function GuideDialog({ open, onClose, start = 'setup' }: { open: boolean; onClose: () => void; start?: string }) {

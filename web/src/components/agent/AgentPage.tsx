@@ -12,7 +12,7 @@ import { IconActivity, IconAlert, IconCheckCircle, IconClock, IconDownload, Icon
 import { WolfRing } from '../mascot/Wolf';
 import { Contours } from '../motif';
 import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
-import { TasksCard } from './TasksCard';
+import { UsagePanel, type UsagePanelProps } from './UsagePanel';
 import { EnginePicker, type EngineOption } from './EnginePicker';
 import { BrandLogo } from '../BrandLogo';
 
@@ -58,22 +58,6 @@ const budgetOptions = (values: number[], current: number | null): PillOption<num
   { value: NO_LIMIT, label: 'No limit' },
 ];
 
-/** What the AI cost against the budget: "Today $0.42 / $2 · Month $3.10 / $20 · Codex 12". */
-export function usageLine(usage: Usage, settings: AgentSettings): string {
-  const of = (spent: number, limit: number | null) => (limit === null ? usd(spent) : `${usd(spent)} / ${usd(limit)}`);
-  const parts = [`Today ${of(usage.day, settings.budget_day)}`, `Month ${of(usage.month, settings.budget_month)}`];
-  if (settings.engine === 'codex' || usage.codexToday) parts.push(`Codex ${usage.codexToday}`);
-  return parts.join(' · ');
-}
-
-/** What the API cost today and this month, how often Codex was asked today, and whether a budget is used up. */
-export interface Usage {
-  day: number;
-  month: number;
-  codexToday: number;
-  reached: boolean;
-}
-
 export interface SettingsState {
   loading: boolean;
   /** The table is not in the database yet: the controls are shown off. */
@@ -99,10 +83,8 @@ interface AgentPageProps {
   settings: AgentSettings;
   settingsState: SettingsState;
   onSettings: (patch: Partial<AgentSettings>) => void;
-  /** What the AI cost; null while the usage table is not in the database. */
-  usage?: Usage | null;
-  /** In place of the live Tasks card: the page's preview passes one with sample tasks. */
-  tasks?: ReactNode;
+  /** Billing: the account, the budget used, what it went on. Null while the usage table is not in the database. */
+  billing?: UsagePanelProps | null;
 }
 
 /** "Last check 47m ago, 12 new. Next in 2h 13m." */
@@ -187,7 +169,7 @@ function Stat({ label, value, id, hint }: { label: string; value: number; id: st
 }
 
 export function AgentPage(props: AgentPageProps) {
-  const { agent, online, loading, error, onRetry, now, tail, commands, live, sent, current, settings, settingsState, onSettings, usage = null } = props;
+  const { agent, online, loading, error, onRetry, now, tail, commands, live, sent, current, settings, settingsState, onSettings, billing = null } = props;
   const [how, setHow] = useState(false);
   const state = online ? agent?.state ?? 'idle' : 'offline';
   const tone = loading ? 'off' : agentTone(online, state);
@@ -279,6 +261,10 @@ export function AgentPage(props: AgentPageProps) {
         </div>
       </section>
 
+      <Group title="Billing" icon={<IconGauge size={15} />} tone="pine" bare>
+        {billing ? <UsagePanel {...billing} /> : <GroupNote>Needs the latest supabase/schema.sql</GroupNote>}
+      </Group>
+
       <Group title="Controls" icon={<IconSliders size={15} />} tone="ember">
         <ToggleRow
           title="Agent on"
@@ -353,12 +339,6 @@ export function AgentPage(props: AgentPageProps) {
             disabled={off}
           />
         </SettingRow>
-        {usage ? (
-          <p className={`srow__note num ${usage.reached ? 'is-warn' : ''}`}>
-            <IconGauge size={14} />
-            {usage.reached ? `Budget used up · ${usageLine(usage, settings)}` : usageLine(usage, settings)}
-          </p>
-        ) : null}
         <NavRow title="Search process" icon={<IconInfo size={18} />} onClick={() => setHow(true)} />
       </Group>
       {settingsState.missing ? (
@@ -368,8 +348,6 @@ export function AgentPage(props: AgentPageProps) {
       ) : settingsState.error ? (
         <GroupNote tone="warn">{settingsState.error}</GroupNote>
       ) : null}
-
-      {props.tasks ?? <TasksCard now={now} />}
 
       <Group title="Activity" icon={<IconActivity size={15} />} tone="sky" bare>
         <div className="card stats">

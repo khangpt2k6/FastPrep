@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { errorText } from '../lib/errors';
 import { APPLICATION_STATUSES, WORKING_STATES, blockedReason, budgetReason, companyName, displayName, isOnline, plural, spentOn, statusInfo, stopReason } from '../lib/format';
 import { tampaDayKey } from '../lib/time';
+import { daysBefore } from './agent/UsagePanel';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
 import { applyResume, activeResume, isPending, writeResume, type ResumeProfile } from '../lib/resume';
 import { atCompany, filterJobs, placeOf, sortJobs } from '../lib/jobs';
@@ -71,6 +72,7 @@ const InboxView = lazy(() => import('./inbox/InboxPage').then((m) => ({ default:
 const OverviewPage = lazy(() => import('./overview/OverviewPage').then((m) => ({ default: m.OverviewPage })));
 const CalendarPage = lazy(() => import('./calendar/CalendarPage'));
 const RulesPage = lazy(() => import('./rules/RulesPage').then((m) => ({ default: m.RulesPage })));
+const AutomationPage = lazy(() => import('./automation/AutomationPage').then((m) => ({ default: m.AutomationPage })));
 
 export interface DashboardProps {
   userId: string;
@@ -162,7 +164,10 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   }, [stored, override]);
   // What the API cost today and this month (the agent writes one row a day, by the person's own day).
   const today = tampaDayKey(now);
-  const usageT = useUsage(userId, `${today.slice(0, 7)}-01`);
+  // This month's days and the last seven, for the budget and the week of what it went on.
+  const weekStart = daysBefore(today, 6);
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const usageT = useUsage(userId, weekStart < monthStart ? weekStart : monthStart);
   const spent = useMemo(() => spentOn(usageT.rows, today), [usageT.rows, today]);
   const usageMissing = usageT.error?.kind === 'missing-table';
   const budgetBlock = usageMissing ? '' : budgetReason(settings, spent);
@@ -624,6 +629,9 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       header = null;
       content = <CalendarPage userId={userId} table={calendarT} jobs={jobsT.rows} inbox={inboxT.rows} now={now} online={online} toast={push} />;
       break;
+    case 'automation':
+      content = <AutomationPage now={now} online={online} />;
+      break;
     case 'agent':
       content = (
         <AgentPage
@@ -642,7 +650,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           settings={settings}
           settingsState={{ loading: settingsT.loading, missing: settingsMissing, error: settingsT.error && !settingsMissing ? settingsT.error.message : null }}
           onSettings={(patch) => void changeSettings(patch)}
-          usage={usageMissing ? null : { ...spent, reached: Boolean(budgetBlock) }}
+          billing={usageMissing ? null : { settings, rows: usageT.rows, today, email, model: agent?.model ?? '' }}
         />
       );
       break;

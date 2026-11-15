@@ -5,6 +5,7 @@ import {
   IconBriefcase,
   IconBuilding,
   IconCalendar,
+  IconFlow,
   IconFlag,
   IconGauge,
   IconLetter,
@@ -39,6 +40,7 @@ export const PAGE_META: Record<Page, PageMeta> = {
   inbox: { page: 'inbox', title: 'Inbox', short: 'Inbox', Icon: IconMail, tone: 'plum', friend: 'bunny-reading' },
   calendar: { page: 'calendar', title: 'Calendar', short: 'Calendar', Icon: IconCalendar, tone: 'rose', friend: 'panda-idea' },
   agent: { page: 'agent', title: 'Agent', short: 'Agent', Icon: IconBot, tone: 'ember' },
+  automation: { page: 'automation', title: 'Automation', short: 'Automation', Icon: IconFlow, tone: 'plum', friend: 'robot-laptop' },
   letters: { page: 'letters', title: 'Letters', short: 'Letters', Icon: IconLetter, tone: 'sand', friend: 'fox-laptop' },
   companies: { page: 'companies', title: 'Companies', short: 'Companies', Icon: IconBuilding, tone: 'sky', friend: 'raccoon-cool' },
   profile: { page: 'profile', title: 'Profile', short: 'Profile', Icon: IconUser, tone: 'plum', friend: 'bear-graduate' },
@@ -49,9 +51,9 @@ export const PAGE_META: Record<Page, PageMeta> = {
 };
 
 /** The sidebar's first group. The agent itself lives in the top bar; its page is here too. */
-export const MAIN_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'calendar', 'letters', 'companies', 'agent'];
+export const MAIN_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox', 'calendar', 'letters', 'companies', 'automation', 'agent'];
 /** The person's own pages: the sidebar's second group. */
 export const YOU_PAGES: Page[] = ['setup', 'profile', 'preferences', 'rules', 'memory'];
 /** The phone's tab bar; everything else is in the More sheet. */
 export const TAB_PAGES: Page[] = ['overview', 'jobs', 'applications', 'inbox'];
-export const MORE_PAGES: Page[] = ['agent', 'calendar', 'letters', 'companies', ...YOU_PAGES];
+export const MORE_PAGES: Page[] = ['automation', 'agent', 'calendar', 'letters', 'companies', ...YOU_PAGES];

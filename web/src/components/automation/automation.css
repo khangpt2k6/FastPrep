@@ -1,0 +1,185 @@
+/* The Automation page: the way a task goes (a strip of steps that flows while the PC is online), a composer that stays in
+   view, and the runs. */
+
+.auto {
+  display: grid;
+  gap: 18px;
+}
+
+.aflow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aflow__steps {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aflow__node {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(21, 24, 28, 0.08);
+}
+
+/* The thread between two steps: it flows while the PC is online. */
+.aflow__node + .aflow__node {
+  margin-left: 28px;
+}
+
+.aflow__node + .aflow__node::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 4px);
+  width: 28px;
+  height: 2px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, var(--ember-300) 0 6px, transparent 6px 10px);
+  background-size: 20px 2px;
+  animation: aflow-run 0.9s linear infinite;
+}
+
+.aflow__steps:has(.is-off) .aflow__node + .aflow__node::before {
+  background: var(--line);
+  animation: none;
+}
+
+.aflow__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--frost);
+  color: var(--ink-2);
+}
+
+.aflow__icon--duo {
+  display: inline-flex;
+  gap: 2px;
+  width: auto;
+  padding: 0 7px;
+}
+
+.aflow__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ink-4);
+}
+
+.aflow__dot.is-on {
+  background: var(--pine-500);
+  box-shadow: 0 0 0 3px rgba(31, 138, 91, 0.18);
+}
+
+.aflow__node.is-off {
+  color: var(--ink-3);
+}
+
+.auto__grid {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .auto__grid {
+    grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  }
+
+  .auto__new {
+    position: sticky;
+    top: 96px;
+  }
+}
+
+.auto__new {
+  padding: 4px 0 0;
+}
+
+.auto__new .tasks__form {
+  padding-top: 8px;
+}
+
+/* In the narrow column the tiles stack, so their names never wrap. */
+.auto__new .engines {
+  grid-template-columns: 1fr;
+}
+
+.auto__new .tasks__run {
+  justify-self: stretch;
+}
+
+.auto__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 18px 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.auto__runs .auto__title {
+  padding: 0 0 10px;
+}
+
+.auto__count {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--frost);
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.auto__list {
+  padding: 0;
+  overflow: hidden;
+}
+
+.auto__list .task:first-child {
+  border-top: 0;
+}
+
+@keyframes aflow-run {
+  to {
+    background-position: 20px 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .aflow {
+    align-items: flex-start;
+  }
+
+  .aflow__node + .aflow__node {
+    margin-left: 0;
+  }
+
+  .aflow__node + .aflow__node::before {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aflow__node + .aflow__node::before {
+    animation: none;
+  }
+}
