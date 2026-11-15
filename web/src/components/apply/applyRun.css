@@ -1,0 +1,509 @@
+/* The apply run: a centered dialog that follows each job from Queued to its result. */
+.arun {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 48px));
+  padding: 0;
+  overflow: hidden;
+}
+
+.arun__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 22px 16px;
+}
+
+.arun__head::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 120px;
+  background: radial-gradient(120% 100% at 0% 0%, var(--ember-50), transparent 70%);
+  opacity: 0.9;
+  pointer-events: none;
+  transition: opacity 0.4s var(--ease-out);
+}
+
+.arun__head.is-done::before {
+  background: radial-gradient(120% 100% at 0% 0%, rgb(42 138 94 / 0.12), transparent 70%);
+}
+
+.arun__head.is-stopped::before {
+  background: radial-gradient(120% 100% at 0% 0%, rgb(200 69 90 / 0.1), transparent 70%);
+}
+
+.arun__ringwrap {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+
+.arun__ring {
+  display: block;
+}
+
+.arun__ring circle {
+  fill: none;
+  stroke-width: 5;
+}
+
+.arun__ring-track {
+  stroke: var(--fill);
+}
+
+.arun__ring-fill {
+  stroke: var(--ember-500);
+  stroke-linecap: round;
+}
+
+.arun__ring.is-done .arun__ring-fill {
+  stroke: var(--pine-500);
+}
+
+.arun__ring.is-stopped .arun__ring-fill {
+  stroke: var(--rose-500);
+}
+
+.arun__ring.is-waiting .arun__ring-track,
+.arun__ring.is-running .arun__ring-track {
+  stroke-dasharray: 4 6;
+  animation: arun-spin 6s linear infinite;
+  transform-origin: 32px 32px;
+}
+
+.arun__pct {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.arun__head.is-done .arun__pct {
+  color: var(--pine-500);
+}
+
+.arun__heading {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.arun__badges {
+  padding-right: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.arun__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+.arun__h {
+  margin: 6px 0 2px;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.arun__h > span {
+  display: inline-block;
+}
+
+.arun__sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arun__sub.is-warn {
+  color: var(--rose-500);
+  white-space: normal;
+}
+
+.arun__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+/* One segment per job. */
+.arun__bar {
+  display: flex;
+  gap: 4px;
+  padding: 0 22px 14px;
+}
+
+.arun__seg {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fill);
+  overflow: hidden;
+  transition: background 0.4s var(--ease-out);
+}
+
+.arun__seg.is-active {
+  background: var(--ember-100);
+}
+
+.arun__seg.is-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--ember-500), transparent);
+  animation: arun-sweep 1.3s var(--ease-out) infinite;
+}
+
+.arun__seg.tone-sent,
+.arun__seg.tone-unconfirmed {
+  background: var(--pine-500);
+}
+
+.arun__seg.tone-filled {
+  background: var(--sand-500);
+}
+
+.arun__seg.tone-bad,
+.arun__seg.tone-stopped {
+  background: var(--rose-500);
+}
+
+.arun__seg.is-skipped {
+  background: var(--line-strong);
+}
+
+.arun__list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 12px 8px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.arun__row {
+  display: grid;
+  grid-template-columns: 24px 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  transition: background 0.3s var(--ease-out);
+}
+
+.arun__row.is-active {
+  background: var(--ember-50);
+  box-shadow: inset 0 0 0 1px var(--ember-100);
+}
+
+.arun__row.is-queued .arun__who,
+.arun__row.is-skipped .arun__who {
+  opacity: 0.6;
+}
+
+.arun__mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.arun__mark.is-queued {
+  background: var(--fill);
+  color: var(--ink-3);
+}
+
+.arun__mark.is-skipped {
+  background: var(--fill);
+  color: var(--ink-4);
+}
+
+.arun__mark.is-sent,
+.arun__mark.is-unconfirmed {
+  background: var(--pine-500);
+  color: #fff;
+}
+
+.arun__mark.is-filled {
+  background: var(--sand-500);
+  color: #fff;
+}
+
+.arun__mark.is-bad,
+.arun__mark.is-stopped,
+.arun__mark.is-none,
+.arun__mark.is-applying {
+  background: var(--rose-500);
+  color: #fff;
+}
+
+.arun__mark.is-active {
+  position: relative;
+}
+
+.arun__orbit {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ember-100);
+  border-top-color: var(--ember-500);
+  animation: arun-spin 0.8s linear infinite;
+}
+
+.arun__who {
+  min-width: 0;
+}
+
+.arun__title,
+.arun__company,
+.arun__note {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arun__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.arun__company {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.arun__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.arun__row.is-active .arun__note {
+  color: var(--ember-700);
+}
+
+.arun__typing {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.arun__typing i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: arun-dot 1s ease-in-out infinite;
+}
+
+.arun__typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.arun__typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.arun__state {
+  justify-self: end;
+}
+
+.arun__queued {
+  font-size: 12px;
+  color: var(--ink-4);
+}
+
+.arun__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arun__pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: arun-pulse 1.4s ease-out infinite;
+}
+
+.arun__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--line);
+}
+
+.arun__count {
+  margin-right: auto;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+/* The folded run. */
+.arun-dock {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-pop);
+  cursor: pointer;
+  text-align: left;
+}
+
+.arun-dock:hover {
+  transform: translateY(-1px);
+}
+
+.arun-dock__ring {
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+
+.arun-dock__ring .arun__ring {
+  width: 36px;
+  height: 36px;
+}
+
+.arun-dock__text {
+  display: grid;
+  line-height: 1.25;
+}
+
+.arun-dock__text strong {
+  font-size: 13px;
+}
+
+.arun-dock__text span {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+@keyframes arun-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes arun-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(240%);
+  }
+}
+
+@keyframes arun-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes arun-pulse {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+@media (max-width: 560px) {
+  .arun__head {
+    padding: 18px 16px 12px;
+    gap: 12px;
+  }
+
+  .arun__bar {
+    padding: 0 16px 12px;
+  }
+
+  .arun__list {
+    padding: 4px 6px 8px;
+  }
+
+  .arun__row {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+  }
+
+  .arun__row .logo,
+  .arun__row > :nth-child(2) {
+    display: none;
+  }
+
+  .arun__foot {
+    flex-wrap: wrap;
+    padding: 12px 16px 16px;
+  }
+
+  .arun-dock {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arun__seg.is-active::after,
+  .arun__orbit,
+  .arun__typing i,
+  .arun__pulse,
+  .arun__ring.is-waiting .arun__ring-track,
+  .arun__ring.is-running .arun__ring-track {
+    animation: none;
+  }
+}

@@ -12,6 +12,7 @@ import type { LiveTable } from '../../hooks/useLiveTable';
 import type { Page } from '../../hooks/useRoute';
 import { useSavedJobs } from '../../hooks/useSavedJobs';
 import { useNow } from '../../hooks/useNow';
+import { ApplyRunDemo } from '../apply/RunDemo';
 import { useResumeActivated } from '../../hooks/useResumes';
 import { APPLICATION_STATUSES, WORKING_STATES, blockedReason, displayName, isOnline, statusInfo } from '../../lib/format';
 import { atCompany, filterJobs, sortJobs } from '../../lib/jobs';
@@ -554,6 +555,7 @@ export default function Preview() {
   ]);
   const [dryRun, setDryRun] = useState(true);
   const [confirm, setConfirm] = useState<JobRow[] | null>(null);
+  const [runDemo, setRunDemo] = useState(0);
   const [shot, setShot] = useState<{ job: JobRow; url: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
@@ -1194,6 +1196,9 @@ export default function Preview() {
       <button type="button" className="btn btn--sm btn--secondary" onClick={() => confetti()}>
         Confetti
       </button>
+      <button type="button" className="btn btn--sm btn--secondary" onClick={() => setRunDemo((n) => n + 1)}>
+        Apply run
+      </button>
       <button type="button" className="btn btn--sm btn--secondary" onClick={() => push({ tone: 'info', title: 'New answer learned', detail: 'Why do you want to work here?' })}>
         Toast
       </button>
@@ -1255,6 +1260,7 @@ export default function Preview() {
         </Suspense>
       ) : null}
       <ConfirmSubmit jobs={confirm} onCancel={() => setConfirm(null)} onConfirm={() => setConfirm(null)} />
+      {runDemo ? <ApplyRunDemo key={runDemo} jobs={jobs} agent={agent} now={now} onEnd={() => setRunDemo(0)} /> : null}
       <Lightbox shot={shot} onClose={() => setShot(null)} />
       <Toasts toasts={toasts} onDismiss={dismiss} />
     </>

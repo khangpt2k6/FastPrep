@@ -181,9 +181,15 @@ export async function savePreferences(prefs: Preferences) {
   if (error) throw error;
 }
 
-export async function sendApply(jobIds: string[], dryRun: boolean) {
-  const { error } = await supabase.from(TABLES.commands).insert({ kind: 'apply', job_ids: jobIds, dry_run: dryRun });
+/** Queues an apply run; its command, for the run dialog to follow. */
+export async function sendApply(jobIds: string[], dryRun: boolean): Promise<CommandRow> {
+  const { data, error } = await supabase
+    .from(TABLES.commands)
+    .insert({ kind: 'apply', job_ids: jobIds, dry_run: dryRun })
+    .select('id,kind,job_ids,dry_run,status,error,created_at')
+    .single<CommandRow>();
   if (error) throw error;
+  return data;
 }
 
 /** What a command cancelled on the page says: the agent finishes the application under way and starts no other. */

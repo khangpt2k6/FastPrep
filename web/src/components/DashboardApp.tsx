@@ -9,7 +9,7 @@ import { applyResume, activeResume, isPending, writeResume, type ResumeProfile }
 import { atCompany, filterJobs, placeOf, sortJobs } from '../lib/jobs';
 import { confetti } from '../lib/confetti';
 import { playChime, showBrowserNotification } from '../lib/notify';
-import type { AgentSettings, JobRow, LiveStatus } from '../lib/types';
+import type { AgentSettings, CommandRow, JobRow, LiveStatus } from '../lib/types';
 import {
   readSettings,
   saveAgentSettings,
@@ -58,6 +58,7 @@ import { statusWords } from './shell/StatusControls';
 import { Toasts, useToasts, type ToastTone } from './Toasts';
 import { PageTransition } from './motion';
 import { UpcomingCard } from './calendar/UpcomingCard';
+import { ApplyRunDialog, ApplyRunDock } from './apply/ApplyRunDialog';
 import { nextInterviewShort } from '../lib/calendar';
 import { companyLookup } from '../lib/overview';
 
@@ -141,6 +142,9 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   const [searchBusy, setSearchBusy] = useState(false);
   const [lettersBusy, setLettersBusy] = useState(false);
   const [confirmJobs, setConfirmJobs] = useState<JobRow[] | null>(null);
+  // The apply run on screen: the command just queued (until the list has it) and whether its dialog is open.
+  const [runCommand, setRunCommand] = useState<CommandRow | null>(null);
+  const [runOpen, setRunOpen] = useState(false);
   const [shot, setShot] = useState<{ job: JobRow; url: string } | null>(null);
   const [override, setOverride] = useState<AgentSettings | null>(null);
   const [wizard, setWizard] = useState<{ open: boolean; key: number; step: number; reason: WizardReason }>({ open: false, key: 0, step: 0, reason: 'auto' });
@@ -343,17 +347,23 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     return !why;
   }
 
+  const runLive = useMemo<CommandRow | null>(() => {
+    if (runCommand) return commandsT.rows.find((c) => c.id === runCommand.id) ?? runCommand;
+    return commandsT.rows.find((c) => c.kind === 'apply' && (c.status === 'pending' || c.status === 'running')) ?? null;
+  }, [runCommand, commandsT.rows]);
+
   async function apply(jobs: JobRow[]) {
     setConfirmJobs(null);
     if (!canAsk(applyBlocked)) return;
     setApplyBusy(true);
     try {
-      await sendApply(
+      const queued = await sendApply(
         jobs.map((j) => j.id),
         dryRun,
       );
       setSelected(new Set());
-      push({ tone: 'ok', title: dryRun ? `${plural(jobs.length, 'job')} queued for dry run` : `${plural(jobs.length, 'job')} queued to send` });
+      setRunCommand(queued);
+      setRunOpen(true);
       commandsT.reload();
     } catch (error) {
       push({ tone: 'error', title: 'Could not queue jobs', detail: errorText(error) });
@@ -805,6 +815,25 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
         </Suspense>
       ) : null}
 
+      <ApplyRunDialog
+        command={runLive}
+        jobs={jobsT.rows}
+        agent={agent ?? null}
+        online={online}
+        now={now}
+        open={runOpen && runLive !== null}
+        onHide={() => {
+          setRunOpen(false);
+          if (runLive && (runLive.status === 'done' || runLive.status === 'failed')) setRunCommand(null);
+        }}
+        onCancel={(id) => void cancel(id)}
+        onViewApplied={() => {
+          setRunOpen(false);
+          setRunCommand(null);
+          navigate('applications');
+        }}
+      />
+      <ApplyRunDock command={runLive} jobs={jobsT.rows} agent={agent ?? null} now={now} visible={!runOpen && runLive !== null} onOpen={() => setRunOpen(true)} />
       <ConfirmSubmit jobs={confirmJobs} onCancel={() => setConfirmJobs(null)} onConfirm={() => confirmJobs && apply(confirmJobs)} />
       <Lightbox shot={shot} onClose={() => setShot(null)} />
       <Toasts toasts={toasts} onDismiss={dismiss} />
