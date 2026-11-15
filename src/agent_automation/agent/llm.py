@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from typing import Any
 
 from openai import (
@@ -16,10 +17,18 @@ from openai import (
     RateLimitError,
 )
 
+from agent_automation.agent import codex
 from agent_automation.memory.config import KEY_ENV, KEY_URL, Config, ConfigError, base_url
 
 # The SDK's own default is ten minutes a try, and a model that hangs would hold a request that long.
 TIMEOUT = 180.0
+# What OpenAI charges per million tokens (prompt, completion, cached prompt), for when the gateway lists no prices: OpenAI's
+# own /models does not. From OpenAI's model page on 2026-11-15 (developers.openai.com/api/docs/models/gpt-5.4-mini).
+OPENAI_PRICES = {"gpt-5.4-mini": (0.75, 4.50, 0.075)}
+# How far past a budget the gateway still lets calls through, so a form under way can end: a quarter of the budget, and
+# at least this many dollars. The agent itself stops taking new work at the budget.
+HARD_SHARE = 0.25
+HARD_MIN = 0.25
 
 
 # A spend's total and tokens at one moment: see Spend.mark.
@@ -38,8 +47,12 @@ class Spend:
     """
 
     def __init__(self) -> None:
-        self.prices: dict[str, tuple[float, float, float]] = {}  # per token: prompt, completion, cached prompt
+        # Per token: prompt, completion, cached prompt. OpenAI's prices to start with; a gateway's own list overrides them.
+        self.prices: dict[str, tuple[float, float, float]] = {
+            model: (prompt / 1e6, completion / 1e6, cached / 1e6) for model, (prompt, completion, cached) in OPENAI_PRICES.items()
+        }
         self.total = 0.0
+        self.calls = 0
         self.unpriced = 0
         self.loaded = False
         self.pending: list[tuple[str, float]] = []  # the gateway's id of each call not yet settled, and its estimate
@@ -65,6 +78,7 @@ class Spend:
     def note(self, model: str, usage: Any, request_id: str = "") -> float:
         """One call's cost, estimated from its usage and added to the total; its gateway id kept for settling. Zero, and one more
         unpriced call, when the price is unknown."""
+        self.calls += 1
         if usage is None:
             # A client that says nothing about tokens: nothing to count or estimate, and nothing to call unpriced.
             if request_id:
@@ -118,8 +132,70 @@ class Spend:
             self.total += charged - estimate
 
 
+class BudgetReached(Exception):
+    """The API may not be asked: what it cost today or this month is past the budget set on the dashboard."""
+
+
+@dataclass
+class Budget:
+    """The most the API may cost, set on the dashboard: a day's and a month's, in dollars; None is no limit. `day_before`
+    and `month_before` are what was spent before SPEND's total was `since`, as the usage table had it."""
+
+    day: float | None = None
+    month: float | None = None
+    day_before: float = 0.0
+    month_before: float = 0.0
+    since: float = 0.0
+
+    def spent(self) -> tuple[float, float]:
+        """What the API cost today and this month, this run's calls included."""
+        run = SPEND.total - self.since
+        return self.day_before + run, self.month_before + run
+
+    def start(self, day_before: float, month_before: float) -> None:
+        """Counted from here: what was spent before, and this run's calls from SPEND's total now."""
+        self.day_before, self.month_before, self.since = day_before, month_before, SPEND.total
+
+    def reached(self, hard: bool = False) -> str:
+        """Why the API may not be asked ('' when it may). `hard` is the gateway's own line: the budget and a margin past it,
+        so a form under way can end."""
+        today, month = self.spent()
+        for limit, spent, words in ((self.month, month, "this month's"), (self.day, today, "today's")):
+            if limit is None:
+                continue
+            line = limit + max(HARD_MIN, limit * HARD_SHARE) if hard else limit
+            if spent >= line:
+                return f"{words} AI budget (${limit:.2f}) is used up"
+        return ""
+
+
+class Engine:
+    """Which model answers the structured questions (scores, letters, resume reading, company names): the API, or Codex
+    on the person's ChatGPT plan. The form filler always uses the API. `runs` counts the questions Codex was asked."""
+
+    def __init__(self) -> None:
+        self.name = "api"
+        self.runs = 0
+        # The Codex model to ask; empty is Codex's own default.
+        self.model = ""
+
+    @property
+    def codex(self) -> bool:
+        return self.name == "codex"
+
+    def use(self, name: str) -> None:
+        self.name = "codex" if name == "codex" else "api"
+
+
+BUDGET = Budget()
+ENGINE = Engine()
+
+
 async def chat(client: AsyncOpenAI, **request: Any) -> tuple[Any, str]:
-    """One chat completion, and the gateway's id of the request when the client gives the headers; an empty id otherwise."""
+    """One chat completion, and the gateway's id of the request when the client gives the headers; an empty id otherwise.
+    Refused, with nothing sent, once the budget and its margin are used up."""
+    if why := BUDGET.reached(hard=True):
+        raise BudgetReached(why)
     raw = getattr(getattr(getattr(client, "chat", None), "completions", None), "with_raw_response", None)
     if raw is None:
         return await client.chat.completions.create(**request), ""
@@ -196,8 +272,14 @@ def make_client(config: Config) -> AsyncOpenAI:
     return AsyncOpenAI(base_url=base_url(), api_key=key, max_retries=5, timeout=TIMEOUT)
 
 
-async def structured(client: AsyncOpenAI, model: str, system: str, user: str, name: str, schema: dict[str, Any]) -> dict[str, Any]:
-    """One answer that follows `schema`. A reply that is not that JSON raises: nothing is guessed from it."""
+async def structured(
+    client: AsyncOpenAI, model: str, system: str, user: str, name: str, schema: dict[str, Any], api_only: bool = False,
+) -> dict[str, Any]:
+    """One answer that follows `schema`. A reply that is not that JSON raises: nothing is guessed from it. With the Codex
+    engine Codex answers, on the person's ChatGPT plan, unless `api_only` (the form filler's own checks)."""
+    if ENGINE.codex and not api_only:
+        ENGINE.runs += 1
+        return await codex.ask(system, user, schema, ENGINE.model)
     response, request_id = await chat(
         client,
         model=model,

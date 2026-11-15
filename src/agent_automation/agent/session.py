@@ -34,7 +34,7 @@ from agent_automation.agent.cover_letter import (
 )
 from agent_automation.agent.cover_letter import load_skills as load_cover_skills
 from agent_automation.agent.cover_letter.research import company_notes
-from agent_automation.agent.llm import SPEND, Mark, make_client, no_credit, not_answering, refused
+from agent_automation.agent.llm import SPEND, BudgetReached, Mark, make_client, no_credit, not_answering, refused
 from agent_automation.agent.scoring import NOT_JUDGED, NotAnswering, fits, question, score
 from agent_automation.home import Home, home_for
 from agent_automation.hooks import errors
@@ -403,7 +403,11 @@ class Session:
             # One job's failure is reported and recorded; the next job still runs.
             if refused(error):
                 raise
-            outcome = Outcome("failed", errors.explained(error), reason="no_credit" if no_credit(error) else type(error).__name__)
+            if isinstance(error, BudgetReached):
+                # Past the budget and its margin in the middle of a form: nothing was sent, and the job can be tried again.
+                outcome = Outcome("blocked", f"Stopped: {error}. Nothing was sent.", reason="budget")
+            else:
+                outcome = Outcome("failed", errors.explained(error), reason="no_credit" if no_credit(error) else type(error).__name__)
         finally:
             NOTE.reset(told)
         used = await self._record(item, host, outcome, mark)

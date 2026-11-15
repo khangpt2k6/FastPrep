@@ -45,6 +45,7 @@ export const TABLES = {
   rules: 'automation_rules',
   documents: 'automation_documents',
   tasks: 'automation_tasks',
+  usage: 'automation_usage',
 } as const;
 
 export const PROOFS_BUCKET = 'automation-proofs';

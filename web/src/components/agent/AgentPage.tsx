@@ -1,14 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { CANCELLED } from '../../hooks/useAutomationData';
 import { AnimatePresence, motion } from 'motion/react';
-import type { AgentRow, AgentSettings, CommandRow, JobRow, LiveStatus, LoadError } from '../../lib/types';
+import type { AgentRow, AgentSettings, AiEngine, CommandRow, JobRow, LiveStatus, LoadError } from '../../lib/types';
 import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
 import { AnimatedNumber, Shimmer, Swap, WaitingLines } from '../motion';
-import { clock, plural, stateLabel, timeAgo, untilText, waitingLines, type TagColor } from '../../lib/format';
+import { clock, plural, stateLabel, timeAgo, untilText, usd, waitingLines, type TagColor } from '../../lib/format';
 import { Callout, Tag } from '../common';
 import { Dialog } from '../Dialog';
 import { Group, GroupNote, NavRow, PillSelect, SettingRow, ToggleRow, type PillOption } from '../settings';
-import { IconActivity, IconAlert, IconCheckCircle, IconClock, IconDownload, IconFile, IconFilter, IconInfo, IconSliders, IconSpark, IconTerminal, IconX } from '../Icons';
+import { IconActivity, IconAlert, IconCheckCircle, IconClock, IconDownload, IconFile, IconFilter, IconGauge, IconInfo, IconSliders, IconSpark, IconTerminal, IconX } from '../Icons';
 import { WolfRing } from '../mascot/Wolf';
 import { Contours } from '../motif';
 import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
@@ -40,6 +40,37 @@ const hourOptions = (current: number): PillOption<number>[] =>
 const limitOptions = (current: number): PillOption<number>[] =>
   withCurrent(LIMITS, current).map((n) => ({ value: n, label: `${n} jobs`, hint: n <= 20 ? 'Least credit' : n >= 80 ? 'Most choice' : undefined }));
 
+const ENGINES: PillOption<AiEngine>[] = [
+  { value: 'api', label: 'OpenAI API', hint: 'Fast, paid per use' },
+  { value: 'codex', label: 'Codex', hint: 'Your ChatGPT plan, slower' },
+];
+
+// A budget's options in dollars; NO_LIMIT stands for no limit (null in the database).
+const NO_LIMIT = -1;
+const DAY_BUDGETS = [1, 2, 5, 10];
+const MONTH_BUDGETS = [10, 20, 50, 100];
+
+const budgetOptions = (values: number[], current: number | null): PillOption<number>[] => [
+  ...withCurrent(values, current ?? values[0]).map((n) => ({ value: n, label: usd(n) })),
+  { value: NO_LIMIT, label: 'No limit' },
+];
+
+/** What the AI cost against the budget: "Today $0.42 of $2.00 · this month $3.10 of $20 · Codex 12 today". */
+export function usageLine(usage: Usage, settings: AgentSettings): string {
+  const of = (spent: number, limit: number | null) => (limit === null ? usd(spent) : `${usd(spent)} of ${usd(limit)}`);
+  const parts = [`Today ${of(usage.day, settings.budget_day)}`, `this month ${of(usage.month, settings.budget_month)}`];
+  if (settings.engine === 'codex' || usage.codexToday) parts.push(`Codex ${plural(usage.codexToday, 'question')} today`);
+  return `${parts.join(' · ')}.`;
+}
+
+/** What the API cost today and this month, how often Codex was asked today, and whether a budget is used up. */
+export interface Usage {
+  day: number;
+  month: number;
+  codexToday: number;
+  reached: boolean;
+}
+
 export interface SettingsState {
   loading: boolean;
   /** The table is not in the database yet: the controls are shown off. */
@@ -65,6 +96,8 @@ interface AgentPageProps {
   settings: AgentSettings;
   settingsState: SettingsState;
   onSettings: (patch: Partial<AgentSettings>) => void;
+  /** What the AI cost; null while the usage table is not in the database. */
+  usage?: Usage | null;
 }
 
 /** "Last check 47m ago, 12 new. Next in 2h 13m." */
@@ -149,7 +182,7 @@ function Stat({ label, value, id, hint }: { label: string; value: number; id: st
 }
 
 export function AgentPage(props: AgentPageProps) {
-  const { agent, online, loading, error, onRetry, now, tail, commands, live, sent, current, settings, settingsState, onSettings } = props;
+  const { agent, online, loading, error, onRetry, now, tail, commands, live, sent, current, settings, settingsState, onSettings, usage = null } = props;
   const [how, setHow] = useState(false);
   const state = online ? agent?.state ?? 'idle' : 'offline';
   const tone = loading ? 'off' : agentTone(online, state);
@@ -273,7 +306,7 @@ export function AgentPage(props: AgentPageProps) {
         </SettingRow>
         <SettingRow
           title="New jobs scored per round"
-          className={`srow--last ${!settings.auto_fetch ? 'is-dim' : ''}`}
+          className={!settings.auto_fetch ? 'is-dim' : ''}
         >
           <PillSelect<number>
             label="New jobs scored per round"
@@ -288,6 +321,42 @@ export function AgentPage(props: AgentPageProps) {
           <IconClock size={14} />
           {checkLine(agent, settings, online, now)}
         </p>
+        <SettingRow
+          title="AI engine"
+          description={settings.engine === 'codex' ? 'Scores, letters and resumes run on your ChatGPT plan. Forms stay on the API.' : undefined}
+        >
+          <PillSelect<AiEngine>
+            label="AI engine"
+            value={settings.engine}
+            options={ENGINES}
+            onChange={(v) => onSettings({ engine: v })}
+            disabled={off}
+          />
+        </SettingRow>
+        <SettingRow title="Daily budget">
+          <PillSelect<number>
+            label="Daily budget"
+            value={settings.budget_day ?? NO_LIMIT}
+            options={budgetOptions(DAY_BUDGETS, settings.budget_day)}
+            onChange={(v) => onSettings({ budget_day: v === NO_LIMIT ? null : v })}
+            disabled={off}
+          />
+        </SettingRow>
+        <SettingRow title="Monthly budget" className="srow--last">
+          <PillSelect<number>
+            label="Monthly budget"
+            value={settings.budget_month ?? NO_LIMIT}
+            options={budgetOptions(MONTH_BUDGETS, settings.budget_month)}
+            onChange={(v) => onSettings({ budget_month: v === NO_LIMIT ? null : v })}
+            disabled={off}
+          />
+        </SettingRow>
+        {usage ? (
+          <p className={`srow__note num ${usage.reached ? 'is-warn' : ''}`}>
+            <IconGauge size={14} />
+            {usage.reached ? `Budget used up: no new API work until it starts again or you raise it. ${usageLine(usage, settings)}` : usageLine(usage, settings)}
+          </p>
+        ) : null}
         <NavRow title="Search process" icon={<IconInfo size={18} />} onClick={() => setHow(true)} />
       </Group>
       {settingsState.missing ? (

@@ -442,3 +442,44 @@ do $$
 begin
   begin alter publication supabase_realtime add table public.automation_tasks; exception when duplicate_object then null; end;
 end $$;
+
+-- The AI engine for the agent's structured questions (scores, letters, resume reading, company names): the OpenAI API, or
+-- Codex on the person's ChatGPT plan. And the most the API may cost, in dollars, a day and a month (null: no limit): at the
+-- budget the agent takes no new work that goes to the API. Form filling is always on the API, so it always counts.
+alter table public.automation_settings add column if not exists engine text not null default 'api';
+alter table public.automation_settings add column if not exists budget_day numeric(8,2) default 2.00;
+alter table public.automation_settings add column if not exists budget_month numeric(8,2) default 20.00;
+do $$
+begin
+  begin
+    alter table public.automation_settings add constraint automation_settings_engine check (engine in ('api', 'codex'));
+  exception when duplicate_object then null; end;
+  begin
+    alter table public.automation_settings add constraint automation_settings_budget
+      check ((budget_day is null or budget_day >= 0) and (budget_month is null or budget_month >= 0));
+  exception when duplicate_object then null; end;
+end $$;
+
+-- What the AI cost each day (the person's own day, by their computer's clock), written by the agent: the budget counts on
+-- from it after a restart, and the Agent page shows it.
+create table if not exists public.automation_usage (
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  day date not null,
+  api_usd numeric(10,4) not null default 0,
+  api_calls int not null default 0,
+  codex_runs int not null default 0,
+  tokens_in bigint not null default 0,
+  tokens_out bigint not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, day)
+);
+
+alter table public.automation_usage enable row level security;
+drop policy if exists "own usage" on public.automation_usage;
+create policy "own usage" on public.automation_usage for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.automation_usage; exception when duplicate_object then null; end;
+end $$;

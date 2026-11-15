@@ -1,5 +1,5 @@
 import { tampaFormat } from './time';
-import type { AgentState, JobRow } from './types';
+import type { AgentSettings, AgentState, JobRow, UsageRow } from './types';
 
 export const ONLINE_WINDOW_MS = 30_000;
 
@@ -9,7 +9,37 @@ export function isOnline(state: string | undefined, lastSeen: string | undefined
   return Number.isFinite(seen) && now - seen < ONLINE_WINDOW_MS;
 }
 
-export const BLOCKED = { loading: 'Connecting to the agent', offline: 'Agent offline', paused: 'Agent paused' } as const;
+export const BLOCKED = { loading: 'Connecting to the agent', offline: 'Agent offline', paused: 'Agent paused', budget: 'AI budget used up' } as const;
+
+/** What the API cost on `today` (yyyy-mm-dd, the person's day) and in its month, and how often Codex was asked today. */
+export function spentOn(rows: UsageRow[], today: string): { day: number; month: number; codexToday: number } {
+  const month = today.slice(0, 7);
+  let day = 0;
+  let total = 0;
+  let codexToday = 0;
+  for (const row of rows) {
+    if (!row.day.startsWith(month)) continue;
+    const usd = Number(row.api_usd) || 0;
+    total += usd;
+    if (row.day === today) {
+      day = usd;
+      codexToday = Number(row.codex_runs) || 0;
+    }
+  }
+  return { day, month: total, codexToday };
+}
+
+/** Why work on the API is off now ('' when it is not): the day's or the month's budget is used up. */
+export function budgetReason(settings: AgentSettings, spent: { day: number; month: number }): string {
+  if (settings.budget_month !== null && spent.month >= settings.budget_month) return BLOCKED.budget;
+  if (settings.budget_day !== null && spent.day >= settings.budget_day) return BLOCKED.budget;
+  return '';
+}
+
+/** A sum of dollars as the page shows it: "$0.42", "$2". */
+export function usd(amount: number): string {
+  return Number.isInteger(amount) ? `$${amount}` : `$${amount.toFixed(2)}`;
+}
 
 /**
  * Why the buttons whose work asks the model (OpenAI) are off, or '' when they can go: only while the agent is online and

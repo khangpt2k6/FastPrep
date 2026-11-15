@@ -318,6 +318,8 @@ export function SetupPage({ resumes, online, blocked = '', now, onUpload, onDele
           </p>
         ) : blocked === BLOCKED.paused ? (
           <p className="groupnote groupnote--warn">Agent paused. Turn it on to read a resume.</p>
+        ) : blocked === BLOCKED.budget ? (
+          <p className="groupnote groupnote--warn">AI budget used up. Raise it on the Agent page, or switch the AI engine to Codex.</p>
         ) : null}
         {active ? (
           <p className="setup__current">

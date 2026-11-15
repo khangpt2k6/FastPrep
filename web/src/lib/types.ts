@@ -37,6 +37,27 @@ export interface AgentSettings {
   fetch_hours: number;
   /** New jobs scored per round, 0 to 200. */
   fetch_limit: number;
+  /** Who answers the agent's structured questions (scores, letters, resume reading): the OpenAI API, or Codex on the
+   * ChatGPT plan. Form filling is always on the API. */
+  engine: AiEngine;
+  /** The most the API may cost a day and a month, in dollars; null is no limit. */
+  budget_day: number | null;
+  budget_month: number | null;
+}
+
+export type AiEngine = 'api' | 'codex';
+
+/** One day of automation_usage, as the agent writes it: what the API cost, and how often Codex was asked. */
+export interface UsageRow {
+  user_id: string;
+  /** The person's own day, YYYY-MM-DD. */
+  day: string;
+  api_usd: number;
+  api_calls: number;
+  codex_runs: number;
+  tokens_in: number;
+  tokens_out: number;
+  updated_at: string;
 }
 
 export interface AgentSettingsRow extends AgentSettings {

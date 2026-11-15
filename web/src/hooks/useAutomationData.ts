@@ -12,6 +12,7 @@ import type {
   Preferences,
   PreferencesRow,
   ProfileRow,
+  UsageRow,
 } from '../lib/types';
 import { useLiveTable } from './useLiveTable';
 
@@ -214,7 +215,18 @@ export async function sendSearch() {
 }
 
 /** What the agent does with no settings row yet. Keep in step with automation_settings in supabase/schema.sql. */
-export const DEFAULT_SETTINGS: AgentSettings = { paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40 };
+export const DEFAULT_SETTINGS: AgentSettings = {
+  paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40, engine: 'api', budget_day: 2, budget_month: 20,
+};
+
+/** A budget from the row: missing is the default, null is no limit, else a sum of zero or more. */
+function dollars(row: Partial<AgentSettingsRow>, name: 'budget_day' | 'budget_month'): number | null {
+  if (!(name in row)) return DEFAULT_SETTINGS[name];
+  const value = row[name];
+  if (value === null) return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? amount : DEFAULT_SETTINGS[name];
+}
 
 /** The stored settings over the defaults; anything missing or out of range falls back. */
 export function readSettings(row: Partial<AgentSettingsRow> | null | undefined): AgentSettings {
@@ -227,6 +239,9 @@ export function readSettings(row: Partial<AgentSettingsRow> | null | undefined):
     auto_fetch: typeof row.auto_fetch === 'boolean' ? row.auto_fetch : d.auto_fetch,
     fetch_hours: Number.isFinite(hours) && hours >= 1 && hours <= 48 ? hours : d.fetch_hours,
     fetch_limit: Number.isFinite(limit) && limit >= 0 && limit <= 200 ? limit : d.fetch_limit,
+    engine: row.engine === 'codex' ? 'codex' : 'api',
+    budget_day: dollars(row, 'budget_day'),
+    budget_month: dollars(row, 'budget_month'),
   };
 }
 
@@ -247,11 +262,23 @@ export function useAgentSettings(userId: string) {
 }
 
 export async function saveAgentSettings(settings: AgentSettings) {
-  const { paused, auto_fetch, fetch_hours, fetch_limit } = settings;
+  const { paused, auto_fetch, fetch_hours, fetch_limit, engine, budget_day, budget_month } = settings;
   const { error } = await supabase
     .from(TABLES.settings)
-    .upsert({ paused, auto_fetch, fetch_hours, fetch_limit, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    .upsert(
+      { paused, auto_fetch, fetch_hours, fetch_limit, engine, budget_day, budget_month, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' },
+    );
   if (error) throw error;
+}
+
+/** This month's days of automation_usage, live: what the API cost and how often Codex was asked. */
+export function useUsage(userId: string, monthStart: string) {
+  const load = useCallback(
+    () => supabase.from(TABLES.usage).select('*').eq('user_id', userId).gte('day', monthStart).returns<UsageRow[]>(),
+    [userId, monthStart],
+  );
+  return useLiveTable<UsageRow>({ table: TABLES.usage, userId, load, keyOf: (row) => row.day, pollMs: 30_000 });
 }
 
 export async function saveProfileRow(data: unknown, completed: boolean) {

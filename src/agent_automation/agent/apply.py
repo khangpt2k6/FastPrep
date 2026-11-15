@@ -547,7 +547,7 @@ class _Watch:
         """Why the run is going round in circles, when a model reading its last calls is sure of it; "" otherwise."""
         lines = "\n".join(call.line for call in self.calls[-LOOP_CHECK_CALLS:])
         try:
-            verdict = await patiently(lambda: structured(client, model, LOOP_CHECK_SYSTEM, lines, "loop_check", LOOP_CHECK_SCHEMA))
+            verdict = await patiently(lambda: structured(client, model, LOOP_CHECK_SYSTEM, lines, "loop_check", LOOP_CHECK_SCHEMA, api_only=True))
         except Exception:  # noqa: BLE001  A check that fails leaves the run to go on.
             return ""
         return str(verdict.get("reason", "")) if verdict.get("stuck") and float(verdict.get("confidence", 0)) >= LOOP_CHECK_SURE else ""
@@ -682,7 +682,7 @@ async def _address_now(session: Browser) -> str:
 async def _read_result(session: Browser, client: AsyncOpenAI, model: str, guidance: str, address: str) -> tuple[str, dict[str, Any]]:
     """The page's text, and what the verifying model makes of it after a send."""
     text = tool_text(await session.call_tool("browser_read_text", {"selector": "body"}))
-    return text, await patiently(lambda: structured(client, model, verify_system(guidance), f"The page's address: {address}\n\n{text}", "submit_outcome", VERIFY_SCHEMA))
+    return text, await patiently(lambda: structured(client, model, verify_system(guidance), f"The page's address: {address}\n\n{text}", "submit_outcome", VERIFY_SCHEMA, api_only=True))
 
 
 async def submit_and_verify(session: Browser, client: AsyncOpenAI, model: str, selector: str, summary: str, guidance: str, shot: Path) -> Outcome:

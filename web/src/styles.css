@@ -2661,6 +2661,11 @@ a:focus-visible > .wolf--wiggle {
   flex: none;
 }
 
+/* The budget used up: said in the warning colour. */
+.srow__note.is-warn {
+  color: var(--yellow);
+}
+
 .groupnote {
   margin-top: 8px;
   padding: 0 4px;

@@ -7,8 +7,10 @@ import { IconLetter, IconPlay, IconX } from '../Icons';
 interface ActionBarProps {
   count: number;
   dryRun: boolean;
-  /** Why Apply and Write letters are off (agent offline or paused), or '' when they can go. */
+  /** Why Write letters is off (agent offline or paused, or the budget used up when letters go to the API), or ''. */
   blocked: string;
+  /** Why Apply is off: as `blocked`, and the budget, since forms are always filled on the API. */
+  applyBlocked: string;
   applying: boolean;
   onApply: () => void;
   /** Ask the agent to write cover letters for the selected jobs (a cover_letter command), to read before applying. */
@@ -42,7 +44,7 @@ export function ActionBar(props: ActionBarProps) {
   );
 }
 
-function Dock({ count, dryRun, blocked, applying, onApply, onLetters, writing, onClear }: ActionBarProps) {
+function Dock({ count, dryRun, blocked, applyBlocked, applying, onApply, onLetters, writing, onClear }: ActionBarProps) {
   return (
     <>
       <button type="button" className="icon-btn dock__clear" onClick={onClear} aria-label="Clear selection" title="Clear selection">
@@ -52,7 +54,7 @@ function Dock({ count, dryRun, blocked, applying, onApply, onLetters, writing, o
         <AnimatedNumber className="num" value={count} from={count} duration={0.3} /> selected
       </span>
       <span className="dock__spacer" />
-      {blocked ? <span className="dock__note">{blocked}</span> : null}
+      {applyBlocked || blocked ? <span className="dock__note">{applyBlocked || blocked}</span> : null}
       <span className={`tag ${dryRun ? 'tag--yellow' : 'tag--red tag--strong'}`} title={dryRun ? 'Fills forms, never sends' : 'Applications are sent to employers'}>
         {dryRun ? 'Dry run' : 'Live'}
       </span>
@@ -64,8 +66,8 @@ function Dock({ count, dryRun, blocked, applying, onApply, onLetters, writing, o
         type="button"
         className={`btn btn--sm ${dryRun ? 'btn--primary' : 'btn--danger'}`}
         onClick={onApply}
-        disabled={Boolean(blocked) || applying}
-        title={blocked || (dryRun ? 'Fill the forms, send nothing' : 'Fill and send the applications')}
+        disabled={Boolean(applyBlocked) || applying}
+        title={applyBlocked || (dryRun ? 'Fill the forms, send nothing' : 'Fill and send the applications')}
       >
         {applying ? <span className="spinner" aria-hidden="true" /> : <IconPlay size={12} />}
         {applying ? (

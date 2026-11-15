@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { errorText } from '../lib/errors';
-import { APPLICATION_STATUSES, WORKING_STATES, blockedReason, companyName, displayName, isOnline, plural, statusInfo, stopReason } from '../lib/format';
+import { APPLICATION_STATUSES, WORKING_STATES, blockedReason, budgetReason, companyName, displayName, isOnline, plural, spentOn, statusInfo, stopReason } from '../lib/format';
+import { tampaDayKey } from '../lib/time';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
 import { applyResume, activeResume, isPending, writeResume, type ResumeProfile } from '../lib/resume';
 import { atCompany, filterJobs, placeOf, sortJobs } from '../lib/jobs';
@@ -17,6 +18,7 @@ import {
   unqueueJob,
   useAgent,
   useAgentSettings,
+  useUsage,
   useCommands,
   useJobs,
   useMemory,
@@ -158,8 +160,17 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   useEffect(() => {
     if (override && JSON.stringify(override) === JSON.stringify(stored)) setOverride(null);
   }, [stored, override]);
-  // Every button whose work asks the model (OpenAI) goes only while the agent is online and on; why not, otherwise.
-  const blocked = blockedReason(online, settings.paused, agentT.loading);
+  // What the API cost today and this month (the agent writes one row a day, by the person's own day).
+  const today = tampaDayKey(now);
+  const usageT = useUsage(userId, `${today.slice(0, 7)}-01`);
+  const spent = useMemo(() => spentOn(usageT.rows, today), [usageT.rows, today]);
+  const usageMissing = usageT.error?.kind === 'missing-table';
+  const budgetBlock = usageMissing ? '' : budgetReason(settings, spent);
+  // Every button whose work asks the model goes only while the agent is online and on, and, when that work is paid on
+  // the API, while the budget lasts. With Codex the structured work is on the ChatGPT plan; filling forms is always paid.
+  const agentBlock = blockedReason(online, settings.paused, agentT.loading);
+  const blocked = agentBlock || (settings.engine === 'api' ? budgetBlock : '');
+  const applyBlocked = agentBlock || budgetBlock;
 
   const changeSettings = useCallback(
     async (patch: Partial<AgentSettings>) => {
@@ -313,14 +324,14 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   }, []);
 
   /** Whether work that asks the model can go now; a toast says why not. The buttons are off then, this is the backstop. */
-  function canAsk(): boolean {
-    if (blocked) push({ tone: 'warn', title: blocked });
-    return !blocked;
+  function canAsk(why: string = blocked): boolean {
+    if (why) push({ tone: 'warn', title: why });
+    return !why;
   }
 
   async function apply(jobs: JobRow[]) {
     setConfirmJobs(null);
-    if (!canAsk()) return;
+    if (!canAsk(applyBlocked)) return;
     setApplyBusy(true);
     try {
       await sendApply(
@@ -338,7 +349,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   }
 
   function requestApply() {
-    if (chosen.length === 0 || !canAsk()) return;
+    if (chosen.length === 0 || !canAsk(applyBlocked)) return;
     if (chosen.length > MAX_PER_APPLY) {
       push({ tone: 'warn', title: `Select ${MAX_PER_APPLY} or fewer jobs` });
       return;
@@ -474,6 +485,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       count={chosen.length}
       dryRun={dryRun}
       blocked={blocked}
+      applyBlocked={applyBlocked}
       applying={applyBusy}
       onApply={requestApply}
       onLetters={writeLetters}
@@ -593,11 +605,11 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           onOpenAnswers={(job) => navigate('memory', { job: job.id })}
           answerCounts={answerCounts}
           dryRun={dryRun}
-          blocked={blocked}
+          blocked={applyBlocked}
           queued={queued}
           notices={!dryRun ? <LiveCallout /> : null}
           onApplyAgain={(job) => {
-            if (!canAsk()) return;
+            if (!canAsk(applyBlocked)) return;
             if (dryRun) void apply([job]);
             else setConfirmJobs([job]);
           }}
@@ -629,6 +641,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           settings={settings}
           settingsState={{ loading: settingsT.loading, missing: settingsMissing, error: settingsT.error && !settingsMissing ? settingsT.error.message : null }}
           onSettings={(patch) => void changeSettings(patch)}
+          usage={usageMissing ? null : { ...spent, reached: Boolean(budgetBlock) }}
         />
       );
       break;

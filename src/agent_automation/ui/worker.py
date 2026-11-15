@@ -21,7 +21,7 @@ import time
 import unicodedata
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -29,9 +29,11 @@ from urllib.parse import quote
 import click
 import httpx
 
+from agent_automation.agent.codex import CodexLimit
 from agent_automation.agent.companies import company_key, key_of, name_companies
 from agent_automation.agent.cover_letter import Letter
 from agent_automation.agent.cover_letter.sync import CoverLetters
+from agent_automation.agent.llm import BUDGET, ENGINE, SPEND
 from agent_automation.agent.scoring import NotAnswering
 from agent_automation.agent.session import Session
 from agent_automation.hooks.runner import run_hooks
@@ -74,6 +76,10 @@ PAUSED = "Paused from the dashboard"
 MODEL_KINDS = ("apply", "cover_letter", "linkedin", "resume", "search")
 REFUSED_PAUSED = "Not run: the agent was paused. Turn it on, then ask again."
 REFUSED_OFF = "Not run: the agent was off. Ask again now that it is on."
+REFUSED_BUDGET = "Not run: {why}. Raise the budget on the Agent page, or wait until it starts again."
+# What the API cost each day, and how many questions Codex was asked: the budget counts on from it after a restart.
+USAGE = "automation_usage"
+USAGE_SECONDS = 10
 # Supabase's answer when a table or column is not there: supabase/schema.sql was not run again since it got it.
 MISSING = frozenset({"42703", "42P01", "PGRST204", "PGRST205"})
 # The parts of the newer schema the agent asks about, and what each one brings.
@@ -87,6 +93,8 @@ PARTS = {
     "rules": "automation_rules (rules edited on the Rules page)",
     "documents": "automation_documents (a transcript uploaded on the page)",
     "tasks": "automation_tasks (tasks for Claude Code or Codex typed on the Agent page)",
+    "budget": "automation_settings.engine, budget_day and budget_month (the AI engine and its budget)",
+    "usage": "automation_usage (what the AI cost each day)",
     "calendar": "automation_calendar (Google Calendar events for the Calendar page)",
 }
 CONTENT_TYPES = {
@@ -141,6 +149,12 @@ def asks_model(command: dict[str, Any]) -> bool:
     return command.get("kind") in MODEL_KINDS and not pdf_only(command)
 
 
+def needs_api(command: dict[str, Any]) -> bool:
+    """Whether this command's work would be paid on the API: filling forms always is; the rest is when the engine is the
+    API, not Codex."""
+    return command.get("kind") == "apply" or (asks_model(command) and not ENGINE.codex)
+
+
 def schema_missing(error: BaseException) -> bool:
     """Whether Supabase answered that a table or column is not there, as opposed to failing to answer at all."""
     if not isinstance(error, httpx.HTTPStatusError) or not 400 <= error.response.status_code < 500:
@@ -161,6 +175,11 @@ class Settings:
     auto_fetch: bool = True
     fetch_hours: int = 3
     fetch_limit: int = 40
+    # The model engine for the structured questions ("api" or "codex"), and the most the API may cost a day and a month,
+    # in dollars (None: no limit). Keep in step with automation_settings in supabase/schema.sql.
+    engine: str = "api"
+    budget_day: float | None = 2.0
+    budget_month: float | None = 20.0
 
 
 def settings_from(row: dict[str, Any] | None) -> Settings:
@@ -181,7 +200,24 @@ def settings_from(row: dict[str, Any] | None) -> Settings:
             return getattr(default, name)
         return int(amount) if amount.is_integer() and low <= amount <= high else getattr(default, name)
 
-    return Settings(switch("paused"), switch("auto_fetch"), number("fetch_hours", 1, 48), number("fetch_limit", 0, 200))
+    def dollars(name: str) -> float | None:
+        # Not there: the default. Empty (null): no limit. Otherwise a sum of zero or more.
+        if name not in row:
+            return getattr(default, name)
+        value = row[name]
+        if value is None:
+            return None
+        try:
+            amount = float(value) if not isinstance(value, bool) else float("nan")
+        except (TypeError, ValueError):
+            return getattr(default, name)
+        return amount if amount >= 0 else getattr(default, name)
+
+    engine = row.get("engine") if row.get("engine") in ("api", "codex") else default.engine
+    return Settings(
+        switch("paused"), switch("auto_fetch"), number("fetch_hours", 1, 48), number("fetch_limit", 0, 200), str(engine),
+        dollars("budget_day"), dollars("budget_month"),
+    )
 
 
 def next_fetch(last: float | None, settings: Settings, failed: bool = False) -> float | None:
@@ -244,6 +280,7 @@ class Support:
 
     def __init__(self) -> None:
         self.settings = self.fetch = self.found_at = self.posted = self.places = self.resumes = self.rules = self.documents = self.calendar = self.tasks = True
+        self.budget = self.usage = True
 
     def drop(self, part: str) -> None:
         if getattr(self, part):
@@ -370,6 +407,12 @@ class Agent:
         self.command_id: int | None = None
         # Whether the commands asked while the agent was off were refused yet: done at the start, before any other runs.
         self.off_checked = False
+        # Today's row of the usage table: its day, what it held when this run read it, the counters (SPEND's and
+        # ENGINE's) then, and what was last written, so an unchanged row is not written again.
+        self.usage_day: date | None = None
+        self.usage_base: tuple[float, int, int, int, int] = (0.0, 0, 0, 0, 0)
+        self.usage_from: tuple[float, int, int, int, int] = (0.0, 0, 0, 0, 0)
+        self.usage_written: dict[str, Any] | None = None
         # The jobs tried before get their company's name once a run: they are not pushed again.
         self.tried_named = False
         # Which parts of the newer schema the database has, and the Agent page's switches.
@@ -431,7 +474,8 @@ class Agent:
         message = " | ".join(part for part in (self.message, self.download) if part)
         row = {
             "user_id": self.db.user_id, "state": self.state, "message": message[:500], "resume_name": self.session.resume_name(),
-            "model": self.session.config.model, "jobs_found": len(items), "jobs_scored": sum(1 for item in items if item.score is not None),
+            "model": f"Codex + {self.session.config.model}" if ENGINE.codex else self.session.config.model,
+            "jobs_found": len(items), "jobs_scored": sum(1 for item in items if item.score is not None),
             "last_seen": _now(),
         }
         fetch = self.fetch_columns()
@@ -509,8 +553,8 @@ class Agent:
         try:
             known = store.companies()
             unnamed = [item.job for item in items if company_key(item.job) not in known]
-            # Naming asks the model: not while paused. The next push names them.
-            if unnamed and not self.settings.paused and time.monotonic() >= self.naming_paused_until:
+            # Naming asks the model: not while paused or past the budget. The next push names them.
+            if unnamed and not self.held(not ENGINE.codex) and time.monotonic() >= self.naming_paused_until:
                 try:
                     named = await name_companies(self.session.client, self.session.config.quick_model, unnamed)
                 except Exception as error:  # noqa: BLE001  Names and logos are only for the page.
@@ -586,8 +630,10 @@ class Agent:
         session = self.session
         failures = 0
         while session.store.with_status("new") and self.scored() < (goal := self.target if until is None else until):
-            # Paused on the page: the round under way was the last, the rest wait for the next search.
-            if self.settings.paused:
+            # Paused on the page, or the budget used up (scoring on the API): the round under way was the last, the rest
+            # wait for the next search.
+            if why := self.held(not ENGINE.codex):
+                click.echo(f"Scoring stops here: {why}.")
                 return
             self.say("scoring", f"Scoring jobs against your resume ({self.scored()} so far)")
             try:
@@ -721,6 +767,8 @@ class Agent:
             ("calendar", calendar_push.TABLE, "id,starts_at,kind"),
             ("documents", DOCUMENTS, "id,kind,name,path"),
             ("tasks", tasks.TABLE, "id,status"),
+            ("budget", AGENT_SETTINGS, "engine,budget_day,budget_month"),
+            ("usage", USAGE, "day,api_usd,codex_runs"),
         ):
             try:
                 await self.db.select(table, {"select": columns, "limit": "1"})
@@ -730,24 +778,42 @@ class Agent:
                 else:
                     click.echo(f"could not ask Supabase about {table}: {error}")
 
-    async def read_settings(self) -> None:
+    async def read_settings(self, engine_only: bool = False) -> None:
+        """The page's switches, read and taken in. `engine_only` takes in only the engine and the budget, for the start,
+        before the pause is said."""
         if not self.support.settings:
             return
-        where = {"user_id": f"eq.{self.db.user_id}", "select": "paused,auto_fetch,fetch_hours,fetch_limit"}
+        columns = "paused,auto_fetch,fetch_hours,fetch_limit" + (",engine,budget_day,budget_month" if self.support.budget else "")
         try:
-            rows = await self.db.select(AGENT_SETTINGS, where)
+            rows = await self.db.select(AGENT_SETTINGS, {"user_id": f"eq.{self.db.user_id}", "select": columns})
         except Exception as error:
             if not schema_missing(error):
                 raise
+            # The engine and the budget came later than the rest: without them the switches still work.
+            if self.support.budget:
+                self.support.drop("budget")
+                await self.read_settings(engine_only)
+                return
             self.support.drop("settings")
             rows = []
-        self.use_settings(settings_from(rows[0] if rows else None))
+        settings = settings_from(rows[0] if rows else None)
+        if engine_only:
+            self.use_engine(settings)
+        else:
+            self.use_settings(settings)
+
+    def use_engine(self, settings: Settings) -> None:
+        """The engine and the budget, from the next model call on. A database without them keeps the API and no limit,
+        since the page could not show or change them."""
+        ENGINE.use(settings.engine if self.support.budget else "api")
+        BUDGET.day, BUDGET.month = (settings.budget_day, settings.budget_month) if self.support.budget else (None, None)
 
     def use_settings(self, settings: Settings) -> None:
         """The page's switches taken in. A pause is said on the page at once, or, while a command or a round of auto-fetch
         runs, when that ends; going on again says ready."""
         was = self.settings.paused
         self.settings = settings
+        self.use_engine(settings)
         if settings.paused and not was:
             self.go.clear()
             if not self.busy and not self.search_lock.locked():
@@ -764,6 +830,86 @@ class Agent:
                 await self.read_settings()
             except Exception as error:  # noqa: BLE001  The switches stay as they were until the next read.
                 click.echo(f"settings: {error}")
+
+    def held(self, uses_api: bool = True) -> str:
+        """Why new model work may not start ('' when it may): the page paused the agent, or, for work on the API, the
+        budget is used up. Work already under way ends; this is asked before the next step."""
+        if self.settings.paused:
+            return "paused on the page"
+        return BUDGET.reached() if uses_api else ""
+
+    # What the AI cost: the usage table, one row a day.
+
+    def counters(self) -> tuple[float, int, int, int, int]:
+        """Dollars and calls on the API, questions to Codex, and tokens in and out, as this run has counted them."""
+        taken = sum(given_in for given_in, _ in SPEND.tokens.values())
+        given = sum(given_out for _, given_out in SPEND.tokens.values())
+        return SPEND.total, SPEND.calls, ENGINE.runs, taken, given
+
+    def usage_now(self) -> dict[str, Any]:
+        """Today's row as it stands: what it held when read, and this run's counts since."""
+        now, base, start = self.counters(), self.usage_base, self.usage_from
+        return {
+            "api_usd": round(base[0] + now[0] - start[0], 4), "api_calls": base[1] + now[1] - start[1],
+            "codex_runs": base[2] + now[2] - start[2], "tokens_in": base[3] + now[3] - start[3], "tokens_out": base[4] + now[4] - start[4],
+        }
+
+    async def load_usage(self) -> None:
+        """What the API cost earlier today and this month, from the usage table: the budget counts on from there, so a
+        restart does not start it again from zero. Days go by this computer's clock, the person's own."""
+        today = date.today()
+        self.usage_day, self.usage_from, self.usage_base, self.usage_written = today, self.counters(), (0.0, 0, 0, 0, 0), None
+        month = 0.0
+        if self.support.usage:
+            fields = "day,api_usd,api_calls,codex_runs,tokens_in,tokens_out"
+            try:
+                rows = await self.db.select(USAGE, {"user_id": f"eq.{self.db.user_id}", "day": f"gte.{today.replace(day=1).isoformat()}", "select": fields})
+            except Exception as error:
+                if not schema_missing(error):
+                    raise
+                self.support.drop("usage")
+                rows = []
+            for row in rows:
+                numbers = tuple(row.get(name) or 0 for name in fields.split(",")[1:])
+                if str(row.get("day")) == today.isoformat():
+                    self.usage_base = (float(numbers[0]), *(int(number) for number in numbers[1:]))  # type: ignore[assignment]
+                else:
+                    month += float(numbers[0])
+        BUDGET.start(self.usage_base[0], month + self.usage_base[0])
+
+    async def sync_usage(self) -> None:
+        """Today's row brought up to date when something was spent or asked since it was last written. A new day ends the
+        old day's row and counts on from zero; a new month starts the month's budget again too."""
+        if self.usage_day is None:
+            return
+        today = date.today()
+        if today != self.usage_day:
+            await self._write_usage(self.usage_day)
+            same_month = (today.year, today.month) == (self.usage_day.year, self.usage_day.month)
+            month = BUDGET.spent()[1] if same_month else 0.0
+            self.usage_day, self.usage_from, self.usage_base, self.usage_written = today, self.counters(), (0.0, 0, 0, 0, 0), None
+            BUDGET.start(0.0, month)
+        await self._write_usage(self.usage_day)
+
+    async def _write_usage(self, day: date) -> None:
+        if not self.support.usage:
+            return
+        values = self.usage_now()
+        if values == self.usage_written:
+            return
+        try:
+            await self.db.upsert(USAGE, [{"user_id": self.db.user_id, "day": day.isoformat(), **values, "updated_at": _now()}], "user_id,day")
+            self.usage_written = values
+        except Exception as error:  # noqa: BLE001  Written again on the next round; the budget counts in memory meanwhile.
+            if schema_missing(error):
+                self.support.drop("usage")
+            else:
+                click.echo(f"usage: {error}")
+
+    async def usage_loop(self) -> None:
+        while True:
+            await asyncio.sleep(USAGE_SECONDS)
+            await self.sync_usage()
 
     # What the page asks for.
 
@@ -809,7 +955,8 @@ class Agent:
 
     async def next_command(self) -> None:
         """The oldest command the page left, run. None runs while paused: one whose work asks the model is refused then,
-        so a click meanwhile never spends once the agent is on again, and the others wait."""
+        so a click meanwhile never spends once the agent is on again, and the others wait. One whose work would go to the
+        API is refused too once the budget is used up."""
         if self.settings.paused:
             asked = await self.model_commands()
             if asked:
@@ -822,8 +969,12 @@ class Agent:
             "automation_commands",
             {"status": "eq.pending", "kind": "in.(apply,search,cover_letter,resume,linkedin,calendar_add)", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc", "limit": "1"},
         )
-        if rows and not self.settings.paused:
-            await self.handle(rows[0])
+        if not rows or self.settings.paused:
+            return
+        if needs_api(rows[0]) and (why := BUDGET.reached()):
+            await self.refuse(rows[:1], REFUSED_BUDGET.format(why=why))
+            return
+        await self.handle(rows[0])
 
     async def handle(self, command: dict[str, Any]) -> None:
         claimed = await self.db.update("automation_commands", {"id": f"eq.{command['id']}", "status": "eq.pending"}, {"status": "running"})
@@ -946,11 +1097,16 @@ class Agent:
         except Exception as error:  # noqa: BLE001  The application itself is already recorded.
             click.echo(f"memory: {error}")
 
-    async def letter(self, item: Stored, always: bool = False, kept_only: bool = False) -> Letter | None:
+    async def letter(self, item: Stored, always: bool = False, kept_only: bool = False, strict: bool = False) -> Letter | None:
         """The job's cover letter as the page set it up, or None: letters off, or one that could not be written, which is
-        said and does not stop the application."""
+        said and does not stop the application. With `strict` (letters asked for alone) Codex at its limit stops them all."""
         try:
             return await self.letters.for_job(item, always, kept_only)
+        except CodexLimit:
+            if strict:
+                raise
+            self.say(self.state, f"No cover letter for {item.job.company}: Codex is at its limit")
+            return None
         except Exception as error:  # noqa: BLE001  Said on the page; the application goes on without a letter.
             self.say(self.state, f"No cover letter for {item.job.company}: {error}")
             return None
@@ -960,14 +1116,17 @@ class Agent:
         only the kept letters' PDFs are made again, and no model is asked."""
         await self.writing()
         for number, job_id in enumerate(job_ids, 1):
-            # A pause from the page lets the letter under way finish, and starts no other.
+            # A pause from the page lets the letter under way finish, and starts no other; so does the budget, used up,
+            # when the letters go to the API.
             if self.settings.paused and not kept_only:
                 raise Paused(f"Paused after {number - 1} of {len(job_ids)} letters. Select the rest and write them again.")
+            if not kept_only and (why := self.held(not ENGINE.codex)):
+                raise Paused(f"Stopped after {number - 1} of {len(job_ids)} letters: {why}. Raise the budget on the Agent page, then write the rest.")
             item = self.session.store.get(job_id)
             if item is None:
                 continue
             self.say("writing", f"Cover letter {number}/{len(job_ids)}: {item.job.company}")
-            await self.letter(item, always=True, kept_only=kept_only)
+            await self.letter(item, always=True, kept_only=kept_only, strict=True)
         if kept_only:
             self.idle(f"Cover letter PDF{'' if len(job_ids) == 1 else 's'} made again.")
         else:
@@ -983,6 +1142,9 @@ class Agent:
             # A pause from the page lets the application under way finish, and starts no other.
             if self.settings.paused:
                 raise Paused(f"Paused after {number - 1} of {len(job_ids)} jobs. Select the rest and apply again.")
+            # Forms are filled on the API: the budget used up ends the batch the same way.
+            if why := BUDGET.reached():
+                raise Paused(f"Stopped after {number - 1} of {len(job_ids)} jobs: {why}. Raise the budget on the Agent page, then apply again.")
             # The page can cancel the command, or take single jobs out of it, while it runs.
             if not await self.still_wanted(job_id, number - 1, len(job_ids)):
                 continue
@@ -1017,7 +1179,7 @@ class Agent:
                 "dry_run": dry, "updated_at": _now(),
             })
             self.say("applied", f"{label}: {outcome.status}")
-            if outcome.reason == "no_credit":
+            if outcome.reason in ("no_credit", "budget"):
                 break
         self.say("ready", f"Done with {len(job_ids)} application(s){mode}.")
 
@@ -1281,6 +1443,12 @@ class Agent:
                 await self.refuse_asked_while_off()
             except Exception as error:  # noqa: BLE001  The command loop does it before it takes any command.
                 click.echo(f"commands asked while the agent was off: {error}")
+            # The engine and the budget, and what was spent earlier today and this month, before the first model call.
+            try:
+                await self.load_usage()
+                await self.read_settings(engine_only=True)
+            except Exception as error:  # noqa: BLE001  The API and no limit until the settings are read again.
+                click.echo(f"engine and budget: {error}")
             if self.resume:
                 self.say("reading", f"Reading {self.resume.name}")
                 await self.session.load_resume(self.resume)
@@ -1317,10 +1485,16 @@ class Agent:
                 keep_current(self.db, self.session.workspace),
                 self.calendar_loop(),
                 self.tasks_loop(),
+                self.usage_loop(),
             )
         finally:
             self.state, self.message, self.download = "offline", "", ""
             await self._beat()
+            try:
+                # What this run spent since the last write, so the budget still counts it after a restart.
+                await self.sync_usage()
+            except Exception as error:  # noqa: BLE001  The run is ending; the next one reads what was written.
+                click.echo(f"usage: {error}")
             await self.db.close()
 
 
