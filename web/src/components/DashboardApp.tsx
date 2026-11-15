@@ -167,10 +167,11 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   const usageMissing = usageT.error?.kind === 'missing-table';
   const budgetBlock = usageMissing ? '' : budgetReason(settings, spent);
   // Every button whose work asks the model goes only while the agent is online and on, and, when that work is paid on
-  // the API, while the budget lasts. With Codex the structured work is on the ChatGPT plan; filling forms is always paid.
+  // the API, while the budget lasts. Codex and Claude Code answer on their plans; forms are filled on the API except
+  // with Claude Code, which fills them on the Claude plan too.
   const agentBlock = blockedReason(online, settings.paused, agentT.loading);
   const blocked = agentBlock || (settings.engine === 'api' ? budgetBlock : '');
-  const applyBlocked = agentBlock || budgetBlock;
+  const applyBlocked = agentBlock || (settings.engine === 'claude' ? '' : budgetBlock);
 
   const changeSettings = useCallback(
     async (patch: Partial<AgentSettings>) => {

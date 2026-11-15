@@ -45,7 +45,7 @@ const limitOptions = (current: number): PillOption<number>[] =>
 const ENGINES: EngineOption<AiEngine>[] = [
   { value: 'api', brand: 'openai', name: 'OpenAI API', note: 'Pay per use' },
   { value: 'codex', brand: 'openai', name: 'Codex', note: 'ChatGPT plan' },
-  { value: 'claude', brand: 'claude', name: 'Claude Code', note: 'Claude plan' },
+  { value: 'claude', brand: 'claude', name: 'Claude Code', note: 'Claude plan, forms too' },
 ];
 
 // A budget's options in dollars; NO_LIMIT stands for no limit (null in the database).
