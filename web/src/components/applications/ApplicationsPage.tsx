@@ -31,7 +31,8 @@ interface ApplicationsPageProps {
   answerCounts: Map<string, number>;
   /** The Dry run switch: it decides whether "again" fills only or really sends. */
   dryRun: boolean;
-  online: boolean;
+  /** Why "again" is off (agent offline or paused), or '' when it can go. */
+  blocked: string;
   /** Jobs already in a command the agent has not finished. */
   queued: Set<string>;
   onApplyAgain: (job: JobRow) => void;
@@ -65,13 +66,13 @@ function Thumb({ job, name, onOpen }: { job: JobRow; name: string; onOpen: (url:
 
 const SETTLED = ['submitted', 'unconfirmed', 'blocked', 'refused', 'failed'];
 
-function AppRow({ job, index, now, answers, dryRun, online, queued, onOpenShot, onOpenAnswers, onApplyAgain }: {
+function AppRow({ job, index, now, answers, dryRun, blocked, queued, onOpenShot, onOpenAnswers, onApplyAgain }: {
   job: JobRow;
   index: number;
   now: number;
   answers: number;
   dryRun: boolean;
-  online: boolean;
+  blocked: string;
   queued: boolean;
   onOpenShot: (url: string) => void;
   onOpenAnswers: () => void;
@@ -83,7 +84,6 @@ function AppRow({ job, index, now, answers, dryRun, online, queued, onOpenShot, 
   const fresh = useJustSettled(job.status, 'applying', SETTLED);
   const name = displayName(job);
   const reason = job.status === 'applying' ? '' : stopReason(job) || reasonWords(job.reason);
-  const offline = online ? undefined : 'Start the agent first';
 
   return (
     <motion.li
@@ -132,11 +132,11 @@ function AppRow({ job, index, now, answers, dryRun, online, queued, onOpenShot, 
           )}
           {canApplyAgain(job) && !queued ? (
             dryRun ? (
-              <button type="button" className="icon-btn" onClick={onApplyAgain} disabled={!online} aria-label="Dry run again" title={offline ?? 'Dry run again'}>
+              <button type="button" className="icon-btn" onClick={onApplyAgain} disabled={Boolean(blocked)} aria-label="Dry run again" title={blocked || 'Dry run again'}>
                 <IconRepeat size={15} />
               </button>
             ) : (
-              <button type="button" className="icon-btn icon-btn--danger" onClick={onApplyAgain} disabled={!online} aria-label="Apply for real" title={offline ?? 'Apply for real'}>
+              <button type="button" className="icon-btn icon-btn--danger" onClick={onApplyAgain} disabled={Boolean(blocked)} aria-label="Apply for real" title={blocked || 'Apply for real'}>
                 <IconSend size={15} />
               </button>
             )
@@ -170,7 +170,7 @@ function AppRow({ job, index, now, answers, dryRun, online, queued, onOpenShot, 
 }
 
 export function ApplicationsPage({
-  items, loading, error, onRetry, now, onOpenShot, onOpenAnswers, answerCounts, dryRun, online, queued, onApplyAgain, notices,
+  items, loading, error, onRetry, now, onOpenShot, onOpenAnswers, answerCounts, dryRun, blocked, queued, onApplyAgain, notices,
 }: ApplicationsPageProps) {
   const [group, setGroup] = useState<Group>('all');
 
@@ -240,7 +240,7 @@ export function ApplicationsPage({
                 now={now}
                 answers={answerCounts.get(job.id) ?? 0}
                 dryRun={dryRun}
-                online={online}
+                blocked={blocked}
                 queued={queued.has(job.id)}
                 onOpenShot={(url) => onOpenShot(job, url)}
                 onOpenAnswers={() => onOpenAnswers(job)}

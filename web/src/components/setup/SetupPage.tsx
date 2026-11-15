@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { errorText } from '../../lib/errors';
-import { fileSize, timeAgo } from '../../lib/format';
+import { BLOCKED, fileSize, timeAgo } from '../../lib/format';
 import { EASE_OUT, SPRING_SOFT } from '../../lib/motion';
 import { activeResume, byNewest, checkResumeFile, isPending, readResume, type ResumeProfile, type ResumeSearch } from '../../lib/resume';
 import type { LoadError, ResumeRow } from '../../lib/types';
@@ -28,6 +28,8 @@ export interface SetupStart {
 interface SetupPageProps {
   resumes: { rows: ResumeRow[]; loading: boolean; error: LoadError | null };
   online: boolean;
+  /** Why uploading is off (the agent reads the resume with the model): offline or paused. '' when it can go. */
+  blocked?: string;
   now: number;
   onUpload: (file: File) => Promise<number>;
   onDelete: (row: ResumeRow) => Promise<void>;
@@ -114,7 +116,7 @@ function DrawnCheck({ big = false }: { big?: boolean }) {
   );
 }
 
-export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead, onApply, onSeeJobs, onEditProfile, toast, start }: SetupPageProps) {
+export function SetupPage({ resumes, online, blocked = '', now, onUpload, onDelete, onSaveRead, onApply, onSeeJobs, onEditProfile, toast, start }: SetupPageProps) {
   const [step, setStep] = useState<SetupStep>(start?.step ?? 1);
   const [upload, setUpload] = useState<{ name: string; size: number; error?: string } | null>(
     start?.upload ? { ...start.upload, error: start.uploadError } : null,
@@ -305,11 +307,17 @@ export function SetupPage({ resumes, online, now, onUpload, onDelete, onSaveRead
   } else {
     left = (
       <motion.div key="drop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-        <DropZone onFile={(file) => void choose(file)} disabled={missing} />
+        <DropZone onFile={(file) => void choose(file)} disabled={missing || Boolean(blocked)} />
         {missing ? (
           <p className="groupnote groupnote--warn">
             Needs the latest <code className="code">supabase/schema.sql</code>
           </p>
+        ) : blocked === BLOCKED.offline ? (
+          <p className="groupnote groupnote--warn">
+            Agent offline. Double-click <strong className="nowrap">{START_SHORTCUT}</strong> on your desktop first.
+          </p>
+        ) : blocked === BLOCKED.paused ? (
+          <p className="groupnote groupnote--warn">Agent paused. Turn it on to read a resume.</p>
         ) : null}
         {active ? (
           <p className="setup__current">

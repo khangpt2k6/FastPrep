@@ -7,7 +7,8 @@ import { IconLetter, IconPlay, IconX } from '../Icons';
 interface ActionBarProps {
   count: number;
   dryRun: boolean;
-  online: boolean;
+  /** Why Apply and Write letters are off (agent offline or paused), or '' when they can go. */
+  blocked: string;
   applying: boolean;
   onApply: () => void;
   /** Ask the agent to write cover letters for the selected jobs (a cover_letter command), to read before applying. */
@@ -41,7 +42,7 @@ export function ActionBar(props: ActionBarProps) {
   );
 }
 
-function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, onClear }: ActionBarProps) {
+function Dock({ count, dryRun, blocked, applying, onApply, onLetters, writing, onClear }: ActionBarProps) {
   return (
     <>
       <button type="button" className="icon-btn dock__clear" onClick={onClear} aria-label="Clear selection" title="Clear selection">
@@ -51,15 +52,11 @@ function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, on
         <AnimatedNumber className="num" value={count} from={count} duration={0.3} /> selected
       </span>
       <span className="dock__spacer" />
-      {!online ? (
-        <span className="dock__note" title="Start the agent to apply">
-          Agent offline
-        </span>
-      ) : null}
+      {blocked ? <span className="dock__note">{blocked}</span> : null}
       <span className={`tag ${dryRun ? 'tag--yellow' : 'tag--red tag--strong'}`} title={dryRun ? 'Fills forms, never sends' : 'Applications are sent to employers'}>
         {dryRun ? 'Dry run' : 'Live'}
       </span>
-      <button type="button" className="btn btn--secondary btn--sm" onClick={onLetters} disabled={writing} title="Write cover letters for these jobs">
+      <button type="button" className="btn btn--secondary btn--sm" onClick={onLetters} disabled={writing || Boolean(blocked)} title={blocked || 'Write cover letters for these jobs'}>
         <IconLetter size={14} />
         {writing ? <Shimmer>Writing letters</Shimmer> : 'Write letters'}
       </button>
@@ -67,8 +64,8 @@ function Dock({ count, dryRun, online, applying, onApply, onLetters, writing, on
         type="button"
         className={`btn btn--sm ${dryRun ? 'btn--primary' : 'btn--danger'}`}
         onClick={onApply}
-        disabled={!online || applying}
-        title={dryRun ? 'Fill the forms, send nothing' : 'Fill and send the applications'}
+        disabled={Boolean(blocked) || applying}
+        title={blocked || (dryRun ? 'Fill the forms, send nothing' : 'Fill and send the applications')}
       >
         {applying ? <span className="spinner" aria-hidden="true" /> : <IconPlay size={12} />}
         {applying ? (

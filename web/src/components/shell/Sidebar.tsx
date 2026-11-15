@@ -32,6 +32,8 @@ export interface AgentCardProps {
   onSettings: (patch: Partial<AgentSettings>) => void;
   searching: boolean;
   onSearch: () => void;
+  /** Why Find more is off (agent offline or paused), or '' when it can go. */
+  blocked?: string;
 }
 
 /** A nav row's live marker: a count, a dot, or Set up's progress while it is unfinished. */

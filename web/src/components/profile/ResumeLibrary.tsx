@@ -34,6 +34,8 @@ export interface ResumeLibraryProps {
   jobsFound: number;
   now: number;
   online: boolean;
+  /** Why uploading and Make default are off (the agent reads resumes with the model): offline or paused. '' when they can go. */
+  blocked?: string;
   actions: ResumeActions;
   toast: (toast: ToastInput) => void;
   /** Set up, for the first resume. */
@@ -165,13 +167,14 @@ function Readout({ row, isDefault, jobsFound }: { row: ResumeRow; isDefault: boo
   );
 }
 
-function ResumeItem({ row, isDefault, switching, now, online, jobsFound, onOpen, onMakeDefault, onDelete, onLabel }: {
+function ResumeItem({ row, isDefault, switching, now, online, blocked, jobsFound, onOpen, onMakeDefault, onDelete, onLabel }: {
   row: ResumeRow;
   isDefault: boolean;
   /** Asked to become the default; the agent has not done it yet. */
   switching: boolean;
   now: number;
   online: boolean;
+  blocked: string;
   jobsFound: number;
   onOpen: () => void;
   onMakeDefault: () => void;
@@ -218,7 +221,7 @@ function ResumeItem({ row, isDefault, switching, now, online, jobsFound, onOpen,
             </button>
           ) : null}
           {isReady(row) && !switching ? (
-            <button type="button" className="btn btn--secondary btn--xs" onClick={onMakeDefault}>
+            <button type="button" className="btn btn--secondary btn--xs" onClick={onMakeDefault} disabled={Boolean(blocked)} title={blocked || undefined}>
               Make default
             </button>
           ) : null}
@@ -471,7 +474,7 @@ function Confirm({ ask, onClose }: {
 }
 
 /** The Resumes card on the Profile page. */
-export function ResumeLibrary({ rows, loading, missing, agentName, jobsFound, now, online, actions, toast, onSetup }: ResumeLibraryProps) {
+export function ResumeLibrary({ rows, loading, missing, agentName, jobsFound, now, online, blocked = '', actions, toast, onSetup }: ResumeLibraryProps) {
   const [open, setOpen] = useState<ResumeRow | null>(null);
   const [uploading, setUploading] = useState(false);
   const [ask, setAsk] = useState<Parameters<typeof Confirm>[0]['ask']>(null);
@@ -500,6 +503,7 @@ export function ResumeLibrary({ rows, loading, missing, agentName, jobsFound, no
       text: `${name(row)} goes with every application from now on. The agent searches again with what it read from it, so your jobs get scored again.`,
       action: 'Make default',
       run: async () => {
+        if (blocked) throw new Error(blocked);
         await actions.makeDefault(row);
         setSwitching(row.id);
         toast({ tone: 'ok', title: online ? 'Switching the default resume' : 'Queued for the agent', detail: 'The agent searches again with it.' });
@@ -570,6 +574,7 @@ export function ResumeLibrary({ rows, loading, missing, agentName, jobsFound, no
             switching={switching === row.id}
             now={now}
             online={online}
+            blocked={blocked}
             jobsFound={jobsFound}
             onOpen={() => setOpen(row)}
             onMakeDefault={() => askDefault(row)}
@@ -596,7 +601,7 @@ export function ResumeLibrary({ rows, loading, missing, agentName, jobsFound, no
         tone="ember"
         aside={
           !missing && !loading && list.length > 0 ? (
-            <button type="button" className="btn btn--secondary btn--sm" onClick={() => setUploading(true)}>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => setUploading(true)} disabled={Boolean(blocked)} title={blocked || undefined}>
               <IconUpload size={14} />
               Upload another
             </button>

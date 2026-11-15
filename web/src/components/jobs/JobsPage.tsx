@@ -62,6 +62,8 @@ interface JobsPageProps {
   /** A search is on its way or running: the button shimmers "Finding jobs". */
   searching: boolean;
   onSearch: () => void;
+  /** Why Find more is off (agent offline or paused), or '' when it can go. */
+  blocked?: string;
   now: number;
   /** Callouts above the list: agent offline, Live mode, profile incomplete. */
   notices?: ReactNode;
@@ -84,9 +86,15 @@ function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Se
 }
 
 /** "Find more", or a shimmering "Finding jobs" while a search runs. */
-export function FindButton({ searching, onSearch, small = false }: { searching: boolean; onSearch: () => void; small?: boolean }) {
+export function FindButton({ searching, onSearch, small = false, blocked = '' }: { searching: boolean; onSearch: () => void; small?: boolean; blocked?: string }) {
   return (
-    <button type="button" className={`btn btn--primary ${small ? 'btn--sm' : ''} findbtn`} onClick={onSearch} disabled={searching} title="Ask the agent for more jobs">
+    <button
+      type="button"
+      className={`btn btn--primary ${small ? 'btn--sm' : ''} findbtn`}
+      onClick={onSearch}
+      disabled={searching || Boolean(blocked)}
+      title={blocked || 'Ask the agent for more jobs'}
+    >
       <IconRadar size={15} className={searching ? 'spin-slow' : ''} />
       {searching ? <Shimmer tone="inverse">Finding jobs</Shimmer> : 'Find more'}
     </button>
@@ -139,7 +147,7 @@ export function JobsPage(props: JobsPageProps) {
         friend="raccoon-search"
         title="No scored jobs yet"
         text={props.searching ? <Shimmer>The agent is looking now.</Shimmer> : undefined}
-        action={<FindButton searching={props.searching} onSearch={props.onSearch} />}
+        action={<FindButton searching={props.searching} onSearch={props.onSearch} blocked={props.blocked} />}
       />
     );
   } else if (visible.length === 0) {
@@ -232,7 +240,7 @@ export function JobsPage(props: JobsPageProps) {
           <span className="sr-only" aria-live="polite">
             {loading ? '' : filtered ? `${visible.length} of ${candidates.length} jobs shown` : `${candidates.length} jobs`}
           </span>
-          <FindButton searching={props.searching} onSearch={props.onSearch} small />
+          <FindButton searching={props.searching} onSearch={props.onSearch} blocked={props.blocked} small />
         </div>
         <div className="jfilters" role="group" aria-label="Narrow the jobs">
           <span className={`jf jf--sky ${filters.posted !== 'any' ? 'is-set' : ''}`}>

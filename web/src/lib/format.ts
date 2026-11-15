@@ -9,6 +9,18 @@ export function isOnline(state: string | undefined, lastSeen: string | undefined
   return Number.isFinite(seen) && now - seen < ONLINE_WINDOW_MS;
 }
 
+export const BLOCKED = { loading: 'Connecting to the agent', offline: 'Agent offline', paused: 'Agent paused' } as const;
+
+/**
+ * Why the buttons whose work asks the model (OpenAI) are off, or '' when they can go: only while the agent is online and
+ * on. A click otherwise would only leave work that spends later, and the agent refuses such work anyway.
+ */
+export function blockedReason(online: boolean, paused: boolean, loading = false): string {
+  if (loading) return BLOCKED.loading;
+  if (!online) return BLOCKED.offline;
+  return paused ? BLOCKED.paused : '';
+}
+
 export function timeAgo(iso: string | undefined, now: number): string {
   if (!iso) return '';
   const then = Date.parse(iso);

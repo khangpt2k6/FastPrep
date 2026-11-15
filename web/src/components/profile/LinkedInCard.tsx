@@ -10,7 +10,7 @@ import './documents.css';
 import './linkedin.css';
 
 /** The profile saved from LinkedIn as a PDF: the agent reads it and adds what the profile is missing. */
-function ImportRow({ userId }: { userId: string }) {
+function ImportRow({ userId, blocked }: { userId: string; blocked: string }) {
   const [running, setRunning] = useState<LinkedInImport | null>(null);
   const [uploading, setUploading] = useState(false);
   const [problem, setProblem] = useState('');
@@ -61,7 +61,13 @@ function ImportRow({ userId }: { userId: string }) {
         ) : null}
       </div>
       <div className="resume__actions">
-        <button type="button" className="btn btn--secondary btn--sm" onClick={() => input.current?.click()} disabled={working || !userId}>
+        <button
+          type="button"
+          className="btn btn--secondary btn--sm"
+          onClick={() => input.current?.click()}
+          disabled={working || !userId || Boolean(blocked)}
+          title={blocked || undefined}
+        >
           Upload PDF
         </button>
         <input ref={input} type="file" accept=".pdf,application/pdf" className="sr-only" tabIndex={-1} aria-label="LinkedIn profile PDF" onChange={onPick} />
@@ -143,11 +149,12 @@ function ConnectRow() {
 }
 
 /** LinkedIn on the Profile page: the profile brought in as a file, and the account linked by LinkedIn's sign-in. */
-export function LinkedInCard() {
+/** `blocked`: why the import is off (the agent reads it with the model, so not while it is offline or paused). */
+export function LinkedInCard({ blocked = '' }: { blocked?: string }) {
   const userId = useUserId();
   return (
     <Group title="LinkedIn" icon={<IconLinkedin size={15} />} tone="sky">
-      <ImportRow userId={userId} />
+      <ImportRow userId={userId} blocked={blocked} />
       <ConnectRow />
     </Group>
   );

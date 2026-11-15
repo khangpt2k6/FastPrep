@@ -68,6 +68,12 @@ RESUMES = "automation_resumes"
 RULES = "automation_rules"
 DOCUMENTS = "automation_documents"
 PAUSED = "Paused from the dashboard"
+# The commands whose work asks the model (OpenAI), which costs money. One asked while the agent was paused or off never
+# runs: the page keeps their buttons off then, and one that came anyway is refused, so a click from then never spends later.
+# A cover_letter command with pdf_only in its payload only makes the kept letters' PDFs again: it asks no model.
+MODEL_KINDS = ("apply", "cover_letter", "linkedin", "resume", "search")
+REFUSED_PAUSED = "Not run: the agent was paused. Turn it on, then ask again."
+REFUSED_OFF = "Not run: the agent was off. Ask again now that it is on."
 # Supabase's answer when a table or column is not there: supabase/schema.sql was not run again since it got it.
 MISSING = frozenset({"42703", "42P01", "PGRST204", "PGRST205"})
 # The parts of the newer schema the agent asks about, and what each one brings.
@@ -121,6 +127,17 @@ def _quiet(loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
 
 def _moving(answers: dict[str, str]) -> bool:
     return answers.get("willing_to_relocate", "").strip().lower().startswith("y")
+
+
+def pdf_only(command: dict[str, Any]) -> bool:
+    """A cover_letter command that only asks for the kept letters' PDFs again."""
+    payload = command.get("payload")
+    return command.get("kind") == "cover_letter" and isinstance(payload, dict) and payload.get("pdf_only") is True
+
+
+def asks_model(command: dict[str, Any]) -> bool:
+    """Whether this command's work asks the model."""
+    return command.get("kind") in MODEL_KINDS and not pdf_only(command)
 
 
 def schema_missing(error: BaseException) -> bool:
@@ -350,6 +367,8 @@ class Agent:
         self.naming_paused_until = 0.0
         # The command being handled, so a running apply can ask whether the page cancelled it.
         self.command_id: int | None = None
+        # Whether the commands asked while the agent was off were refused yet: done at the start, before any other runs.
+        self.off_checked = False
         # The jobs tried before get their company's name once a run: they are not pushed again.
         self.tried_named = False
         # Which parts of the newer schema the database has, and the Agent page's switches.
@@ -489,7 +508,8 @@ class Agent:
         try:
             known = store.companies()
             unnamed = [item.job for item in items if company_key(item.job) not in known]
-            if unnamed and time.monotonic() >= self.naming_paused_until:
+            # Naming asks the model: not while paused. The next push names them.
+            if unnamed and not self.settings.paused and time.monotonic() >= self.naming_paused_until:
                 try:
                     named = await name_companies(self.session.client, self.session.config.quick_model, unnamed)
                 except Exception as error:  # noqa: BLE001  Names and logos are only for the page.
@@ -565,6 +585,9 @@ class Agent:
         session = self.session
         failures = 0
         while session.store.with_status("new") and self.scored() < (goal := self.target if until is None else until):
+            # Paused on the page: the round under way was the last, the rest wait for the next search.
+            if self.settings.paused:
+                return
             self.say("scoring", f"Scoring jobs against your resume ({self.scored()} so far)")
             try:
                 # No more than asked for: a round of auto-fetch scores fetch_limit jobs at most.
@@ -744,17 +767,54 @@ class Agent:
 
     async def commands(self) -> None:
         while True:
-            # Paused on the page: no command is taken, and they wait there until the agent is resumed.
-            await self.go.wait()
             try:
+                # Refused at the start already, unless that failed: then before any command runs.
+                if not self.off_checked:
+                    await self.refuse_asked_while_off()
                 await self.next_command()
             except Exception as error:  # noqa: BLE001  The next poll tries again.
                 click.echo(f"command poll failed: {error}")
             await asyncio.sleep(POLL_SECONDS)
 
+    async def model_commands(self) -> list[dict[str, Any]]:
+        """The commands waiting whose work would ask the model."""
+        rows = await self.db.select(
+            "automation_commands",
+            {"status": "eq.pending", "kind": f"in.({','.join(MODEL_KINDS)})", "user_id": f"eq.{self.db.user_id}", "order": "created_at.asc"},
+        )
+        return [row for row in rows if asks_model(row)]
+
+    async def refuse(self, rows: list[dict[str, Any]], why: str) -> None:
+        """These commands ended as failed with why, so none of them runs later. A resume still waiting to be read says why
+        on its row too, so the page stops waiting for it."""
+        for row in rows:
+            if not await self.db.update("automation_commands", {"id": f"eq.{row['id']}", "status": "eq.pending"}, {"status": "failed", "error": why}):
+                continue
+            click.echo(f"{row.get('kind')} command {row['id']}: {why}")
+            payload = row.get("payload")
+            if row.get("kind") != "resume" or not self.support.resumes or not isinstance(payload, dict):
+                continue
+            try:
+                where = {"user_id": f"eq.{self.db.user_id}", "id": f"eq.{int(payload['resume_id'])}", "status": "eq.uploaded"}
+                await self.db.update(RESUMES, where, {"status": "failed", "error": why, "updated_at": _now()})
+            except Exception as error:  # noqa: BLE001  The command already says why.
+                click.echo(f"resume row: {error}")
+
+    async def refuse_asked_while_off(self) -> None:
+        """What the page asked of the model while the agent was off, refused: it never runs, whenever the agent comes."""
+        await self.refuse(await self.model_commands(), REFUSED_OFF)
+        self.off_checked = True
+
     async def next_command(self) -> None:
-        """The oldest command the page left, run; none while paused."""
+        """The oldest command the page left, run. None runs while paused: one whose work asks the model is refused then,
+        so a click meanwhile never spends once the agent is on again, and the others wait."""
         if self.settings.paused:
+            asked = await self.model_commands()
+            if asked:
+                # The page may have turned the agent on since the last read: what was asked since then runs.
+                await self.read_settings()
+                if self.settings.paused:
+                    await self.refuse(asked, REFUSED_PAUSED)
             return
         rows = await self.db.select(
             "automation_commands",
@@ -777,7 +837,7 @@ class Agent:
                 self.target = self.scored() + SCORE_MORE
                 self.wake.set()
             elif command["kind"] == "cover_letter":
-                await self.write_letters(command["job_ids"])
+                await self.write_letters(command["job_ids"], kept_only=pdf_only(command))
             elif command["kind"] == "apply":
                 await self.apply_all(command["job_ids"], bool(command["dry_run"]))
             elif command["kind"] == "resume":
@@ -884,25 +944,32 @@ class Agent:
         except Exception as error:  # noqa: BLE001  The application itself is already recorded.
             click.echo(f"memory: {error}")
 
-    async def letter(self, item: Stored, always: bool = False) -> Letter | None:
+    async def letter(self, item: Stored, always: bool = False, kept_only: bool = False) -> Letter | None:
         """The job's cover letter as the page set it up, or None: letters off, or one that could not be written, which is
         said and does not stop the application."""
         try:
-            return await self.letters.for_job(item, always)
+            return await self.letters.for_job(item, always, kept_only)
         except Exception as error:  # noqa: BLE001  Said on the page; the application goes on without a letter.
             self.say(self.state, f"No cover letter for {item.job.company}: {error}")
             return None
 
-    async def write_letters(self, job_ids: list[str]) -> None:
-        """Cover letters for these jobs, to read and edit on the page before applying. Nothing is sent."""
+    async def write_letters(self, job_ids: list[str], kept_only: bool = False) -> None:
+        """Cover letters for these jobs, to read and edit on the page before applying. Nothing is sent. With `kept_only`
+        only the kept letters' PDFs are made again, and no model is asked."""
         await self.writing()
         for number, job_id in enumerate(job_ids, 1):
+            # A pause from the page lets the letter under way finish, and starts no other.
+            if self.settings.paused and not kept_only:
+                raise Paused(f"Paused after {number - 1} of {len(job_ids)} letters. Select the rest and write them again.")
             item = self.session.store.get(job_id)
             if item is None:
                 continue
             self.say("writing", f"Cover letter {number}/{len(job_ids)}: {item.job.company}")
-            await self.letter(item, always=True)
-        self.say("ready", f"{len(job_ids)} cover letter(s) written. Read them on the page before applying.")
+            await self.letter(item, always=True, kept_only=kept_only)
+        if kept_only:
+            self.idle(f"Cover letter PDF{'' if len(job_ids) == 1 else 's'} made again.")
+        else:
+            self.say("ready", f"{len(job_ids)} cover letter(s) written. Read them on the page before applying.")
 
     async def apply_all(self, job_ids: list[str], dry: bool) -> None:
         session = self.session
@@ -1201,6 +1268,11 @@ class Agent:
         click.echo(f"Signed in to Supabase as {self.db.email}")
         try:
             await self.detect()
+            # Before the page can see the agent online: whatever is waiting then was asked while it was off.
+            try:
+                await self.refuse_asked_while_off()
+            except Exception as error:  # noqa: BLE001  The command loop does it before it takes any command.
+                click.echo(f"commands asked while the agent was off: {error}")
             if self.resume:
                 self.say("reading", f"Reading {self.resume.name}")
                 await self.session.load_resume(self.resume)

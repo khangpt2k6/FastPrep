@@ -29,10 +29,12 @@ interface ProfilePageProps {
   row: ProfileRow | null;
   onEdit: (step: number) => void;
   /** The Resumes card: every resume and what can be done with them. */
-  resume: Omit<ResumeLibraryProps, 'now' | 'onSetup'>;
+  resume: Omit<ResumeLibraryProps, 'now' | 'onSetup' | 'blocked'>;
   now: number;
   /** Go to Set up to upload a new resume. */
   onReplace: () => void;
+  /** Why reading a resume or a LinkedIn profile is off (agent offline or paused), or '' when it can go. */
+  blocked?: string;
 }
 
 function withScheme(url: string) {
@@ -239,7 +241,7 @@ function TabBody({ tab, profile, onEdit }: { tab: TabKey; profile: Profile; onEd
   }
 }
 
-export function ProfilePage({ profile, row, onEdit, resume, now, onReplace }: ProfilePageProps) {
+export function ProfilePage({ profile, row, onEdit, resume, now, onReplace, blocked = '' }: ProfilePageProps) {
   const [tab, setTab] = useState<TabKey>('personal');
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const sections = profileProgress(profile);
@@ -285,9 +287,9 @@ export function ProfilePage({ profile, row, onEdit, resume, now, onReplace }: Pr
         </Callout>
       ) : null}
 
-      <ResumeLibrary {...resume} now={now} onSetup={onReplace} />
+      <ResumeLibrary {...resume} now={now} onSetup={onReplace} blocked={blocked} />
       <DocumentsCard now={now} />
-      <LinkedInCard />
+      <LinkedInCard blocked={blocked} />
 
       <Group title="Details" icon={<IconUser size={15} />} tone="plum" bare>
         <div className="panel profilecard">

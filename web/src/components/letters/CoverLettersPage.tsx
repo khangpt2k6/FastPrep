@@ -81,7 +81,8 @@ export interface LettersActions {
   saveTemplate: (template: Pick<CoverTemplate, 'id' | 'name' | 'description' | 'body'>) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
   saveLetter: (jobId: string, body: string) => Promise<void>;
-  /** Asks the agent for letters; `fresh` drops the kept ones first. Without it the agent only renders the PDF again. */
+  /** Asks the agent for letters; `fresh` drops the kept ones and writes new ones (the model). Without it the agent only
+   * renders the kept letter's PDF again, with no model. */
   sendLetters: (jobIds: string[], fresh: boolean) => Promise<void>;
 }
 
@@ -90,7 +91,7 @@ export const LIVE_ACTIONS: LettersActions = {
   saveTemplate: saveCoverTemplate,
   deleteTemplate: deleteCoverTemplate,
   saveLetter: saveCoverLetter,
-  sendLetters: sendCoverLetters,
+  sendLetters: (jobIds, fresh) => sendCoverLetters(jobIds, fresh ? 'fresh' : 'pdf'),
 };
 
 interface LettersViewProps {
@@ -98,6 +99,8 @@ interface LettersViewProps {
   actions: LettersActions;
   jobs: JobRow[];
   online: boolean;
+  /** Why Rewrite is off (agent offline or paused), or '' when it can go. */
+  blocked?: string;
   now: number;
   toast: Toast;
   /** Fills the letterhead and fields of the sample letter; without it the sample uses a made-up person. */
@@ -444,6 +447,7 @@ interface LetterViewProps {
   job: JobRow | undefined;
   templateName: string;
   online: boolean;
+  blocked: string;
   toast: Toast;
   actions: LettersActions;
   onChanged: () => void;
@@ -507,7 +511,7 @@ function PdfPane({ letter, name, online, wait, onMake, busy }: { letter: CoverLe
 }
 
 /** The letter on paper, editable, or its PDF. Keyed by job, so another letter starts clean. */
-function LetterView({ letter, job, templateName, online, toast, actions, onChanged, onClose }: LetterViewProps & { onClose: () => void }) {
+function LetterView({ letter, job, templateName, online, blocked, toast, actions, onChanged, onClose }: LetterViewProps & { onClose: () => void }) {
   const [text, setText] = useState(letter.body);
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<'text' | 'pdf'>('text');
@@ -556,6 +560,7 @@ function LetterView({ letter, job, templateName, online, toast, actions, onChang
   }
 
   async function again() {
+    if (blocked) return;
     setBusy(true);
     try {
       await actions.sendLetters([letter.job_id], true);
@@ -609,7 +614,7 @@ function LetterView({ letter, job, templateName, online, toast, actions, onChang
       </div>
       <footer className="letterview__foot">
         <span className="savestate">{dirty ? 'Unsaved changes' : letter.updated_by === 'web' ? 'Edited' : ''}</span>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy} title="Replace with a new letter">
+        <button type="button" className="btn btn--ghost btn--sm" onClick={again} disabled={busy || Boolean(blocked)} title={blocked || 'Replace with a new letter'}>
           Rewrite
         </button>
         <button type="button" className="btn btn--primary btn--sm" onClick={save} disabled={!dirty || busy}>
@@ -634,7 +639,7 @@ function LetterDialog({ view, onClose }: { view: LetterViewProps | null; onClose
 }
 
 /** The page's content: the templates on the left, the letters in the rail. */
-export function LettersView({ data, actions, jobs, online, now, toast, profile }: LettersViewProps) {
+export function LettersView({ data, actions, jobs, online, blocked = '', now, toast, profile }: LettersViewProps) {
   const { templates: templatesT, settings: settingsT, letters: lettersT } = data;
   const templates = useMemo(() => [...templatesT.rows].sort((a, b) => Number(b.builtin) - Number(a.builtin) || a.name.localeCompare(b.name)), [templatesT.rows]);
   const letters = useMemo(() => [...lettersT.rows].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)), [lettersT.rows]);
@@ -854,6 +859,7 @@ export function LettersView({ data, actions, jobs, online, now, toast, profile }
                 job: jobsById.get(opened.job_id),
                 templateName: names.get(opened.template_id) ?? opened.template_id,
                 online,
+                blocked,
                 toast,
                 actions,
                 onChanged: lettersT.reload,
@@ -892,17 +898,18 @@ interface CoverLettersPageProps {
   userId: string;
   jobs: JobRow[];
   online: boolean;
+  blocked?: string;
   now: number;
   toast: Toast;
   profile?: Profile | null;
 }
 
 /** The page wired to Supabase. */
-export function CoverLettersPage({ userId, jobs, online, now, toast, profile }: CoverLettersPageProps) {
+export function CoverLettersPage({ userId, jobs, online, blocked, now, toast, profile }: CoverLettersPageProps) {
   const templates = useCoverTemplates(userId);
   const settings = useCoverSettings(userId);
   const letters = useCoverLetters(userId);
-  return <LettersView data={{ templates, settings, letters }} actions={LIVE_ACTIONS} jobs={jobs} online={online} now={now} toast={toast} profile={profile} />;
+  return <LettersView data={{ templates, settings, letters }} actions={LIVE_ACTIONS} jobs={jobs} online={online} blocked={blocked} now={now} toast={toast} profile={profile} />;
 }
 
 export default CoverLettersPage;

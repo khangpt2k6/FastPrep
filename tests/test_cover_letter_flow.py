@@ -195,6 +195,22 @@ def test_a_letter_edited_on_the_page_is_sent_as_the_person_left_it_with_no_model
 
 
 @pytest.mark.letters
+def test_kept_only_makes_the_kept_letters_pdf_again_and_never_asks_the_model(tmp_path: Path) -> None:
+    session = session_at(tmp_path)
+    session._client = ScriptedModel()  # type: ignore[assignment]
+    # Written with another template than the one picked now: kept_only still takes it as it is.
+    kept = "Dear Acme,\n\nThe letter as it was written.\n\nAda\n"
+    db = Remote(**{SETTINGS: [{"enabled": True, "template_id": "concise"}], LETTERS: [{"job_id": JOB.id, "template_id": "story", "body": kept, "updated_by": "agent"}]})
+    letter = asyncio.run(CoverLetters(db, session, print).for_job(session.store.get(JOB.id), always=True, kept_only=True))
+    assert letter is not None and letter.text == kept and letter.template_id == "story"
+    assert db.tables[LETTERS][0]["pdf_path"] == f"u1/cover-letters/{letter_key(JOB.id)}.pdf"
+    # None kept: none is written.
+    empty = Remote(**{SETTINGS: [{"enabled": True, "template_id": "concise"}]})
+    assert asyncio.run(CoverLetters(empty, session, print).for_job(session.store.get(JOB.id), always=True, kept_only=True)) is None
+    assert session._client.requests == [] and LETTERS not in empty.tables
+
+
+@pytest.mark.letters
 def test_letters_off_on_the_page_write_nothing_unless_asked_for_and_a_page_template_is_used(tmp_path: Path) -> None:
     session = session_at(tmp_path)
     session._client = letter_model(hi="Hello from my template.")  # type: ignore[assignment]

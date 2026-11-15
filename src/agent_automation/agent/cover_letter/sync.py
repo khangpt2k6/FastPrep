@@ -78,9 +78,10 @@ class CoverLetters:
             template = templates[DEFAULT_TEMPLATE]
         return Choice(enabled, template)
 
-    async def for_job(self, item: Stored, always: bool = False) -> Letter | None:
+    async def for_job(self, item: Stored, always: bool = False, kept_only: bool = False) -> Letter | None:
         """The letter for this job, as a PDF beside the CV and kept on the page. None when letters are off (unless `always`)
-        or a letter_written hook stopped it."""
+        or a letter_written hook stopped it. With `kept_only` none is written: the kept letter's PDF is made again, and
+        with none kept there is none, so no model is asked."""
         choice = await self.choice()
         if not choice.enabled and not always:
             return None
@@ -89,7 +90,9 @@ class CoverLetters:
         kept = next(iter(await self.db.select(LETTERS, where)), None)
         edited = kept is not None and kept.get("updated_by") == "web"
         # One the person edited is theirs; one written with the template still picked is not written again.
-        reuse = kept is not None and bool(str(kept.get("body") or "").strip()) and (edited or kept.get("template_id") == choice.template.id)
+        reuse = kept is not None and bool(str(kept.get("body") or "").strip()) and (kept_only or edited or kept.get("template_id") == choice.template.id)
+        if kept_only and not reuse:
+            return None
         letter = await self.session.cover_letter(item, choice.template, str(kept["body"]) if reuse and kept else "", self.log)
         if letter is None:
             return None

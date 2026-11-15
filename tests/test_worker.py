@@ -318,12 +318,20 @@ def test_a_column_that_turns_out_missing_later_is_left_out_and_the_heartbeat_and
 # Pause.
 
 
-def test_paused_takes_no_command_and_going_on_again_says_ready(session: Session) -> None:
+def test_paused_runs_no_command_refuses_what_asks_the_model_and_going_on_again_says_ready(session: Session) -> None:
     db = Remote(
         automation_settings=[{"user_id": "u1", "paused": True, "auto_fetch": True, "fetch_hours": 3, "fetch_limit": 40}],
-        automation_commands=[{"id": 1, "user_id": "u1", "kind": "search", "status": "pending", "job_ids": [], "dry_run": True}],
+        automation_commands=[
+            {"id": 1, "user_id": "u1", "kind": "search", "status": "pending", "job_ids": [], "dry_run": True},
+            # Only the PDF of a kept letter: no model, so it waits instead.
+            {"id": 2, "user_id": "u1", "kind": "cover_letter", "status": "pending", "job_ids": ["gone"], "dry_run": True, "payload": {"pdf_only": True}},
+        ],
     )
     agent = agent_for(session, db)
+
+    def status(number: int) -> tuple[str, str]:
+        row = db.row("automation_commands", id=number)
+        return row["status"], row.get("error", "")
 
     async def run() -> None:
         await agent.read_settings()
@@ -331,14 +339,123 @@ def test_paused_takes_no_command_and_going_on_again_says_ready(session: Session)
         assert (agent.state, agent.message, agent.go.is_set()) == ("paused", worker.PAUSED, False)
         assert db.tables["automation_agent"][0]["state"] == "paused"
         await agent.next_command()
-        assert db.tables["automation_commands"][0]["status"] == "pending"
+        # A Find more from while it was paused never runs, not even once it is on again.
+        assert status(1) == ("failed", worker.REFUSED_PAUSED) and status(2) == ("pending", "")
+        assert not agent.wake.is_set()
         db.tables["automation_settings"][0]["paused"] = False
         await agent.read_settings()
         assert agent.state == "ready" and agent.go.is_set()
+        db.tables["automation_commands"].append({"id": 3, "user_id": "u1", "kind": "search", "status": "pending", "job_ids": [], "dry_run": True})
         await agent.next_command()
-        assert db.tables["automation_commands"][0]["status"] == "done" and agent.wake.is_set()
+        assert status(2) == ("done", "") and status(3) == ("pending", "")
+        await agent.next_command()
+        assert status(3) == ("done", "") and agent.wake.is_set()
 
     asyncio.run(run())
+
+
+def test_a_command_asked_just_after_the_page_turned_the_agent_on_again_runs(session: Session) -> None:
+    db = Remote(
+        automation_settings=[{"user_id": "u1", "paused": False, "auto_fetch": True, "fetch_hours": 3, "fetch_limit": 40}],
+        automation_commands=[{"id": 1, "user_id": "u1", "kind": "search", "status": "pending", "job_ids": [], "dry_run": True}],
+    )
+    agent = agent_for(session, db)
+
+    async def run() -> None:
+        # The agent's last read of the switches said paused; the page has turned it on since.
+        agent.use_settings(Settings(paused=True))
+        await agent.next_command()
+        assert not agent.settings.paused and db.tables["automation_commands"][0]["status"] == "pending"
+        await agent.next_command()
+        assert db.tables["automation_commands"][0]["status"] == "done"
+
+    asyncio.run(run())
+
+
+def test_what_was_asked_of_the_model_while_the_agent_was_off_never_runs(session: Session) -> None:
+    def command(number: int, kind: str, status: str = "pending", **payload: Any) -> dict[str, Any]:
+        return {"id": number, "user_id": "u1", "kind": kind, "status": status, "job_ids": [], "dry_run": True, "payload": payload}
+
+    db = Remote(
+        automation_commands=[
+            command(1, "search"), command(2, "apply"), command(3, "cover_letter"), command(4, "linkedin", path="u1/in.pdf"),
+            command(5, "resume", resume_id=8), command(6, "cover_letter", pdf_only=True), command(7, "calendar_add", title="Call"),
+            command(9, "search", "done"),
+        ],
+        automation_resumes=[{"user_id": "u1", "id": 8, "name": "cv.pdf", "status": "uploaded", "error": ""}],
+    )
+    agent = agent_for(session, db)
+    asyncio.run(agent.refuse_asked_while_off())
+    statuses = {row["id"]: (row["status"], row.get("error", "")) for row in db.tables["automation_commands"]}
+    refused = ("failed", worker.REFUSED_OFF)
+    assert statuses == {1: refused, 2: refused, 3: refused, 4: refused, 5: refused, 6: ("pending", ""), 7: ("pending", ""), 9: ("done", "")}
+    # The page stops waiting for the resume.
+    resume = db.row("automation_resumes", id=8)
+    assert (resume["status"], resume["error"]) == ("failed", worker.REFUSED_OFF)
+    assert agent.off_checked
+
+
+def test_only_commands_whose_work_asks_the_model_count_as_asking_it() -> None:
+    assert all(worker.asks_model({"kind": kind}) for kind in ("apply", "search", "cover_letter", "resume", "linkedin"))
+    assert not worker.asks_model({"kind": "calendar_add"})
+    assert not worker.asks_model({"kind": "cover_letter", "payload": {"pdf_only": True}})
+    assert worker.asks_model({"kind": "cover_letter", "payload": {"pdf_only": "yes"}})
+
+
+def test_a_pause_stops_scoring_after_the_round_under_way(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    session.store.add_all([job(number) for number in range(6)])
+    agent = agent_for(session, Remote())
+    rounds: list[int] = []
+
+    async def read(log: Any, most: int = 200) -> int:
+        rounds.append(most)
+        batch = session.store.with_status("new")[:2]
+        for item in batch:
+            session.store.set_score(item.job.id, 3.0)
+        # The page pauses while the first round is being scored.
+        agent.use_settings(Settings(paused=True))
+        return len(batch)
+
+    monkeypatch.setattr(session, "read", read)
+    asyncio.run(agent.score_rounds(until=6))
+    assert len(rounds) == 1 and agent.scored() == 2
+
+
+def test_a_pause_lets_the_letter_under_way_finish_and_starts_no_other(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    ids = scored(session, 1, 2, 3)
+    db = Remote(automation_commands=[{"id": 9, "user_id": "u1", "kind": "cover_letter", "status": "pending", "job_ids": ids, "dry_run": True}])
+    agent = agent_for(session, db)
+    written: list[str] = []
+
+    async def for_job(item: Stored, always: bool = False, kept_only: bool = False) -> None:
+        written.append(item.job.id)
+        agent.use_settings(Settings(paused=True))
+
+    monkeypatch.setattr(agent.letters, "for_job", for_job)
+    asyncio.run(agent.next_command())
+    command = db.tables["automation_commands"][0]
+    assert written == ids[:1]
+    assert command["status"] == "failed" and command["error"] == "Paused after 1 of 3 letters. Select the rest and write them again."
+
+
+def test_companies_are_not_named_while_paused(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    scored(session, 1)
+    agent = agent_for(session, Remote())
+    agent.naming_paused_until = 0.0
+    asked: list[int] = []
+
+    async def name_companies(client: Any, model: str, jobs: list[Job]) -> dict[str, Any]:
+        asked.append(len(jobs))
+        return {}
+
+    monkeypatch.setattr(worker, "name_companies", name_companies)
+    session._client = SimpleNamespace()  # type: ignore[assignment]
+    agent.settings = Settings(paused=True)
+    asyncio.run(agent.know_companies(session.store.all()))
+    assert asked == []
+    agent.settings = Settings()
+    asyncio.run(agent.know_companies(session.store.all()))
+    assert asked == [1]
 
 
 def test_a_pause_lets_the_form_under_way_finish_and_stops_before_the_next(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:

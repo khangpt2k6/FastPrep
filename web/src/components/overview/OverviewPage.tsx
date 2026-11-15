@@ -63,6 +63,8 @@ interface OverviewProps {
   now: number;
   searching: boolean;
   onSearch: () => void;
+  /** Why Find more is off (agent offline or paused), or '' when it can go. */
+  blocked?: string;
   onReviewStrong: () => void;
   onNavigate: (page: Page) => void;
   selected: Set<string>;
@@ -288,7 +290,7 @@ export function OverviewPage(props: OverviewProps) {
               Review strong matches
               {openStrong ? <span className="btn__count num">{openStrong} open</span> : null}
             </button>
-            <button type="button" className="btn btn--secondary" onClick={props.onSearch} disabled={props.searching}>
+            <button type="button" className="btn btn--secondary" onClick={props.onSearch} disabled={props.searching || Boolean(props.blocked)} title={props.blocked || undefined}>
               <IconRadar size={15} className={props.searching ? 'spin-slow' : ''} />
               {props.searching ? <Shimmer>Finding jobs</Shimmer> : 'Find more'}
             </button>

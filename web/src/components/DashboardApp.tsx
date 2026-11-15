@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { errorText } from '../lib/errors';
-import { APPLICATION_STATUSES, WORKING_STATES, companyName, displayName, isOnline, plural, statusInfo, stopReason } from '../lib/format';
+import { APPLICATION_STATUSES, WORKING_STATES, blockedReason, companyName, displayName, isOnline, plural, statusInfo, stopReason } from '../lib/format';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
 import { applyResume, activeResume, isPending, writeResume, type ResumeProfile } from '../lib/resume';
 import { atCompany, filterJobs, placeOf, sortJobs } from '../lib/jobs';
@@ -129,7 +129,8 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   const { saved, toggle: toggleSaved } = useSavedJobs();
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const [dryRun, setDryRun] = useState(true);
+  // Live by default: Apply sends for real, after the confirm dialog. Dry run is the switch in the top bar.
+  const [dryRun, setDryRun] = useState(false);
   const [filters, setFilters] = useState<Omit<JobFilterState, 'company'>>(NO_JOB_FILTERS);
   const [applyBusy, setApplyBusy] = useState(false);
   const [searchBusy, setSearchBusy] = useState(false);
@@ -157,6 +158,8 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   useEffect(() => {
     if (override && JSON.stringify(override) === JSON.stringify(stored)) setOverride(null);
   }, [stored, override]);
+  // Every button whose work asks the model (OpenAI) goes only while the agent is online and on; why not, otherwise.
+  const blocked = blockedReason(online, settings.paused, agentT.loading);
 
   const changeSettings = useCallback(
     async (patch: Partial<AgentSettings>) => {
@@ -309,8 +312,15 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     });
   }, []);
 
+  /** Whether work that asks the model can go now; a toast says why not. The buttons are off then, this is the backstop. */
+  function canAsk(): boolean {
+    if (blocked) push({ tone: 'warn', title: blocked });
+    return !blocked;
+  }
+
   async function apply(jobs: JobRow[]) {
     setConfirmJobs(null);
+    if (!canAsk()) return;
     setApplyBusy(true);
     try {
       await sendApply(
@@ -328,7 +338,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   }
 
   function requestApply() {
-    if (chosen.length === 0 || !online) return;
+    if (chosen.length === 0 || !canAsk()) return;
     if (chosen.length > MAX_PER_APPLY) {
       push({ tone: 'warn', title: `Select ${MAX_PER_APPLY} or fewer jobs` });
       return;
@@ -363,10 +373,11 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   }
 
   async function search() {
+    if (!canAsk()) return;
     setSearchBusy(true);
     try {
       await sendSearch();
-      push({ tone: 'ok', title: online ? 'Searching for jobs' : 'Search queued' });
+      push({ tone: 'ok', title: 'Searching for jobs' });
       commandsT.reload();
     } catch (error) {
       push({ tone: 'error', title: 'Could not start search', detail: errorText(error) });
@@ -376,11 +387,11 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   }
 
   async function writeLetters() {
-    if (chosen.length === 0) return;
+    if (chosen.length === 0 || !canAsk()) return;
     setLettersBusy(true);
     try {
       await sendCoverLetters(chosen.map((j) => j.id));
-      push({ tone: 'ok', title: online ? `Writing ${plural(chosen.length, 'letter')}` : 'Letters queued' });
+      push({ tone: 'ok', title: `Writing ${plural(chosen.length, 'letter')}` });
       commandsT.reload();
       navigate('letters');
     } catch (error) {
@@ -434,6 +445,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     onSettings: (patch: Partial<AgentSettings>) => void changeSettings(patch),
     searching,
     onSearch: () => void search(),
+    blocked,
   };
   const tone = agentT.loading ? 'off' : agentTone(online, state);
   const words = statusWords(agent, online, agentT.loading, now, tone);
@@ -461,7 +473,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
     <ActionBar
       count={chosen.length}
       dryRun={dryRun}
-      online={online}
+      blocked={blocked}
       applying={applyBusy}
       onApply={requestApply}
       onLetters={writeLetters}
@@ -507,6 +519,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
             now={now}
             searching={searching}
             onSearch={() => void search()}
+            blocked={blocked}
             onReviewStrong={() => {
               setFilters({ ...NO_JOB_FILTERS, minScore: 4 });
               navigate('jobs');
@@ -559,6 +572,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
             homeLabel={home ? homeCity : ''}
           searching={searching}
           onSearch={() => void search()}
+          blocked={blocked}
           now={now}
           notices={notices(true)}
           actionBar={dock}
@@ -579,11 +593,11 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           onOpenAnswers={(job) => navigate('memory', { job: job.id })}
           answerCounts={answerCounts}
           dryRun={dryRun}
-          online={online}
+          blocked={blocked}
           queued={queued}
           notices={!dryRun ? <LiveCallout /> : null}
           onApplyAgain={(job) => {
-            if (!online) return;
+            if (!canAsk()) return;
             if (dryRun) void apply([job]);
             else setConfirmJobs([job]);
           }}
@@ -654,11 +668,13 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
             toast: push,
             actions: {
               upload: async (file, options) => {
+                if (blocked) throw new Error(blocked);
                 await uploadResume(userId, file, options);
                 resumesT.reload();
                 commandsT.reload();
               },
               makeDefault: async (row) => {
+                if (blocked) throw new Error(blocked);
                 await makeResumeDefault(row.id);
                 commandsT.reload();
               },
@@ -674,6 +690,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           }}
           now={now}
           onReplace={() => navigate('setup')}
+          blocked={blocked}
         />
       );
       break;
@@ -687,7 +704,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       content = <MemoryPage memory={memoryT} now={now} job={jobFilter} onClearJob={() => navigate('memory')} toast={push} jobs={jobsT.rows} />;
       break;
     case 'letters':
-      content = <CoverLettersPage userId={userId} jobs={jobsT.rows} online={online} now={now} toast={push} profile={profile} />;
+      content = <CoverLettersPage userId={userId} jobs={jobsT.rows} online={online} blocked={blocked} now={now} toast={push} profile={profile} />;
       break;
     case 'companies':
       header = null;
@@ -699,8 +716,9 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
         <SetupPage
           resumes={resumesT}
           online={online}
+          blocked={blocked}
           now={now}
-          onUpload={(file) => uploadResume(userId, file)}
+          onUpload={(file) => (blocked ? Promise.reject(new Error(blocked)) : uploadResume(userId, file))}
           onDelete={(row) => deleteResume(row)}
           onSaveRead={(row, read) => saveResumeData(row.id, writeResume(row.data, read))}
           onApply={applyResumeToProfile}

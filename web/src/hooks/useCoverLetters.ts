@@ -70,12 +70,17 @@ export async function saveCoverLetter(jobId: string, body: string) {
   if (error) throw error;
 }
 
-/** Asks the agent to write letters for these jobs without applying. `fresh` drops the ones kept, edits included. */
-export async function sendCoverLetters(jobIds: string[], fresh = false) {
-  if (fresh) {
+/**
+ * Asks the agent for letters for these jobs without applying. 'write' writes the ones not kept yet, 'fresh' drops the kept
+ * ones first (edits included) and writes them all again; both ask the model. 'pdf' only makes the kept letters' PDFs again:
+ * no model, so it is the one that may wait while the agent is paused or offline.
+ */
+export async function sendCoverLetters(jobIds: string[], mode: 'write' | 'fresh' | 'pdf' = 'write') {
+  if (mode === 'fresh') {
     const { error } = await supabase.from(TABLES.coverLetters).delete().in('job_id', jobIds);
     if (error) throw error;
   }
-  const { error } = await supabase.from(TABLES.commands).insert({ kind: 'cover_letter', job_ids: jobIds, dry_run: true });
+  const payload = mode === 'pdf' ? { pdf_only: true } : {};
+  const { error } = await supabase.from(TABLES.commands).insert({ kind: 'cover_letter', job_ids: jobIds, dry_run: true, payload });
   if (error) throw error;
 }

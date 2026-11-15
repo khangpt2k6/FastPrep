@@ -13,7 +13,7 @@ import type { Page } from '../../hooks/useRoute';
 import { useSavedJobs } from '../../hooks/useSavedJobs';
 import { useNow } from '../../hooks/useNow';
 import { useResumeActivated } from '../../hooks/useResumes';
-import { APPLICATION_STATUSES, WORKING_STATES, displayName, isOnline, statusInfo } from '../../lib/format';
+import { APPLICATION_STATUSES, WORKING_STATES, blockedReason, displayName, isOnline, statusInfo } from '../../lib/format';
 import { atCompany, filterJobs, sortJobs } from '../../lib/jobs';
 import { mergeProfile, profileProgress } from '../../lib/profile';
 import { activeResume } from '../../lib/resume';
@@ -654,6 +654,7 @@ export default function Preview() {
     setCompany(null);
   };
 
+  const blocked = blockedReason(online, settings.paused);
   const agentCard: AgentCardProps = {
     agent,
     online,
@@ -667,6 +668,7 @@ export default function Preview() {
     },
     searching: isSearching,
     onSearch: search,
+    blocked,
   };
   const tone = agentTone(online, state);
   const words = statusWords(agent, online, false, now, tone);
@@ -682,7 +684,7 @@ export default function Preview() {
     <ActionBar
       count={selected.size}
       dryRun={dryRun}
-      online={online}
+      blocked={blocked}
       applying={false}
       onApply={() => {
         const chosen = candidates.filter((j) => selected.has(j.id));
@@ -851,7 +853,7 @@ export default function Preview() {
           onOpenAnswers={() => setPage('memory')}
           answerCounts={new Map([['a3', 3], ['a2', 4]])}
           dryRun={dryRun}
-          online={online}
+          blocked={blocked}
           queued={new Set(['a8'])}
           notices={!dryRun ? <LiveCallout /> : null}
           onApplyAgain={(j) => (dryRun ? push({ tone: 'ok', title: '1 job queued for dry run' }) : setConfirm([j]))}

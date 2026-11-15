@@ -116,7 +116,7 @@ export function TopBar({ onNavigate, agent, dryRun, alerts, email }: {
   alerts: ReactNode;
   email: string;
 }) {
-  const { agent: row, online, loading, now, settings, settingsOff, onSettings, searching, onSearch } = agent;
+  const { agent: row, online, loading, now, settings, settingsOff, onSettings, searching, onSearch, blocked = '' } = agent;
   const state = online ? row?.state ?? 'idle' : 'offline';
   const tone = loading ? 'off' : agentTone(online, state);
   const { word, line } = statusWords(row, online, loading, now, tone);
@@ -151,11 +151,11 @@ export function TopBar({ onNavigate, agent, dryRun, alerts, email }: {
         </button>
         <button
           type="button"
-          className={`icon-btn tagent__btn tagent__find ${offline ? '' : 'is-live'}`}
+          className={`icon-btn tagent__btn tagent__find ${blocked ? '' : 'is-live'}`}
           onClick={onSearch}
-          disabled={searching}
+          disabled={searching || Boolean(blocked)}
           aria-label="Find more jobs"
-          title={searching ? 'Finding jobs' : offline ? 'Find more (runs when the agent is back)' : 'Find more'}
+          title={searching ? 'Finding jobs' : blocked || 'Find more'}
         >
           <IconRadar size={15} className={searching ? 'spin-slow' : ''} />
         </button>
