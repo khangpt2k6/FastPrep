@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { DEFAULT_TEMPLATE, pieces, type CoverSettings, type CoverTemplate } from '../../lib/coverLetter';
 import { errorText } from '../../lib/errors';
@@ -9,8 +9,9 @@ import { deleteRule, resetRule, saveRule, useRules } from '../../hooks/useRules'
 import type { Page } from '../../hooks/useRoute';
 import { SkeletonRows } from '../common';
 import { LetterRules } from './LetterRules';
-import { Group, GroupNote, Switch } from '../settings';
-import { IconChat, IconCheck, IconChevronDown, IconHash, IconLetter, IconPlus, IconRules, IconSpark, IconTrash } from '../Icons';
+import { RulePicker, type PickItem } from './RulePicker';
+import { Group, GroupNote } from '../settings';
+import { IconChat, IconChevronDown, IconHash, IconLetter, IconPlus, IconRules } from '../Icons';
 import type { ToastInput } from '../Toasts';
 
 export interface RulesData {
@@ -49,44 +50,6 @@ function useRun(toast: RulesViewProps['toast']) {
     }
   }
   return { busy, run };
-}
-
-/** A text box with Save and Cancel that appear once it differs from what is stored. */
-function RuleText({ value, placeholder, label, readOnly, busy, onSave, rows = 3, alwaysOpen = false }: {
-  value: string;
-  placeholder?: string;
-  label: string;
-  readOnly: boolean;
-  busy: boolean;
-  onSave: (text: string) => void;
-  rows?: number;
-  alwaysOpen?: boolean;
-}) {
-  const id = useId();
-  const [text, setText] = useState(value);
-  useEffect(() => setText(value), [value]);
-  const dirty = text.trim() !== value.trim();
-  return (
-    <div className="rulebox">
-      <label className="sr-only" htmlFor={id}>
-        {label}
-      </label>
-      <textarea id={id} className="input textarea" rows={rows} value={text} placeholder={placeholder} readOnly={readOnly} onChange={(e) => setText(e.target.value)} />
-      <AnimatePresence initial={false}>
-        {dirty || alwaysOpen ? (
-          <motion.div className="rulebox__bar" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setText(value)} disabled={busy || !dirty}>
-              Cancel
-            </button>
-            <button type="button" className="btn btn--primary btn--sm" onClick={() => onSave(text.trim())} disabled={busy || readOnly || !dirty}>
-              {busy ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />}
-              Save
-            </button>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </div>
-  );
 }
 
 /** An inline form for a new rule: a title, a line about it, and the rule itself. */
@@ -147,7 +110,6 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
   const { busy, run } = useRun(toast);
   const [adding, setAdding] = useState<'letter' | 'always' | null>(null);
   const [newKinds, setNewKinds] = useState<string[]>([]);
-  const [kindDraft, setKindDraft] = useState('');
   const [builtinOpen, setBuiltinOpen] = useState(false);
   const readOnly = rulesT.error?.kind === 'missing-table';
 
@@ -225,105 +187,59 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
       </Group>
 
       <Group icon={<IconHash size={15} />} tone="pine" title={header('Letter sections', template ? `The generated parts of "${template.name}", the template in use.` : 'The generated parts of the template in use.')}>
-        {slots.length === 0 ? <p className="srow__empty">The template in use has no generated parts.</p> : null}
-        {slots.map(([slot, note]) => {
-          const id = sectionRuleId(slot);
-          const rule = sectionRules.get(id);
-          return (
-            <div className={`srow srow--rule ${rule && !rule.enabled ? 'is-off' : ''}`} key={slot}>
-              <div className="srow__main">
-                <div className="srow__text">
-                  <p className="srow__title">
-                    <IconSpark size={14} className="srow__spark" />
-                    <span className="srow__name">{slotTitle(slot)}</span>
-                    {rule && !rule.enabled ? <span className="tag tag--gray">Off</span> : null}
-                  </p>
-                  <p className="srow__desc">{note || 'Two to four sentences.'}</p>
-                </div>
-                {rule ? (
-                  <div className="srow__switch">
-                    <Switch
-                      checked={rule.enabled}
-                      label={`${slotTitle(slot)} rule, on`}
-                      disabled={readOnly}
-                      onChange={(on) => void run(id, () => actions.save({ id, kind: 'section', title: slot, body: rule.body, enabled: on }))}
-                    />
-                  </div>
-                ) : null}
-              </div>
-              <RuleText
-                value={rule?.body ?? ''}
-                label={`Your rule for ${slotTitle(slot)}`}
-                placeholder="Your rule for this part"
-                readOnly={readOnly}
-                busy={busy === id}
-                onSave={(body) => void run(id, () => actions.save({ id, kind: 'section', title: slot, body, enabled: rule?.enabled ?? true }), 'Rule saved')}
-              />
-            </div>
-          );
-        })}
+        {slots.length === 0 ? (
+          <p className="srow__empty">The template in use has no generated parts.</p>
+        ) : (
+          <RulePicker
+            label="Letter section"
+            tone="pine"
+            readOnly={readOnly}
+            busy={busy}
+            save={(rule, done) => run(rule.id, () => actions.save(rule), done)}
+            items={slots.map(([slot, note]): PickItem => {
+              const id = sectionRuleId(slot);
+              const rule = sectionRules.get(id);
+              return {
+                id,
+                title: slotTitle(slot),
+                hint: note || 'Two to four sentences.',
+                placeholder: note || 'Your rule for this part',
+                rule,
+                write: ({ body, enabled }) => ({ id, kind: 'section', title: slot, body: body ?? rule?.body ?? '', enabled: enabled ?? rule?.enabled ?? true }),
+              };
+            })}
+          />
+        )}
       </Group>
 
       <Group icon={<IconChat size={15} />} tone="plum" title={header('Form answers', 'A rule for each kind of open question on a form. Empty means no rule.')}>
-        {answerKinds.map((kind) => {
-          const rule = answerRules.get(kind.id);
-          return (
-            <div className={`srow srow--rule ${rule && !rule.enabled ? 'is-off' : ''}`} key={kind.id}>
-              <div className="srow__main">
-                <div className="srow__text">
-                  <p className="srow__title">
-                    <span className="srow__name">{kind.title}</span>
-                    {rule && !rule.enabled ? <span className="tag tag--gray">Off</span> : null}
-                  </p>
-                </div>
-                {rule && !ANSWER_KINDS.some((k) => answerRuleId(k.title) === kind.id) && !readOnly ? (
-                  <div className="srow__tools">
-                    <button type="button" className="icon-btn icon-btn--danger" aria-label={`Delete ${kind.title}`} title="Delete" onClick={() => void run(kind.id, () => actions.remove(kind.id), 'Rule deleted')}>
-                      <IconTrash size={15} />
-                    </button>
-                  </div>
-                ) : null}
-                <div className="srow__switch">
-                  {rule ? (
-                    <Switch
-                      checked={rule.enabled}
-                      label={`${kind.title} rule, on`}
-                      disabled={readOnly}
-                      onChange={(on) => void run(kind.id, () => actions.save({ id: kind.id, kind: 'answer', title: kind.title, body: rule.body, enabled: on, sort: kind.sort }))}
-                    />
-                  ) : null}
-                </div>
-              </div>
-              <RuleText
-                value={rule?.body ?? ''}
-                label={`Your rule for ${kind.title}`}
-                placeholder={kind.example ? `For example: ${kind.example}` : 'How to answer this kind of question'}
-                readOnly={readOnly}
-                busy={busy === kind.id}
-                rows={2}
-                onSave={(body) => void run(kind.id, () => actions.save({ id: kind.id, kind: 'answer', title: kind.title, body, enabled: rule?.enabled ?? true, sort: kind.sort }), 'Rule saved')}
-              />
-            </div>
-          );
-        })}
-        {!readOnly ? (
-          <form
-            className="srow srow--addkind"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const title = kindDraft.trim();
-              if (!title) return;
-              setNewKinds((list) => (list.includes(title) ? list : [...list, title]));
-              setKindDraft('');
-            }}
-          >
-            <input className="input" value={kindDraft} onChange={(e) => setKindDraft(e.target.value)} placeholder="Add a kind of question, such as Why our mission" aria-label="Add a kind of question" />
-            <button type="submit" className="btn btn--secondary btn--sm" disabled={!kindDraft.trim()}>
-              <IconPlus size={14} />
-              Add
-            </button>
-          </form>
-        ) : null}
+        <RulePicker
+          label="Kind of question"
+          tone="plum"
+          readOnly={readOnly}
+          busy={busy}
+          rows={3}
+          save={(rule, done) => run(rule.id, () => actions.save(rule), done)}
+          remove={(id) => run(id, () => actions.remove(id), 'Rule deleted')}
+          addLabel="New question"
+          addPlaceholder="Why our mission"
+          onAdd={(title) => {
+            setNewKinds((list) => (list.includes(title) ? list : [...list, title]));
+            return answerRuleId(title);
+          }}
+          items={answerKinds.map((kind): PickItem => {
+            const rule = answerRules.get(kind.id);
+            return {
+              id: kind.id,
+              title: kind.title,
+              hint: kind.example || undefined,
+              placeholder: kind.example ? `For example: ${kind.example}` : 'How to answer this kind of question',
+              rule,
+              removable: Boolean(rule) && !ANSWER_KINDS.some((k) => answerRuleId(k.title) === kind.id),
+              write: ({ body, enabled }) => ({ id: kind.id, kind: 'answer', title: kind.title, body: body ?? rule?.body ?? '', enabled: enabled ?? rule?.enabled ?? true, sort: kind.sort }),
+            };
+          })}
+        />
       </Group>
 
       <Group

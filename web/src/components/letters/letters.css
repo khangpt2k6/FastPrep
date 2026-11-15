@@ -1,0 +1,29 @@
+/* Letters: the template is chosen from a dropdown in the paper card's head, not a grid of tiles. */
+
+.cl-head {
+  align-items: center;
+}
+
+.cl-head > .cl-pick {
+  width: min(340px, 100%);
+}
+
+.cl-head .cl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cl-none {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .cl-head > .cl-pick {
+    width: 100%;
+  }
+}

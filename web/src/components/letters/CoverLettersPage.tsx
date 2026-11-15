@@ -41,6 +41,7 @@ import { useSignedUrl } from '../../hooks/useSignedUrl';
 import { CompanyLogo } from '../CompanyLogo';
 import { EmptyState, PillGroup, SkeletonCards } from '../common';
 import { Dialog } from '../Dialog';
+import { Dropdown, type DropdownOption } from '../Dropdown';
 import { Shimmer } from '../motion';
 import { Switch } from '../settings';
 import {
@@ -64,6 +65,7 @@ import {
 } from '../Icons';
 import { SetupCard } from '../SetupCard';
 import type { ToastTone } from '../Toasts';
+import './letters.css';
 
 type Toast = (toast: { tone: ToastTone; title: string; detail?: string }) => void;
 type Draft = { id: string; name: string; description: string; body: string; isNew: boolean };
@@ -708,81 +710,58 @@ export function LettersView({ data, actions, jobs, online, blocked = '', now, to
   const missing = [templatesT, settingsT, lettersT].find((t) => t.error?.kind === 'missing-table');
   if (missing) return <SetupCard table="automation_cover_templates" />;
 
+  const newTemplate = () => setDraft({ id: newTemplateId('mine'), name: '', description: '', body: STARTER_BODY, isNew: true });
+  // Built-in templates in sand, your own in plum; the one in use carries its tag.
+  const templateOptions: DropdownOption<string>[] = templates.map((t) => ({
+    value: t.id,
+    label: t.name,
+    hint: t.description || 'Custom template',
+    icon: <IconFile size={13} />,
+    tone: t.builtin ? 'sand' : 'plum',
+    badge: t.id === inUse ? <span className="tag tag--ember">{enabled ? 'In use' : 'Selected'}</span> : undefined,
+  }));
+
   return (
     <div className="page page--letters">
       <div className="cl-main">
-        <section className="cl-card" aria-label="Cover letter templates">
-          <label className="card srow srow--toggle cl-attach">
-            <span className="srow__text">
-              <span className="srow__title">Attach letters</span>
-              <span className="srow__desc">{enabled ? `Every application gets a letter from "${names.get(inUse) ?? inUse}".` : 'Off. Applications go without a letter.'}</span>
-            </span>
-            <span className="srow__control">
-              <Switch checked={enabled} onChange={(on) => void choose(inUse, on)} label="Attach letters" />
-            </span>
-          </label>
+        <label className="card srow srow--toggle cl-attach">
+          <span className="srow__text">
+            <span className="srow__title">Attach letters</span>
+            <span className="srow__desc">{enabled ? `Every application gets a letter from "${names.get(inUse) ?? inUse}".` : 'Off. Applications go without a letter.'}</span>
+          </span>
+          <span className="srow__control">
+            <Switch checked={enabled} onChange={(on) => void choose(inUse, on)} label="Attach letters" />
+          </span>
+        </label>
 
-          {templatesT.loading && templates.length === 0 ? <SkeletonCards count={2} check={false} /> : null}
-          {!templatesT.loading && templates.length === 0 ? <p className="cl-empty">No templates yet.</p> : null}
-
-          <div className="cl-gallery stagger" role="list">
-            {templates.map((t) => {
-              const on = t.id === focused?.id && !draft;
-              return (
-                <div key={t.id} role="listitem" className={`card cl-tile ${on ? 'is-focus' : ''} ${t.id === inUse ? 'is-used' : ''}`}>
-                  <button
-                    type="button"
-                    className="cl-tile__pick"
-                    aria-pressed={on}
-                    onClick={() => {
-                      setDraft(null);
-                      setFocusId(t.id);
-                    }}
-                  >
-                    <span className="cl-tile__top">
-                      <span className="cl-tile__name">{t.name}</span>
-                      {t.id === inUse ? <span className="tag tag--ember">{enabled ? 'In use' : 'Selected'}</span> : null}
-                    </span>
-                    <span className="cl-tile__desc">{t.description || 'Custom template'}</span>
-                  </button>
-                  <span className="cl-tile__foot">
-                    <span className="cl-tile__meta" title="Generated parts">
-                      {t.builtin ? 'Built in' : 'Custom'} · <IconSpark size={11} /> {slotNames(t.body).length}
-                    </span>
-                    <span className="cl-tile__previews">
-                      <button type="button" className="cl-tile__btn press" onClick={() => setPreview({ id: t.id, tab: 'template' })} aria-label={`Preview template ${t.name}`}>
-                        <IconFile size={13} /> <span className="cl-long">Preview template</span><span className="cl-short">Template</span>
-                      </button>
-                      <button type="button" className="cl-tile__btn press" onClick={() => setPreview({ id: t.id, tab: 'sample' })} aria-label={`Preview a cover letter from ${t.name}`}>
-                        <IconLetter size={13} /> <span className="cl-long">Preview letter</span><span className="cl-short">Letter</span>
-                      </button>
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
-            <button
-              type="button"
-              className="cl-tile cl-tile--new press"
-              onClick={() => setDraft({ id: newTemplateId('mine'), name: '', description: '', body: STARTER_BODY, isNew: true })}
-            >
-              <IconPlus size={18} />
-              <span className="cl-tile__name">New template</span>
-            </button>
-          </div>
-        </section>
-
-        <section className="card cl-card cl-card--paper" aria-label={draft ? 'Edit template' : 'Template preview'}>
+        <section className="card cl-card cl-card--paper" aria-label={draft ? 'Edit template' : 'Template'}>
           {draft ? (
             <Editor draft={draft} onChange={setDraft} onSave={saveDraft} onCancel={() => setDraft(null)} saving={saving} />
-          ) : focused ? (
+          ) : templatesT.loading && templates.length === 0 ? (
+            <SkeletonCards count={1} check={false} />
+          ) : !focused ? (
+            <div className="cl-none">
+              <p className="cl-empty">No templates yet.</p>
+              <button type="button" className="btn btn--secondary btn--sm" onClick={newTemplate}>
+                <IconPlus size={14} /> New template
+              </button>
+            </div>
+          ) : (
             <>
-              <div className="card__head">
-                <div>
-                  <h2 className="card__title">{focused.name}</h2>
-                  <p className="cl-sub">{focused.description}</p>
-                </div>
+              <div className="card__head cl-head">
+                <Dropdown<string>
+                  value={focused.id}
+                  options={templateOptions}
+                  onChange={setFocusId}
+                  label="Template"
+                  tone="sand"
+                  className="cl-pick"
+                  actions={[{ label: 'New template', icon: <IconPlus size={13} />, onSelect: newTemplate }]}
+                />
                 <div className="cl-actions">
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => setPreview({ id: focused.id, tab: 'sample' })} aria-label={`Preview a cover letter from ${focused.name}`}>
+                    <IconLetter size={14} /> Preview
+                  </button>
                   {focused.builtin ? null : (
                     <>
                       <button type="button" className="icon-btn" onClick={() => void remove(focused)} aria-label={`Delete ${focused.name}`} title="Delete">
@@ -814,7 +793,7 @@ export function LettersView({ data, actions, jobs, online, blocked = '', now, to
               </p>
               <Paper body={focused.body} />
             </>
-          ) : null}
+          )}
         </section>
       </div>
 

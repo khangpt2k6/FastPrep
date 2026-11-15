@@ -1,0 +1,63 @@
+/* Rules picker: a dropdown and one text box in place of a long list of boxes. */
+
+.rulepick {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 18px;
+}
+
+.rulepick__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.rulepick__bar > .dd {
+  width: min(340px, 100%);
+}
+
+.rulepick__count {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--frost);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rulepick__tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.rulepick__add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.rulepick__add .input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+}
+
+.rulepick .rulebox.is-off .textarea {
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .rulepick {
+    padding: 14px 14px 16px;
+  }
+
+  .rulepick__bar > .dd {
+    flex: 1;
+    width: auto;
+  }
+}
