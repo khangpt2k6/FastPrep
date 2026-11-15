@@ -302,3 +302,23 @@ def test_a_usage_row_that_did_not_change_is_not_written_again(session: Session) 
 
     asyncio.run(run())
     assert len(writes) == 2 and llm.SPEND is SPEND
+
+
+def test_with_the_claude_engine_claude_code_answers_on_the_plan(monkeypatch: pytest.MonkeyPatch) -> None:
+    from agent_automation.agent import claude_engine
+
+    asked: list[tuple[str, str]] = []
+
+    async def ask(system: str, user: str, schema: dict[str, Any], model: str = "") -> dict[str, Any]:
+        asked.append((system, user))
+        return {"from": "claude"}
+
+    monkeypatch.setattr(claude_engine, "ask", ask)
+    ENGINE.use("claude")
+    assert ENGINE.on_plan and not ENGINE.codex and ENGINE.label == "Claude Code"
+    BUDGET.day = 0.0
+    client = api_client()
+    assert asyncio.run(structured(client, "gpt-5.4-mini", "rules", "jobs", "verdicts", {})) == {"from": "claude"}
+    assert asked == [("rules", "jobs")] and ENGINE.runs == 1 and client.asked == [] and SPEND.total == 0
+    ENGINE.use("anything else")
+    assert ENGINE.name == "api" and not ENGINE.on_plan

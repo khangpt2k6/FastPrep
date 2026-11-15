@@ -209,6 +209,7 @@ def test_the_switches_in_a_row_fall_back_to_their_defaults_as_on_the_page() -> N
     assert settings_from(None) == Settings() == Settings(paused=False, auto_fetch=True, fetch_hours=3, fetch_limit=40)
     assert settings_from({"paused": True, "auto_fetch": False, "fetch_hours": 6, "fetch_limit": 0}) == Settings(True, False, 6, 0)
     assert settings_from({"paused": "yes", "auto_fetch": None, "fetch_hours": 0, "fetch_limit": 500}) == Settings()
+    assert settings_from({"engine": "claude"}).engine == "claude" and settings_from({"engine": "gemini"}).engine == "api"
     assert settings_from({"fetch_hours": "12", "fetch_limit": 2.5}) == Settings(fetch_hours=12)
     assert settings_from({"fetch_hours": True, "fetch_limit": "many"}) == Settings()
 

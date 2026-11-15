@@ -487,3 +487,8 @@ end $$;
 -- Each task's steps for the Agent page's timeline, the newest last, at most 200: {kind: think|say|run|read|search|edit|
 -- web|tool|error, text (one line), detail (optional, what the step gave back), at}. Written by ui/tasks.py as it runs.
 alter table public.automation_tasks add column if not exists events jsonb not null default '[]'::jsonb;
+
+-- Claude Code joins the engines (agent/claude_engine.py, on the person's Claude plan). The constraint above is only added
+-- when missing, so it is replaced here.
+alter table public.automation_settings drop constraint if exists automation_settings_engine;
+alter table public.automation_settings add constraint automation_settings_engine check (engine in ('api', 'codex', 'claude'));

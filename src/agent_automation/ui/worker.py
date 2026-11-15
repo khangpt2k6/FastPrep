@@ -152,7 +152,7 @@ def asks_model(command: dict[str, Any]) -> bool:
 def needs_api(command: dict[str, Any]) -> bool:
     """Whether this command's work would be paid on the API: filling forms always is; the rest is when the engine is the
     API, not Codex."""
-    return command.get("kind") == "apply" or (asks_model(command) and not ENGINE.codex)
+    return command.get("kind") == "apply" or (asks_model(command) and not ENGINE.on_plan)
 
 
 def schema_missing(error: BaseException) -> bool:
@@ -175,7 +175,7 @@ class Settings:
     auto_fetch: bool = True
     fetch_hours: int = 3
     fetch_limit: int = 40
-    # The model engine for the structured questions ("api" or "codex"), and the most the API may cost a day and a month,
+    # The model engine for the structured questions ("api", "codex" or "claude"), and the most the API may cost a day and a month,
     # in dollars (None: no limit). Keep in step with automation_settings in supabase/schema.sql.
     engine: str = "api"
     budget_day: float | None = 2.0
@@ -213,7 +213,7 @@ def settings_from(row: dict[str, Any] | None) -> Settings:
             return getattr(default, name)
         return amount if amount >= 0 else getattr(default, name)
 
-    engine = row.get("engine") if row.get("engine") in ("api", "codex") else default.engine
+    engine = row.get("engine") if row.get("engine") in ("api", "codex", "claude") else default.engine
     return Settings(
         switch("paused"), switch("auto_fetch"), number("fetch_hours", 1, 48), number("fetch_limit", 0, 200), str(engine),
         dollars("budget_day"), dollars("budget_month"),
@@ -474,7 +474,7 @@ class Agent:
         message = " | ".join(part for part in (self.message, self.download) if part)
         row = {
             "user_id": self.db.user_id, "state": self.state, "message": message[:500], "resume_name": self.session.resume_name(),
-            "model": f"Codex + {self.session.config.model}" if ENGINE.codex else self.session.config.model,
+            "model": f"{ENGINE.label} + {self.session.config.model}" if ENGINE.on_plan else self.session.config.model,
             "jobs_found": len(items), "jobs_scored": sum(1 for item in items if item.score is not None),
             "last_seen": _now(),
         }
@@ -554,7 +554,7 @@ class Agent:
             known = store.companies()
             unnamed = [item.job for item in items if company_key(item.job) not in known]
             # Naming asks the model: not while paused or past the budget. The next push names them.
-            if unnamed and not self.held(not ENGINE.codex) and time.monotonic() >= self.naming_paused_until:
+            if unnamed and not self.held(not ENGINE.on_plan) and time.monotonic() >= self.naming_paused_until:
                 try:
                     named = await name_companies(self.session.client, self.session.config.quick_model, unnamed)
                 except Exception as error:  # noqa: BLE001  Names and logos are only for the page.
@@ -632,7 +632,7 @@ class Agent:
         while session.store.with_status("new") and self.scored() < (goal := self.target if until is None else until):
             # Paused on the page, or the budget used up (scoring on the API): the round under way was the last, the rest
             # wait for the next search.
-            if why := self.held(not ENGINE.codex):
+            if why := self.held(not ENGINE.on_plan):
                 click.echo(f"Scoring stops here: {why}.")
                 return
             self.say("scoring", f"Scoring jobs against your resume ({self.scored()} so far)")
@@ -1105,7 +1105,7 @@ class Agent:
         except CodexLimit:
             if strict:
                 raise
-            self.say(self.state, f"No cover letter for {item.job.company}: Codex is at its limit")
+            self.say(self.state, f"No cover letter for {item.job.company}: {ENGINE.label} is at its limit")
             return None
         except Exception as error:  # noqa: BLE001  Said on the page; the application goes on without a letter.
             self.say(self.state, f"No cover letter for {item.job.company}: {error}")
@@ -1120,7 +1120,7 @@ class Agent:
             # when the letters go to the API.
             if self.settings.paused and not kept_only:
                 raise Paused(f"Paused after {number - 1} of {len(job_ids)} letters. Select the rest and write them again.")
-            if not kept_only and (why := self.held(not ENGINE.codex)):
+            if not kept_only and (why := self.held(not ENGINE.on_plan)):
                 raise Paused(f"Stopped after {number - 1} of {len(job_ids)} letters: {why}. Raise the budget on the Agent page, then write the rest.")
             item = self.session.store.get(job_id)
             if item is None:

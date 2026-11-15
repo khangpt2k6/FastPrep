@@ -17,7 +17,7 @@ from openai import (
     RateLimitError,
 )
 
-from agent_automation.agent import codex
+from agent_automation.agent import claude_engine, codex
 from agent_automation.memory.config import KEY_ENV, KEY_URL, Config, ConfigError, base_url
 
 # The SDK's own default is ten minutes a try, and a model that hangs would hold a request that long.
@@ -170,8 +170,9 @@ class Budget:
 
 
 class Engine:
-    """Which model answers the structured questions (scores, letters, resume reading, company names): the API, or Codex
-    on the person's ChatGPT plan. The form filler always uses the API. `runs` counts the questions Codex was asked."""
+    """Which model answers the structured questions (scores, letters, resume reading, company names): the API, Codex on
+    the person's ChatGPT plan, or Claude Code on their Claude plan. The form filler always uses the API. `runs` counts the
+    questions asked on a plan."""
 
     def __init__(self) -> None:
         self.name = "api"
@@ -183,8 +184,17 @@ class Engine:
     def codex(self) -> bool:
         return self.name == "codex"
 
+    @property
+    def on_plan(self) -> bool:
+        """Whether the structured questions go to a plan (Codex or Claude Code), not the API."""
+        return self.name != "api"
+
+    @property
+    def label(self) -> str:
+        return {"codex": "Codex", "claude": "Claude Code"}.get(self.name, "API")
+
     def use(self, name: str) -> None:
-        self.name = "codex" if name == "codex" else "api"
+        self.name = name if name in ("codex", "claude") else "api"
 
 
 BUDGET = Budget()
@@ -276,9 +286,12 @@ async def structured(
     client: AsyncOpenAI, model: str, system: str, user: str, name: str, schema: dict[str, Any], api_only: bool = False,
 ) -> dict[str, Any]:
     """One answer that follows `schema`. A reply that is not that JSON raises: nothing is guessed from it. With the Codex
-    engine Codex answers, on the person's ChatGPT plan, unless `api_only` (the form filler's own checks)."""
-    if ENGINE.codex and not api_only:
+    engine Codex answers, on the person's ChatGPT plan, and with Claude Code their Claude plan, unless `api_only` (the
+    form filler's own checks)."""
+    if ENGINE.on_plan and not api_only:
         ENGINE.runs += 1
+        if ENGINE.name == "claude":
+            return await claude_engine.ask(system, user, schema)
         return await codex.ask(system, user, schema, ENGINE.model)
     response, request_id = await chat(
         client,
