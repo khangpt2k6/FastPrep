@@ -1,9 +1,8 @@
-// One rule at a time: a dropdown picks the part (a letter section or a kind of question), one text box edits it.
-// Unsaved text is kept per part while switching, and the part shows an ember dot in the menu until it is saved.
+// One rule at a time, in two columns: the parts (letter sections or kinds of question) listed on the left, the picked
+// one's text box on the right. Unsaved text is kept per part while switching, and the part shows an ember dot until saved.
 import { useEffect, useId, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { RuleRow, RuleWrite } from '../../lib/rules';
-import { Dropdown, type DropdownOption } from '../Dropdown';
 import { IconCheck, IconPlus, IconTrash } from '../Icons';
 import { Switch } from '../settings';
 import type { Tone } from '../shell/pages';
@@ -68,18 +67,17 @@ export function RulePicker({ items, label, tone, readOnly, busy, save, remove, o
     // storedKey stands in for items: same ids and texts mean nothing to clear.
   }, [storedKey]);
 
-  const options = useMemo<DropdownOption<string>[]>(
+  const options = useMemo(
     () =>
       items.map((item) => {
         const rule = item.rule;
         const has = Boolean(rule && rule.body.trim());
         const dirty = isDirty(item);
         return {
-          value: item.id,
-          label: item.title,
-          hint: dirty ? 'Not saved' : has ? firstLine(rule!.body) : item.hint,
+          item,
+          hint: dirty ? 'Not saved' : has ? firstLine(rule!.body) : item.hint ?? 'No rule yet',
           dot: dirty ? 'ember' : !has ? 'hollow' : rule!.enabled ? 'pine' : 'sand',
-          badge: rule && !rule.enabled ? <span className="tag tag--gray">Off</span> : undefined,
+          off: Boolean(rule && !rule.enabled),
         };
       }),
     [items, drafts],
@@ -115,64 +113,94 @@ export function RulePicker({ items, label, tone, readOnly, busy, save, remove, o
   }
 
   return (
-    <div className="rulepick">
-      <div className="rulepick__bar">
-        <Dropdown<string>
-          value={current.id}
-          options={options}
-          onChange={setPick}
-          label={label}
-          tone={tone}
-          actions={onAdd && !readOnly ? [{ label: addLabel, icon: <IconPlus size={13} />, onSelect: () => setAdding(true) }] : []}
-        />
-        <span className="rulepick__count num" title="Parts with a rule">
-          {withRule}/{items.length}
-        </span>
-        <div className="rulepick__tools">
-          {current.removable && remove && !readOnly ? (
-            <button
-              type="button"
-              className="icon-btn icon-btn--danger"
-              aria-label={`Delete ${current.title}`}
-              title="Delete"
-              onClick={() =>
-                void remove(current.id).then((ok) => {
-                  if (ok) setPick(items[0]?.id ?? '');
-                })
-              }
-            >
-              <IconTrash size={15} />
-            </button>
-          ) : null}
-          {rule ? (
-            <Switch checked={rule.enabled} label={`${current.title} rule, on`} disabled={readOnly} onChange={(on) => void save(current.write({ enabled: on }))} />
-          ) : null}
-        </div>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {adding ? (
-          <motion.form
-            className="rulepick__add"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            onSubmit={(e) => {
-              e.preventDefault();
-              add();
-            }}
-          >
-            <input className="input" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={addPlaceholder} aria-label={addLabel} autoFocus />
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setAdding(false)}>
-              Cancel
-            </button>
-            <button type="submit" className="btn btn--secondary btn--sm" disabled={!newTitle.trim()}>
-              <IconPlus size={14} />
-              Add
-            </button>
-          </motion.form>
+    <div className={`rulepick tone-${tone}`}>
+      <nav className="rulepick__nav" aria-label={label}>
+        <p className="rulepick__navhead">
+          <span>{label}</span>
+          <span className="rulepick__count num" title="Parts with a rule">
+            {withRule}/{items.length}
+          </span>
+        </p>
+        <ul className="rulepick__list">
+          {options.map(({ item, hint, dot, off }) => {
+            const on = item.id === current.id;
+            return (
+              <li key={item.id}>
+                <button type="button" className={`rulepick__item ${on ? 'is-on' : ''}`} aria-current={on ? 'true' : undefined} onClick={() => setPick(item.id)}>
+                  {on ? <motion.span layoutId={`${id}-pick`} className="rulepick__glow" transition={{ type: 'spring', stiffness: 520, damping: 40 }} /> : null}
+                  <span className={`rulepick__dot is-${dot}`} aria-hidden="true" />
+                  <span className="rulepick__words">
+                    <span className="rulepick__name">
+                      {item.title}
+                      {off ? <span className="tag tag--gray">Off</span> : null}
+                    </span>
+                    <span className="rulepick__hint">{hint}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {onAdd && !readOnly ? (
+          <AnimatePresence initial={false} mode="wait">
+            {adding ? (
+              <motion.form
+                key="add"
+                className="rulepick__add"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  add();
+                }}
+              >
+                <input className="input" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={addPlaceholder} aria-label={addLabel} autoFocus />
+                <div className="rulepick__addbar">
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => setAdding(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn--secondary btn--sm" disabled={!newTitle.trim()}>
+                    <IconPlus size={14} />
+                    Add
+                  </button>
+                </div>
+              </motion.form>
+            ) : (
+              <motion.button key="new" type="button" className="rulepick__new" onClick={() => setAdding(true)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <IconPlus size={14} />
+                {addLabel}
+              </motion.button>
+            )}
+          </AnimatePresence>
         ) : null}
-      </AnimatePresence>
+      </nav>
+
+      <section className="rulepick__pane">
+        <div className="rulepick__bar">
+          <h3 className="rulepick__title">{current.title}</h3>
+          <div className="rulepick__tools">
+            {current.removable && remove && !readOnly ? (
+              <button
+                type="button"
+                className="icon-btn icon-btn--danger"
+                aria-label={`Delete ${current.title}`}
+                title="Delete"
+                onClick={() =>
+                  void remove(current.id).then((ok) => {
+                    if (ok) setPick(items[0]?.id ?? '');
+                  })
+                }
+              >
+                <IconTrash size={15} />
+              </button>
+            ) : null}
+            {rule ? (
+              <Switch checked={rule.enabled} label={`${current.title} rule, on`} disabled={readOnly} onChange={(on) => void save(current.write({ enabled: on }))} />
+            ) : null}
+          </div>
+        </div>
+        {current.hint && !(rule && rule.body.trim()) ? <p className="rulepick__note">{current.hint}</p> : null}
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={current.id} className={`rulebox ${rule && !rule.enabled ? 'is-off' : ''}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16 }}>
@@ -195,6 +223,7 @@ export function RulePicker({ items, label, tone, readOnly, busy, save, remove, o
           </AnimatePresence>
         </motion.div>
       </AnimatePresence>
+      </section>
     </div>
   );
 }

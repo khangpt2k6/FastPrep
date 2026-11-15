@@ -1,29 +1,172 @@
-/* Rules picker: a dropdown and one text box in place of a long list of boxes. */
+/* Rules picker: parts listed on the left, the picked one's text box on the right. */
 
 .rulepick {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  min-height: 280px;
+}
+
+.rulepick__nav {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
+  padding: 14px 10px 14px 14px;
+  border-right: 1px solid var(--line);
+}
+
+.rulepick__navhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 6px 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.rulepick__count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--frost);
+  color: var(--ink-3);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.rulepick__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  overflow: auto;
+  max-height: 420px;
+}
+
+.rulepick__item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease-out);
+}
+
+.rulepick__item:hover {
+  background: var(--frost);
+}
+
+.rulepick__glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--frost);
+  box-shadow: inset 3px 0 0 var(--ember-500);
+}
+
+.rulepick__dot,
+.rulepick__words {
+  position: relative;
+}
+
+.rulepick__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+}
+
+.rulepick__dot.is-hollow { box-shadow: inset 0 0 0 1.5px var(--ink-4); }
+.rulepick__dot.is-ember { background: var(--ember-500); }
+.rulepick__dot.is-pine { background: var(--pine-500); }
+.rulepick__dot.is-sand { background: var(--sand-500); }
+
+.rulepick__words {
+  display: grid;
+  min-width: 0;
+}
+
+.rulepick__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.rulepick__hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.rulepick__new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rulepick__new:hover {
+  background: var(--frost);
+  color: var(--ink);
+}
+
+.rulepick__add {
+  display: grid;
+  gap: 6px;
+  padding: 4px 4px 0;
+}
+
+.rulepick__add .input {
+  height: 36px;
+}
+
+.rulepick__addbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.rulepick__pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
   padding: 16px 20px 18px;
 }
 
 .rulepick__bar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 10px 12px;
+  gap: 12px;
 }
 
-.rulepick__bar > .dd {
-  width: min(340px, 100%);
-}
-
-.rulepick__count {
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--frost);
-  color: var(--muted);
-  font-size: 12px;
+.rulepick__title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -34,30 +177,44 @@
   margin-left: auto;
 }
 
-.rulepick__add {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow: hidden;
+.rulepick__note {
+  margin: -4px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
 }
 
-.rulepick__add .input {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
+.rulepick .rulebox .textarea {
+  width: 100%;
 }
 
 .rulepick .rulebox.is-off .textarea {
   opacity: 0.6;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .rulepick {
-    padding: 14px 14px 16px;
+    grid-template-columns: 1fr;
   }
 
-  .rulepick__bar > .dd {
-    flex: 1;
-    width: auto;
+  .rulepick__nav {
+    padding: 12px 14px 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rulepick__list {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    max-height: none;
+  }
+
+  .rulepick__list li {
+    flex: none;
+    max-width: 220px;
+  }
+
+  .rulepick__pane {
+    padding: 14px;
   }
 }
