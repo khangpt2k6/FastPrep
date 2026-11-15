@@ -1,6 +1,6 @@
 ---
-name: Keep it light on tech
-description: Write for a recruiter, not an engineer. Few tool names, no jargon, impact and motivation in plain words.
+name: "Accessible Communication"
+description: "Prioritize responsibilities, achievements, and practical outcomes. Minimize technical jargon for nontechnical readers."
 order: 5
 ---
 The first reader is usually a recruiter or a hiring manager skimming many letters. The CV already lists the stack.

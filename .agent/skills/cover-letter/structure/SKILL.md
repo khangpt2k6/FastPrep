@@ -1,6 +1,6 @@
 ---
-name: Build each paragraph
-description: One job per paragraph, a first sentence that says what it is about, a last sentence that lands the point.
+name: "Clear Paragraph Structure"
+description: "Give each paragraph a distinct purpose, supported by relevant evidence and a meaningful concluding sentence."
 order: 4.2
 ---
 A reader should be able to follow the letter from the first sentence of each paragraph alone.

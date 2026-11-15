@@ -420,19 +420,21 @@ const rule = (id: string, kind: string, title: string, body: string, rest: Parti
 
 /** What the agent ships, plus a few of the person's own. */
 function mockRules(): RuleRow[] {
-  const letter: [string, string, string][] = [
-    ['Only true facts', 'Nothing the resume and profile do not say.', 'Use only facts from the resume and the profile. Never invent a number, a tool or a result.'],
-    ['Match the job with proof', 'Two duties from the posting, each with evidence.', 'Pick two things the posting asks for and show a result from the resume for each.'],
-    ['Why this company', 'One specific reason, not a compliment.', 'Name one product, paper or team of the company and tie it to something I built.'],
-    ['Sound like a person', 'Plain words, short sentences.', 'Write like a student writing to a person. No buzzwords, no "I am thrilled".'],
-    ['Keep it light on tech', 'At most two tool names.', 'Name at most two tools. A recruiter reads it first, not an engineer.'],
-    ["Speak the posting's language", "Use the posting's own words for the role.", 'When the posting names a skill, use the same words for it.'],
-    ['Handle what is missing', 'Say less rather than guess.', 'When the resume has nothing for a requirement, leave it out instead of stretching.'],
-    ['Fill the slot', 'Write exactly what each generated part asks for.', "Follow each part's note for length and content."],
+  const letter: [string, string, string, string][] = [
+    ['truth', 'Factual Accuracy', 'Base every claim on verified candidate information, the job description, or official company sources. Never fabricate details.', 'Use only facts from the resume and the profile.'],
+    ['evidence', 'Relevant Experience & Impact', "Present two relevant experiences, each demonstrating the candidate's contribution and one verified, measurable outcome.", 'Two stories, one number each.'],
+    ['company', 'Company-Specific Research', 'Reference specific products, initiatives, or priorities from official sources to demonstrate genuine interest.', 'Name one thing the company says about itself.'],
+    ['voice', 'Professional & Authentic Tone', 'Maintain a sincere, confident, and composed voice. Avoid clichés, exaggerated language, artificial phrasing, and em dashes.', 'Short sentences, no buzzwords.'],
+    ['structure', 'Clear Paragraph Structure', 'Give each paragraph a distinct purpose, supported by relevant evidence and a meaningful concluding sentence.', 'One job per paragraph.'],
+    ['heart', 'Meaningful Storytelling', 'Convey motivation and human impact through authentic experiences, specific details, and restrained emotion.', 'What happened and who it was for.'],
+    ['plain', 'Accessible Communication', 'Prioritize responsibilities, achievements, and practical outcomes. Minimize technical jargon for nontechnical readers.', 'At most two tool names.'],
+    ['keywords', 'Job Description Alignment', 'Incorporate relevant terminology, skills, and qualifications from the posting naturally and accurately.', "Use the posting's own words."],
+    ['gaps', 'Strength-Based Positioning', 'Emphasize demonstrated capabilities and transferable experience without drawing unnecessary attention to unmet requirements.', 'Lead with what fits.'],
+    ['format', 'Precise Output Compliance', 'Follow the requested scope, length, and format exactly. Provide submission-ready text without commentary, markup, or placeholders.', 'Plain text, the asked length.'],
   ];
   return [
-    ...letter.map(([title, description, body], i) =>
-      rule(`cover-letter/${i}`, 'cover_letter', title, body, {
+    ...letter.map(([name, title, description, body], i) =>
+      rule(`cover-letter/${name}`, 'cover_letter', title, body, {
         description,
         sort: i,
         ...(i === 3 ? { body: 'Write like a student writing to a person. Contractions are fine. No buzzwords.', updated_by: 'web', updated_at: iso(200) } : {}),

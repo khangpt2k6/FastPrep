@@ -1,6 +1,6 @@
 ---
-name: Sound like a person
-description: A composed, sincere letter in short sentences. No AI tells, no clichés, no dashes, no labels glued to sentences.
+name: "Professional & Authentic Tone"
+description: "Maintain a sincere, confident, and composed voice. Avoid clichés, exaggerated language, artificial phrasing, and em dashes."
 order: 4
 ---
 Write the way a capable person writes a formal letter to someone they respect: direct, warm, composed, never stiff and

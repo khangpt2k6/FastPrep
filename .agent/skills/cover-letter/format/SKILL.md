@@ -1,6 +1,6 @@
 ---
-name: Fill the slot, nothing else
-description: Write exactly what each slot asks for, as plain text, in the length it asks, with no markup or placeholders.
+name: "Precise Output Compliance"
+description: "Follow the requested scope, length, and format exactly. Provide submission-ready text without commentary, markup, or placeholders."
 order: 7
 ---
 The template around the slots is fixed. The greeting, the sign-off, the name and the contact lines are already there.

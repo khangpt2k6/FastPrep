@@ -1,6 +1,6 @@
 ---
-name: Know the company
-description: Show that the candidate read up on this company, by naming specific things it says about itself, never generic praise.
+name: "Company-Specific Research"
+description: "Reference specific products, initiatives, or priorities from official sources to demonstrate genuine interest."
 order: 3
 ---
 The reader wants to know why this candidate wants this job at this company, not any job. A letter that could be sent to

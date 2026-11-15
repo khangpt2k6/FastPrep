@@ -1,6 +1,6 @@
 ---
-name: Speak the posting's language
-description: Reuse the posting's exact names for tools and skills the candidate really has, so screeners and readers find them.
+name: "Job Description Alignment"
+description: "Incorporate relevant terminology, skills, and qualifications from the posting naturally and accurately."
 order: 5.5
 ---
 Screening software and busy readers both look for the words in the posting.

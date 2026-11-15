@@ -49,9 +49,9 @@ def test_an_edited_or_turned_off_rule_overrides_the_project_one(tmp_path: Path) 
     mirror_rules(mine, rows)
     skills = {skill.name: skill for skill in load_skills(mine)}
     assert skills["plain"].body == "Name at most one tool."
-    assert "Speak the posting's language" not in skills and "keywords" not in skills
+    assert "Job Description Alignment" not in skills and "keywords" not in skills
     # The shipped rules nobody changed still apply.
-    assert "Only true facts" in skills
+    assert "Factual Accuracy" in skills
 
 
 def test_own_rules_and_sections_become_skills(tmp_path: Path) -> None:

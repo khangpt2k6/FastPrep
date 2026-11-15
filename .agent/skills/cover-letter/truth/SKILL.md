@@ -1,6 +1,6 @@
 ---
-name: Only true facts
-description: Every claim comes from the CV, the answers, the candidate's own stories, the posting or the company's own site. Nothing is invented.
+name: "Factual Accuracy"
+description: "Base every claim on verified candidate information, the job description, or official company sources. Never fabricate details."
 order: 1
 ---
 Every fact about the candidate comes from the CV, the answers or the candidate's own stories, as written there. Employers,

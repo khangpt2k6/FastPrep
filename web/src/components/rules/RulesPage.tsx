@@ -8,8 +8,9 @@ import { useCoverSettings, useCoverTemplates } from '../../hooks/useCoverLetters
 import { deleteRule, resetRule, saveRule, useRules } from '../../hooks/useRules';
 import type { Page } from '../../hooks/useRoute';
 import { SkeletonRows } from '../common';
+import { LetterRules } from './LetterRules';
 import { Group, GroupNote, Switch } from '../settings';
-import { IconChat, IconCheck, IconChevronDown, IconHash, IconLetter, IconPencil, IconPlus, IconRepeat, IconRules, IconSpark, IconTrash } from '../Icons';
+import { IconChat, IconCheck, IconChevronDown, IconHash, IconLetter, IconPlus, IconRules, IconSpark, IconTrash } from '../Icons';
 import type { ToastInput } from '../Toasts';
 
 export interface RulesData {
@@ -81,68 +82,6 @@ function RuleText({ value, placeholder, label, readOnly, busy, onSave, rows = 3,
               {busy ? <span className="spinner" aria-hidden="true" /> : <IconCheck size={14} />}
               Save
             </button>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function LetterRule({ rule, readOnly, busy, run, actions }: { rule: RuleRow; readOnly: boolean; busy: string | null; run: ReturnType<typeof useRun>['run']; actions: RulesActions }) {
-  const [editing, setEditing] = useState(false);
-  const edited = rule.updated_by === 'web';
-  const changed = rule.builtin && rule.default_body !== '' && rule.body !== rule.default_body;
-  const write = (patch: Partial<RuleWrite>) => ({ id: rule.id, kind: rule.kind, title: rule.title, description: rule.description, body: rule.body, enabled: rule.enabled, ...patch });
-  return (
-    <div className={`srow srow--rule ${rule.enabled ? '' : 'is-off'}`}>
-      <div className="srow__main">
-        <div className="srow__text">
-          <p className="srow__title">
-            <span className="srow__name">{rule.title}</span>
-            {!rule.enabled ? <span className="tag tag--gray">Off</span> : null}
-            {edited ? <span className="tag tag--ember">Edited</span> : null}
-            {!rule.builtin ? <span className="tag tag--gray">Yours</span> : null}
-          </p>
-          {rule.description ? <p className="srow__desc">{rule.description}</p> : null}
-        </div>
-        <div className="srow__tools">
-          {!readOnly ? (
-            <button type="button" className={`btn btn--ghost btn--sm ${editing ? 'is-on' : ''}`} onClick={() => setEditing((v) => !v)} aria-expanded={editing}>
-              <IconPencil size={14} />
-              {editing ? 'Close' : 'Edit'}
-            </button>
-          ) : null}
-          {rule.builtin && (edited || changed) && !readOnly ? (
-            <button type="button" className="btn btn--ghost btn--sm" title="Put back the text the agent shipped" disabled={busy === rule.id} onClick={() => void run(rule.id, () => actions.reset(rule), 'Rule reset')}>
-              <IconRepeat size={14} />
-              Reset
-            </button>
-          ) : null}
-          {!rule.builtin && !readOnly ? (
-            <button type="button" className="icon-btn icon-btn--danger" aria-label={`Delete ${rule.title}`} title="Delete" onClick={() => void run(rule.id, () => actions.remove(rule.id), 'Rule deleted')}>
-              <IconTrash size={15} />
-            </button>
-          ) : null}
-        </div>
-        <div className="srow__switch">
-          <Switch checked={rule.enabled} label={`${rule.title}, on`} disabled={readOnly} onChange={(on) => void run(rule.id, () => actions.save(write({ enabled: on })))} />
-        </div>
-      </div>
-      <AnimatePresence initial={false}>
-        {editing ? (
-          <motion.div className="srow__more" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-            <RuleText
-              value={rule.body}
-              label={`${rule.title}, the rule`}
-              readOnly={readOnly}
-              busy={busy === rule.id}
-              rows={4}
-              onSave={(body) =>
-                void run(rule.id, () => actions.save(write({ body })), 'Rule saved').then((ok) => {
-                  if (ok) setEditing(false);
-                })
-              }
-            />
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -282,9 +221,7 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
           />
         ) : null}
         {letterRules.length === 0 && adding !== 'letter' ? <p className="srow__empty">The agent adds its rules here the next time it starts.</p> : null}
-        {letterRules.map((rule) => (
-          <LetterRule key={rule.id} rule={rule} readOnly={readOnly} busy={busy} run={run} actions={actions} />
-        ))}
+        <LetterRules rules={letterRules} readOnly={readOnly} busy={busy} run={run} actions={actions} />
       </Group>
 
       <Group icon={<IconHash size={15} />} tone="pine" title={header('Letter sections', template ? `The generated parts of "${template.name}", the template in use.` : 'The generated parts of the template in use.')}>
@@ -436,9 +373,7 @@ export function RulesView({ data, actions, toast, onNavigate }: RulesViewProps) 
             }
           />
         ) : null}
-        {ownAlways.map((rule) => (
-          <LetterRule key={rule.id} rule={rule} readOnly={readOnly} busy={busy} run={run} actions={actions} />
-        ))}
+        {ownAlways.length > 0 ? <LetterRules rules={ownAlways} readOnly={readOnly} busy={busy} run={run} actions={actions} /> : null}
         {ownAlways.length === 0 && adding !== 'always' ? <p className="srow__empty">No standing rules of your own yet.</p> : null}
       </Group>
     </>

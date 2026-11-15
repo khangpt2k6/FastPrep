@@ -117,7 +117,7 @@ def test_the_full_page_template_asks_for_a_length_and_names_no_header_of_its_own
     assert template.body.startswith("{{today}}") and "{{email}}" not in template.body
     assert parse_template("t", "---\nname: T\nmin_words: 300\n---\n{{a: x}}").min_words == 300
     names = [skill.name for skill in load_skills(PROJECT)]
-    assert names.index("Two stories, two numbers") < names.index("Know the company") < names.index("Build each paragraph") < names.index("Let the reader feel it")
+    assert names.index("Relevant Experience & Impact") < names.index("Company-Specific Research") < names.index("Clear Paragraph Structure") < names.index("Meaningful Storytelling")
 
 
 def test_a_letter_too_short_for_its_page_is_written_once_more_and_says_so_if_it_stays_short() -> None:

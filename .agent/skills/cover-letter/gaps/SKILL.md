@@ -1,6 +1,6 @@
 ---
-name: Handle what is missing
-description: Do not apologise for missing requirements or point at gaps. Lead with what fits.
+name: "Strength-Based Positioning"
+description: "Emphasize demonstrated capabilities and transferable experience without drawing unnecessary attention to unmet requirements."
 order: 6
 ---
 Almost no candidate meets every line of a posting.

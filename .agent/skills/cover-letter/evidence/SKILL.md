@@ -1,6 +1,6 @@
 ---
-name: Two stories, two numbers
-description: Show the fit with two pieces of real work, each told as a short story and each carrying one number the reader will remember.
+name: "Relevant Experience & Impact"
+description: "Present two relevant experiences, each demonstrating the candidate's contribution and one verified, measurable outcome."
 order: 2
 ---
 Read the posting first and find what it needs most: usually the first few requirements and the work it describes for the

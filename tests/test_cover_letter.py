@@ -55,7 +55,7 @@ def test_every_bundled_skill_loads_with_a_name_and_rules() -> None:
     skills = load_skills(PROJECT)
     assert len(skills) >= 7
     assert all(skill.name and skill.description and skill.body for skill in skills)
-    voice = next(skill for skill in skills if "person" in skill.name.lower())
+    voice = next(skill for skill in skills if "tone" in skill.name.lower())
     assert "em dash" in voice.body
 
 
@@ -119,7 +119,7 @@ def test_only_the_slots_are_written_and_the_rest_of_the_template_stays_as_it_is(
     request = model.requests[0]
     assert request["response_format"]["json_schema"]["schema"]["required"] == ["opening", "fit", "closing"]
     system, brief = request["messages"][0]["content"], request["messages"][1]["content"]
-    assert "Only true facts" in system and "Sound like a person" in system
+    assert "Factual Accuracy" in system and "Professional & Authentic Tone" in system
     assert "fleet telemetry pipeline" in brief and "Cut API latency 40%" in brief
 
 
@@ -164,11 +164,11 @@ def test_the_persons_own_templates_and_skills_win_over_bundled_ones_of_the_same_
     assert templates["classic"].name == "Mine" and not templates["classic"].builtin
     assert templates["concise"].builtin
     names = [skill.name for skill in load_skills(home)]
-    assert names[0] == "My voice" and "Sound like a person" not in names and "Only true facts" in names
+    assert names[0] == "My voice" and "Professional & Authentic Tone" not in names and "Factual Accuracy" in names
 
 
 def test_the_skills_come_in_their_order_and_the_candidates_voice_reaches_the_model(tmp_path: Path) -> None:
-    assert [skill.name for skill in load_skills(PROJECT)][:2] == ["Only true facts", "Two stories, two numbers"]
+    assert [skill.name for skill in load_skills(PROJECT)][:2] == ["Factual Accuracy", "Relevant Experience & Impact"]
     (tmp_path / "preferences.md").write_text("---\nstyle: warm\ntone: calm and direct\navoid: [salary]\n---\nI coach a robotics team.", encoding="utf-8")
     model = ScriptedModel(_reply(opening="a.", fit="b.", closing="c."))
     voice = candidate_voice(Home(bundled_home(), tmp_path))

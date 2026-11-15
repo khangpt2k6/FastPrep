@@ -1,6 +1,6 @@
 ---
-name: Let the reader feel it
-description: Move the reader with what happened and who it was for, in restrained words, never with adjectives or drama.
+name: "Meaningful Storytelling"
+description: "Convey motivation and human impact through authentic experiences, specific details, and restrained emotion."
 order: 4.5
 ---
 A letter is remembered when the reader feels something. That comes from what happened, never from saying how the
