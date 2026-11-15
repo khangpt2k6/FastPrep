@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { errorText } from '../lib/errors';
 import { APPLICATION_STATUSES, WORKING_STATES, blockedReason, budgetReason, companyName, displayName, isOnline, plural, spentOn, statusInfo, stopReason } from '../lib/format';
 import { tampaDayKey } from '../lib/time';
+import { priorApplications, priorFor } from '../lib/applied';
 import { daysBefore } from './agent/UsagePanel';
 import { mergeProfile, profileProgress, validatePersonal } from '../lib/profile';
 import { applyResume, activeResume, isPending, writeResume, type ResumeProfile } from '../lib/resume';
@@ -195,7 +196,14 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
   );
 
   // Jobs that can still be applied to.
-  const candidates = useMemo(() => jobsT.rows.filter((j) => (j.status === 'scored' || j.status === 'new') && j.score !== null), [jobsT.rows]);
+  // What the inbox shows the person applied to before, by hand or by the agent: a job for a role like one of those, at the
+  // same company, is not offered again; another role there carries a tag.
+  const priors = useMemo(() => priorApplications(inboxT.rows), [inboxT.rows]);
+  const priorOf = useCallback((job: JobRow) => priorFor(job, priors), [priors]);
+  const candidates = useMemo(
+    () => jobsT.rows.filter((j) => (j.status === 'scored' || j.status === 'new') && j.score !== null && !priorOf(j)?.same),
+    [jobsT.rows, priorOf],
+  );
   const company = page === 'jobs' ? params.get('company') : null;
   const jobFilters: JobFilterState = { ...filters, company };
   // Home for the distance filter: the profile's city, when the page knows where it is.
@@ -571,6 +579,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
           selected={selected}
           queued={queued}
           onUnqueue={(id) => void unqueue(id)}
+          priorOf={priorOf}
           onToggle={toggle}
           onToggleAll={toggleAll}
           saved={saved}

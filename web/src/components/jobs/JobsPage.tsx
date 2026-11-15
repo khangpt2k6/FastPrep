@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
 import type { JobRow, LoadError } from '../../lib/types';
+import type { Prior } from '../../lib/applied';
 import { KIND_LABEL, POSTED_LABEL, SORT_LABEL, type JobKind, type MinScore, type Miles, type PostedWithin, type SortKey, type WorkModeFilter } from '../../lib/jobs';
 import { STATES } from '../../lib/geo';
 import { CheckBox, EmptyState, PillGroup, SkeletonCards } from '../common';
@@ -68,6 +69,8 @@ interface JobsPageProps {
   /** Callouts above the list: agent offline, Live mode, profile incomplete. */
   notices?: ReactNode;
   actionBar: ReactNode;
+  /** An application the inbox shows at the same company, for the card's tag. */
+  priorOf?: (job: JobRow) => Prior | null;
 }
 
 function SelectAll({ ids, selected, onToggleAll }: { ids: string[]; selected: Set<string>; onToggleAll: JobsPageProps['onToggleAll'] }) {
@@ -179,6 +182,7 @@ export function JobsPage(props: JobsPageProps) {
               saved={props.saved.has(job.id)}
               onToggle={props.onToggle}
               onSave={props.onSave}
+              prior={props.priorOf?.(job) ?? null}
             />
           ))}
         </AnimatePresence>

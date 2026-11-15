@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { motion } from 'motion/react';
 import type { JobRow } from '../../lib/types';
+import type { Prior } from '../../lib/applied';
 import { LAYOUT_CAP, SPRING, riseItem } from '../../lib/motion';
 import { displayName, firstLocation, isNewJob, timeAgo } from '../../lib/format';
 import { foundAt, placeOf, workMode } from '../../lib/jobs';
@@ -21,13 +22,15 @@ interface JobCardProps {
   now: number;
   /** Position in the list: the entrance stagger and whether it gets layout animation. */
   index?: number;
+  /** An application at the same company, from the inbox. */
+  prior?: Prior | null;
 }
 
 /**
  * One job: the checkbox, the logo, the title over company, place and work mode, when it was found (with New for the
  * last day), the match meter, then save and open. The whole left part toggles the selection.
  */
-export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard({ job, selected, queued, onUnqueue, saved, onToggle, onSave, now, index = 0 }, ref) {
+export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard({ job, selected, queued, onUnqueue, saved, onToggle, onSave, now, index = 0, prior = null }, ref) {
   const name = displayName(job);
   const place = firstLocation(placeOf(job));
   const fresh = isNewJob(job, now);
@@ -77,6 +80,11 @@ export const JobCard = forwardRef<HTMLLIElement, JobCardProps>(function JobCard(
           </span>
           <span className="jrow__meta">
             <span className="jrow__co">{name}</span>
+            {prior ? (
+              <span className="jrow__prior" title={`You applied to ${prior.role || 'a role'} here${prior.at ? `, ${timeAgo(prior.at, now)}` : ''}`}>
+                Applied there
+              </span>
+            ) : null}
             {place.first ? (
               <span className="jrow__place" title={job.location}>
                 {place.first}
