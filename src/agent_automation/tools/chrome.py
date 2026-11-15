@@ -410,6 +410,12 @@ async def browser_type(selector: str, text: str) -> str:
     await _click(found, selector)
     await page.keyboard.press("ControlOrMeta+A")
     await page.keyboard.press("Delete")
+    if (await _value(found)).strip():
+        # Some fields eat the select-all (Workday's skills box kept "Python" and the next skill went in front of it).
+        try:
+            await found.fill("")
+        except PlaywrightError:
+            pass
     delay = LONG_KEY_DELAY_MS if len(text) > LONG_TEXT else random.randint(*KEY_DELAY_MS)
     await found.press_sequentially(text, delay=delay)
     kept = await _value(found)

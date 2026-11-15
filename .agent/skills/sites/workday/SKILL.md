@@ -22,6 +22,8 @@ My Information: "How Did You Hear About Us?" is a list and "Have you previously 
 
 My Experience: work experience, education and skills are blocks added with "Add" buttons. Upload the CV with the file input in the "Resume/CV" section, `[data-automation-id="file-upload-input-ref"]` or the `input[type="file"]` there, and wait until the file name shows. Websites and social links are optional.
 
+Skills is a "Type to Add Skills" box and is optional: add at most three. Type one skill, press Enter, and click the matching row of the list that opens; the pick shows as a chip by the box. Text left in the box after a pick is only the search and is not saved, so never delete it key by key: type the next skill (typing replaces it), or press Escape and go on. If a pick does not stick after two tries, leave Skills empty.
+
 Application Questions: the company's own questions, mostly lists and yes or no, all usually required. Voluntary Disclosures and Self Identify: demographic questions with a "prefer not to say" or "I do not wish to answer" option, and a "Terms and Conditions" checkbox that is required.
 
 Review shows every answer; the send control is `[data-automation-id="bottom-navigation-next-button"]` there, labelled "Submit". Some sites name that button `[data-automation-id="pageFooterNextButton"]` instead, on every step.

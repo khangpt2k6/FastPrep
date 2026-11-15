@@ -45,6 +45,7 @@ FORM = """<!doctype html><title>Form</title><style>.hidden { opacity: 0; positio
 <input class="hidden" type="radio" name="visa" id="visa-yes" value="yes"><label for="visa-yes">Yes</label>
 <input class="hidden" type="radio" name="visa" id="visa-no" value="no"><label for="visa-no">No</label></fieldset>
 <select id="country"><option value="">Choose</option><option value="us">United States</option><option value="vn">Vietnam</option></select>
+<input id="skills" value="Python" onkeydown="if (event.ctrlKey || event.metaKey || event.key === 'Delete') event.preventDefault()">
 <input id="cv" type="file"><button type="button" id="send">Submit application</button></form>"""
 
 
@@ -67,6 +68,8 @@ def test_the_tools_read_and_fill_a_form_in_chrome(tmp_path: Path, monkeypatch: p
             assert by_label["Name"]["selector"] == '[id="123abc"]'
             assert by_label["No"]["click"] == 'label[for="visa-no"]'
             assert "all 9 characters" in await chrome.browser_type('[id="123abc"]', "Ada Rossi")
+            # A field that eats select-all and Delete still ends up holding only the new text.
+            assert "all 10 characters" in await chrome.browser_type("#skills", "TypeScript")
             await chrome.browser_click(by_label["No"]["click"])
             assert "United States" in await chrome.browser_select_option("#country", "United States")
             assert "cv.pdf" in await chrome.browser_upload_files("#cv", [str(cv)])
