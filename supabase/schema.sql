@@ -492,3 +492,18 @@ alter table public.automation_tasks add column if not exists events jsonb not nu
 -- when missing, so it is replaced here.
 alter table public.automation_settings drop constraint if exists automation_settings_engine;
 alter table public.automation_settings add constraint automation_settings_engine check (engine in ('api', 'codex', 'claude'));
+
+-- What each day's AI went on, by kind of work: {"usd": {"forms": 0.42, "scoring": 0.1}, "runs": {"letters": 3}}, the API's
+-- dollars and the questions asked on a plan (Codex or Claude Code). The Agent page's "What it went on" reads it.
+alter table public.automation_usage add column if not exists breakdown jsonb not null default '{}'::jsonb;
+
+-- The model and the reasoning effort picked for the plan's engine (Codex or Claude Code), on the Agent page; empty is the
+-- engine's own default. A task can pick its own, on the Automation page.
+alter table public.automation_settings add column if not exists engine_model text not null default '';
+alter table public.automation_settings add column if not exists engine_effort text not null default '';
+alter table public.automation_tasks add column if not exists model text not null default '';
+alter table public.automation_tasks add column if not exists effort text not null default '';
+
+-- The models this computer's Codex and Claude Code offer, written by the agent at its start, for the page's model picker:
+-- {"codex": [{"id", "name", "description", "efforts", "effort"}], "claude": [...]}.
+alter table public.automation_agent add column if not exists catalog jsonb not null default '{}'::jsonb;

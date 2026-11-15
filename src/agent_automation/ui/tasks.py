@@ -58,6 +58,10 @@ CODEX_OFF = (
     "computer_use", "browser_use", "browser_use_external", "browser_use_full_cdp_access", "in_app_browser",
     "apps", "plugins", "remote_plugin", "image_generation",
 )
+# A model name as the page may give one: never anything that reads as a flag.
+MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,79}")
+CLAUDE_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+CODEX_EFFORTS = ("low", "medium", "high", "xhigh", "max", "ultra")
 API_KEYS = frozenset({"OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "CODEX_API_KEY"})
 # Secrets stay out of the task's words: the project's own scripts read .env themselves.
 CLAUDE_DENIED = ["Bash(git push:*)", "Bash(git commit:*)", "Bash(rm:*)", "Bash(curl:*)", "Read(.env)", "Read(./.env)", "Read(**/.env)", "Read(**/.env.*)"]
@@ -74,8 +78,10 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def command(engine: str, prompt: str, find: Callable[[str], str | None] = shutil.which) -> list[str]:
-    """The command line that runs `prompt` with this engine. Raises when the engine is unknown or not installed."""
+def command(engine: str, prompt: str, find: Callable[[str], str | None] = shutil.which, model: str = "", effort: str = "") -> list[str]:
+    """The command line that runs `prompt` with this engine, with the task's model and effort when set (and well formed).
+    Raises when the engine is unknown or not installed."""
+    model = model if MODEL_NAME.fullmatch(model or "") else ""
     if engine == "claude":
         exe = find("claude")
         if not exe:
@@ -84,7 +90,8 @@ def command(engine: str, prompt: str, find: Callable[[str], str | None] = shutil
         settings = {"permissions": {"defaultMode": "default", "allow": CLAUDE_ALLOWED, "deny": CLAUDE_DENIED}}
         return [exe, "-p", prompt, "--output-format", "stream-json", "--verbose", "--append-system-prompt", RULES,
                 "--setting-sources", "project", "--permission-mode", "default", "--settings", json.dumps(settings),
-                "--allowedTools", *CLAUDE_ALLOWED, "--disallowedTools", *CLAUDE_DENIED]
+                "--allowedTools", *CLAUDE_ALLOWED, "--disallowedTools", *CLAUDE_DENIED,
+                *(["--model", model] if model else []), *(["--effort", effort] if effort in CLAUDE_EFFORTS else [])]
     if engine == "codex":
         exe = find("codex")
         if not exe:
@@ -94,7 +101,8 @@ def command(engine: str, prompt: str, find: Callable[[str], str | None] = shutil
         # but nothing in it that reaches outside the shell: no computer use, no browser driving, no apps or plugins.
         # Files change in the repository alone; the network stays on for the project's own calls (Supabase).
         return [exe, "exec", "--json", "--skip-git-repo-check", "--ephemeral", "-s", "workspace-write",
-                "-c", "sandbox_workspace_write.network_access=true", "-c", "model_reasoning_effort=medium",
+                "-c", "sandbox_workspace_write.network_access=true",
+                "-c", f"model_reasoning_effort={effort if effort in CODEX_EFFORTS else 'medium'}", *(["-m", model] if model else []),
                 *(part for feature in CODEX_OFF for part in ("--disable", feature)), "-C", str(REPO), "-"]
     raise RuntimeError(f"unknown engine {engine!r}")
 
@@ -305,7 +313,7 @@ async def run_task(db: Database, task: dict[str, Any], runner: Runner = run_proc
     progress = Progress()
     engine = str(task.get("engine") or "claude")
     try:
-        argv = command(engine, str(task.get("prompt") or ""), find)
+        argv = command(engine, str(task.get("prompt") or ""), find, str(task.get("model") or ""), str(task.get("effort") or ""))
     except RuntimeError as error:
         await db.update(TABLE, where, {"status": "failed", "error": str(error), "finished_at": _now()})
         return "failed"

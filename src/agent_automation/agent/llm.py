@@ -29,6 +29,11 @@ OPENAI_PRICES = {"gpt-5.4-mini": (0.75, 4.50, 0.075)}
 # at least this many dollars. The agent itself stops taking new work at the budget.
 HARD_SHARE = 0.25
 HARD_MIN = 0.25
+# The work each structured question is for, by its schema's name: what the page's "what it went on" lists.
+KIND_OF = {
+    "verdicts": "scoring", "cover_letter": "letters", "profile": "resume", "search_profile": "resume", "companies": "companies",
+    "loop_check": "forms", "submit_outcome": "forms",
+}
 
 
 # A spend's total and tokens at one moment: see Spend.mark.
@@ -58,6 +63,8 @@ class Spend:
         self.pending: list[tuple[str, float]] = []  # the gateway's id of each call not yet settled, and its estimate
         # The tokens each model took in and gave out.
         self.tokens: dict[str, tuple[int, int]] = {}
+        # What each kind of work cost (forms, scoring, letters, resume, companies), for the page's "what it went on".
+        self.by_kind: dict[str, float] = {}
 
     async def load_prices(self, client: AsyncOpenAI) -> None:
         """The price list, once. A gateway that does not give one leaves every call unpriced; nothing else stops."""
@@ -75,9 +82,10 @@ class Spend:
             except (KeyError, TypeError, ValueError):
                 continue
 
-    def note(self, model: str, usage: Any, request_id: str = "") -> float:
+    def note(self, model: str, usage: Any, request_id: str = "", kind: str = "forms") -> float:
         """One call's cost, estimated from its usage and added to the total; its gateway id kept for settling. Zero, and one more
-        unpriced call, when the price is unknown."""
+        unpriced call, when the price is unknown. `kind` is the work it was for; a call that names none is the form
+        filler's, the one caller that notes its own calls."""
         self.calls += 1
         if usage is None:
             # A client that says nothing about tokens: nothing to count or estimate, and nothing to call unpriced.
@@ -94,6 +102,7 @@ class Spend:
             cached = int(getattr(details, "cached_tokens", 0) or 0)
             estimate = (prompt - cached) * price[0] + cached * price[2] + completion * price[1]
             self.total += estimate
+            self.by_kind[kind] = self.by_kind.get(kind, 0.0) + estimate
         else:
             self.unpriced += 1
         if request_id:
@@ -177,8 +186,11 @@ class Engine:
     def __init__(self) -> None:
         self.name = "api"
         self.runs = 0
-        # The Codex model to ask; empty is Codex's own default.
+        # The questions asked on a plan, by the work they were for.
+        self.by_kind: dict[str, int] = {}
+        # The model and the reasoning effort the dashboard picked for the plan's engine; empty is the engine's own default.
         self.model = ""
+        self.effort = ""
 
     @property
     def codex(self) -> bool:
@@ -288,18 +300,20 @@ async def structured(
     """One answer that follows `schema`. A reply that is not that JSON raises: nothing is guessed from it. With the Codex
     engine Codex answers, on the person's ChatGPT plan, and with Claude Code their Claude plan, unless `api_only` (the
     form filler's own checks)."""
+    kind = KIND_OF.get(name, "other")
     if ENGINE.on_plan and not api_only:
         ENGINE.runs += 1
+        ENGINE.by_kind[kind] = ENGINE.by_kind.get(kind, 0) + 1
         if ENGINE.name == "claude":
             return await claude_engine.ask(system, user, schema)
-        return await codex.ask(system, user, schema, ENGINE.model)
+        return await codex.ask(system, user, schema, ENGINE.model, effort=ENGINE.effort)
     response, request_id = await chat(
         client,
         model=model,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         response_format={"type": "json_schema", "json_schema": {"name": name, "strict": True, "schema": schema}},
     )
-    SPEND.note(model, getattr(response, "usage", None), request_id)
+    SPEND.note(model, getattr(response, "usage", None), request_id, kind)
     content = response.choices[0].message.content
     if not content:
         raise ValueError(f"the model gave no {name}")

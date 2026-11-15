@@ -221,3 +221,14 @@ def test_the_steps_are_left_out_while_the_table_has_no_events_column(monkeypatch
     run, _ = engine(claude_lines({"type": "result", "subtype": "success", "result": "Hello.", "num_turns": 1}))
     assert asyncio.run(next_task(db, run, found)) == "done"
     assert db.rows[0]["output"] == "Hello." and "events" not in db.rows[0] and tasks._events_column is False
+
+
+
+def test_a_task_runs_on_the_model_and_effort_it_names_and_never_on_a_flag() -> None:
+    claude = command("claude", "x", found, "claude-sonnet-5-5", "high")
+    assert claude[claude.index("--model") + 1] == "claude-sonnet-5-5" and claude[claude.index("--effort") + 1] == "high"
+    assert "--model" not in command("claude", "x", found) and "--effort" not in command("claude", "x", found, "", "ultra")
+    assert "--model" not in command("claude", "x", found, "--dangerously-skip-permissions")
+    codex = command("codex", "x", found, "gpt-6.1-sol", "xhigh")
+    assert codex[codex.index("-m") + 1] == "gpt-6.1-sol" and "model_reasoning_effort=xhigh" in codex
+    assert "model_reasoning_effort=medium" in command("codex", "x", found) and "-m" not in command("codex", "x", found)

@@ -28,14 +28,15 @@ from test_worker import Remote, agent_for, scored, session_at
 @pytest.fixture(autouse=True)
 def clean_counts() -> Iterator[None]:
     """SPEND, BUDGET and ENGINE are the process's own: each test starts from zero and leaves them so."""
-    saved = (SPEND.total, SPEND.calls, dict(SPEND.tokens), ENGINE.name, ENGINE.runs)
-    SPEND.total, SPEND.calls, SPEND.tokens = 0.0, 0, {}
+    saved = (SPEND.total, SPEND.calls, dict(SPEND.tokens), ENGINE.name, ENGINE.runs, dict(SPEND.by_kind), dict(ENGINE.by_kind))
+    SPEND.total, SPEND.calls, SPEND.tokens, SPEND.by_kind = 0.0, 0, {}, {}
     ENGINE.use("api")
-    ENGINE.runs = 0
+    ENGINE.runs, ENGINE.by_kind = 0, {}
     BUDGET.day = BUDGET.month = None
     BUDGET.start(0.0, 0.0)
     yield
     SPEND.total, SPEND.calls, SPEND.tokens, ENGINE.name, ENGINE.runs = saved[0], saved[1], saved[2], saved[3], saved[4]
+    SPEND.by_kind, ENGINE.by_kind = saved[5], saved[6]
     BUDGET.day = BUDGET.month = None
     BUDGET.start(0.0, 0.0)
 
@@ -100,7 +101,7 @@ def test_at_the_budget_new_work_stops_and_the_gateway_lets_a_form_end_within_its
 def test_with_the_codex_engine_codex_answers_and_the_form_fillers_checks_stay_on_the_api(monkeypatch: pytest.MonkeyPatch) -> None:
     asked: list[tuple[str, str]] = []
 
-    async def ask(system: str, user: str, schema: dict[str, Any], model: str = "") -> dict[str, Any]:
+    async def ask(system: str, user: str, schema: dict[str, Any], model: str = "", effort: str = "") -> dict[str, Any]:
         asked.append((system, user))
         return {"from": "codex"}
 
@@ -171,8 +172,10 @@ def test_the_engine_and_the_budget_come_from_the_page_with_defaults_and_no_limit
 
 def test_only_work_on_the_api_waits_for_the_budget() -> None:
     assert needs_api({"kind": "apply"}) and needs_api({"kind": "search"}) and not needs_api({"kind": "calendar_add"})
-    ENGINE.use("codex")
-    assert needs_api({"kind": "apply"}) and not needs_api({"kind": "search"}) and not needs_api({"kind": "cover_letter"})
+    # On a plan the engine fills forms too (codex_apply.py, claude_apply.py): nothing waits for the API's budget.
+    for engine in ("codex", "claude"):
+        ENGINE.use(engine)
+        assert not needs_api({"kind": "apply"}) and not needs_api({"kind": "search"}) and not needs_api({"kind": "cover_letter"})
 
 
 def test_past_the_budget_api_commands_are_refused_and_codex_ones_run(session: Session) -> None:
@@ -188,12 +191,13 @@ def test_past_the_budget_api_commands_are_refused_and_codex_ones_run(session: Se
         await agent.next_command()
         refused = db.row("automation_commands", id=1)
         assert refused["status"] == "failed" and refused["error"] == worker.REFUSED_BUDGET.format(why="today's AI budget ($1.00) is used up")
-        # On Codex the search costs the API nothing: it runs. Applying still fills forms on the API: refused.
+        # On Codex the search costs the API nothing: it runs. Applying fills forms on the plan too, so the budget does not
+        # hold it back either (needs_api; the apply itself is not run here).
         agent.use_settings(Settings(engine="codex", budget_day=1.0))
-        db.tables["automation_commands"] += [command(2, "search"), command(3, "apply")]
+        db.tables["automation_commands"] += [command(2, "search")]
         await agent.next_command()
-        await agent.next_command()
-        assert db.row("automation_commands", id=2)["status"] == "done" and db.row("automation_commands", id=3)["status"] == "failed"
+        assert db.row("automation_commands", id=2)["status"] == "done"
+        assert not needs_api({"kind": "apply"})
 
     asyncio.run(run())
 
@@ -322,3 +326,27 @@ def test_with_the_claude_engine_claude_code_answers_on_the_plan(monkeypatch: pyt
     assert asked == [("rules", "jobs")] and ENGINE.runs == 1 and client.asked == [] and SPEND.total == 0
     ENGINE.use("anything else")
     assert ENGINE.name == "api" and not ENGINE.on_plan
+
+
+
+def test_what_the_ai_went_on_is_kept_by_kind_for_the_day_and_counts_on_after_a_restart(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(worker, "date", Clock)
+    Clock.now = date(2026, 11, 15)
+    earlier = {"usd": {"forms": 0.5}, "runs": {"letters": 2.0}}
+    db = Ledger(automation_usage=[
+        {"user_id": "u1", "day": "2026-11-15", "api_usd": 0.5, "api_calls": 4, "codex_runs": 2, "tokens_in": 1, "tokens_out": 1, "breakdown": earlier},
+    ])
+    agent = agent_for(session, db)
+
+    async def run() -> None:
+        await agent.load_usage()
+        # Scoring on the API, then letters on a plan.
+        assert await structured(api_client('{"answers": []}'), "gpt-5.4-mini", "s", "u", "verdicts", {}) == {"answers": []}
+        SPEND.note("gpt-5.4-mini", answer("").usage)
+        ENGINE.by_kind["letters"] = ENGINE.by_kind.get("letters", 0) + 1
+        await agent.sync_usage()
+
+    asyncio.run(run())
+    row = db.row("automation_usage", day="2026-11-15")
+    assert row["breakdown"] == {"usd": {"forms": pytest.approx(0.5012), "scoring": pytest.approx(0.0012)}, "runs": {"letters": 3.0}}
+    assert row["api_usd"] == pytest.approx(0.5024)

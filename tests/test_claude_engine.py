@@ -58,3 +58,22 @@ def test_a_missing_claude_is_said(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(claude_engine.shutil, "which", lambda name: None)
     with pytest.raises(ClaudeError, match="not installed"):
         asyncio.run(ask("s", "u", SCHEMA))
+
+
+def test_the_dashboards_model_and_effort_reach_claude_code(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from agent_automation.agent import claude_apply
+    from agent_automation.agent.llm import ENGINE
+
+    monkeypatch.setattr(ENGINE, "model", "claude-opus-5-5")
+    monkeypatch.setattr(ENGINE, "effort", "high")
+    printed = json.dumps({"type": "result", "is_error": False, "structured_output": {"score": 1}})
+    asyncio.run(ask("s", "u", SCHEMA, command=fake(tmp_path, printed)))
+    argv = json.loads((tmp_path / "seen.json").read_text(encoding="utf-8"))["argv"]
+    assert argv[argv.index("--model") + 1] == "claude-opus-5-5" and argv[argv.index("--effort") + 1] == "high"
+    monkeypatch.setattr(claude_apply.shutil, "which", lambda name: "/bin/claude")
+    form = claude_apply.command("http://127.0.0.1:1/x/mcp")
+    assert form[form.index("--model") + 1] == "claude-opus-5-5" and form[form.index("--effort") + 1] == "high"
+    monkeypatch.setattr(ENGINE, "model", "")
+    monkeypatch.setattr(ENGINE, "effort", "ultra")
+    form = claude_apply.command("http://127.0.0.1:1/x/mcp")
+    assert form[form.index("--model") + 1] == claude_apply.MODEL and "--effort" not in form

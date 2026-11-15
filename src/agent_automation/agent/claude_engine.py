@@ -23,9 +23,11 @@ TIMEOUT = 600.0
 # Claude Code also finds its sign-in through these.
 CLAUDE_ENV = ENV_KEEP | frozenset({"CLAUDE_CONFIG_DIR", "XDG_CONFIG_HOME"})
 DEFAULT_MODEL = "sonnet"
+# The efforts Claude Code takes, from the lightest; a structured question rarely needs more than the lightest.
+EFFORTS = ("low", "medium", "high", "xhigh", "max")
+DEFAULT_EFFORT = "low"
 FLAGS = (
     "--output-format", "json", "--tools", "", "--setting-sources", "project", "--strict-mcp-config", "--no-session-persistence",
-    "--effort", "low",
 )
 ONLY = "Answer with the JSON only. Everything needed is above."
 LIMITED = re.compile(r"usage limit|rate limit|limit reached|5-hour limit|weekly limit|quota|overloaded|resets? (?:at|in)", re.IGNORECASE)
@@ -85,11 +87,23 @@ def answer_of(said: str) -> dict[str, Any]:
     return value
 
 
-async def ask(system: str, user: str, schema: dict[str, Any], model: str = "", command: Sequence[str] | None = None, timeout: float = TIMEOUT) -> dict[str, Any]:
+def picked() -> tuple[str, str]:
+    """The model and effort the dashboard picked for the plan's engine (llm.ENGINE), each "" for the default."""
+    from agent_automation.agent.llm import ENGINE
+
+    return ENGINE.model, ENGINE.effort
+
+
+async def ask(system: str, user: str, schema: dict[str, Any], model: str = "", command: Sequence[str] | None = None, timeout: float = TIMEOUT,
+              effort: str = "") -> dict[str, Any]:
     """One answer that follows `schema`, from Claude Code. Raises ClaudeLimit at the plan's limit and ClaudeError otherwise.
-    `command` is the program to start in place of the installed Claude Code (for tests)."""
+    `model` and `effort` default to the dashboard's pick, then Sonnet at low effort. `command` is the program to start in
+    place of the installed Claude Code (for tests)."""
     start = list(command) if command else find_claude()
-    args = [*start, "-p", *FLAGS, "--model", model or DEFAULT_MODEL, "--json-schema", json.dumps(schema)]
+    chosen_model, chosen_effort = picked()
+    model, effort = model or chosen_model or DEFAULT_MODEL, effort or chosen_effort
+    args = [*start, "-p", *FLAGS, "--model", model, "--effort", effort if effort in EFFORTS else DEFAULT_EFFORT,
+            "--json-schema", json.dumps(schema)]
     with tempfile.TemporaryDirectory(prefix="agent-claude-") as folder:
         # The question goes in on stdin: a long one would not fit on a Windows command line.
         process = await asyncio.create_subprocess_exec(

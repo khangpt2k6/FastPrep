@@ -19,6 +19,7 @@ import shutil
 import socket
 import tempfile
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from typing import Any
 
@@ -41,7 +42,7 @@ from agent_automation.agent.apply import (
     instructions,
     written_answers,
 )
-from agent_automation.agent.claude_engine import ClaudeError, plan_env
+from agent_automation.agent.claude_engine import EFFORTS, ClaudeError, picked, plan_env
 
 MODEL = "sonnet"
 # The MCP server's own lines (a session started, a request served) would fill the agent's log at every step.
@@ -154,7 +155,7 @@ async def _serve(form: _Form, path: str, port: int) -> tuple[uvicorn.Server, asy
     return web, task, running
 
 
-def command(url: str, model: str = MODEL) -> list[str]:
+def command(url: str, model: str = "") -> list[str]:
     exe = shutil.which("claude")
     if not exe:
         raise ClaudeError("Claude Code is not installed on this computer: npm install -g @anthropic-ai/claude-code, then claude login")
@@ -162,26 +163,29 @@ def command(url: str, model: str = MODEL) -> list[str]:
     return [
         exe, "-p", "--output-format", "stream-json", "--verbose", "--system-prompt", ROLE, "--tools", "",
         "--mcp-config", json.dumps(config), "--strict-mcp-config", "--allowedTools", "mcp__browser",
-        "--setting-sources", "project", "--permission-mode", "default", "--no-session-persistence", "--model", model,
+        "--setting-sources", "project", "--permission-mode", "default", "--no-session-persistence",
+        "--model", model or picked()[0] or MODEL, *(["--effort", effort] if (effort := picked()[1]) in EFFORTS else []),
     ]
 
 
-async def fill_form_with_claude(session: Browser, tools: list[dict[str, Any]], brief: str, guidance: str = "", page_rules: str = "",
-                                model: str = MODEL, argv: list[str] | None = None) -> Report:
-    """Claude Code works on the open page until it calls finish_form, or the agent stops it; how the form ended."""
+async def drive(session: Browser, tools: list[dict[str, Any]], prompt: str, argv_for: Callable[[str], list[str]], env: dict[str, str],
+                read: Callable[[dict[str, Any]], str], engine: str) -> Report:
+    """One engine at work on the open page through this process's browser server: `argv_for(url)` starts it, `prompt` goes
+    in on stdin, `read` turns each JSON line it prints into what it said ("" for nothing). It ends at finish_form (with
+    END_GRACE to end its turn), at a stop the checks make, or after FORM_SECONDS. How the form ended."""
     form = _Form(session, tools)
     path, port = f"/{secrets.token_urlsafe(18)}/mcp", _free_port()
     web, task, running = await _serve(form, path, port)
     said: list[str] = []
     try:
-        args = argv or command(f"http://127.0.0.1:{port}{path}", model)
-        with tempfile.TemporaryDirectory(prefix="agent-claude-form-") as folder:
+        args = argv_for(f"http://127.0.0.1:{port}{path}")
+        with tempfile.TemporaryDirectory(prefix="agent-form-") as folder:
             process = await asyncio.create_subprocess_exec(
                 *args, cwd=folder, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
-                env=plan_env(), limit=8 * 1024 * 1024,
+                env=env, limit=8 * 1024 * 1024,
             )
             assert process.stdin is not None and process.stdout is not None
-            process.stdin.write(f"{instructions(guidance, page_rules)}\n\n{brief}\n".encode())
+            process.stdin.write(prompt.encode())
             await process.stdin.drain()
             process.stdin.close()
             started, finished_at = time.monotonic(), None
@@ -195,8 +199,8 @@ async def fill_form_with_claude(session: Browser, tools: list[dict[str, Any]], b
                 if raw:
                     with suppress(ValueError):
                         event = json.loads(raw)
-                        if event.get("type") == "result":
-                            said.append(str(event.get("result") or event.get("subtype") or ""))
+                        if isinstance(event, dict) and (words := read(event)):
+                            said.append(words)
                 if form.done.is_set() and finished_at is None:
                     finished_at = time.monotonic()
                 if (finished_at and time.monotonic() - finished_at > END_GRACE) or time.monotonic() - started > FORM_SECONDS:
@@ -213,5 +217,16 @@ async def fill_form_with_claude(session: Browser, tools: list[dict[str, Any]], b
             await running.__aexit__(None, None, None)
     if form.report is not None:
         return form.report
-    why = " ".join(said).strip() or "Claude Code ended without calling finish_form."
-    return _blocked(f"Claude Code stopped before the form was done: {why[:300]}", STUCK, form.watch.turns)
+    why = " ".join(said[-2:]).strip() or f"{engine} ended without calling finish_form."
+    return _blocked(f"{engine} stopped before the form was done: {why[:300]}", STUCK, form.watch.turns)
+
+
+def _claude_said(event: dict[str, Any]) -> str:
+    return str(event.get("result") or event.get("subtype") or "") if event.get("type") == "result" else ""
+
+
+async def fill_form_with_claude(session: Browser, tools: list[dict[str, Any]], brief: str, guidance: str = "", page_rules: str = "",
+                                model: str = "") -> Report:
+    """Claude Code works on the open page until it calls finish_form, or the agent stops it; how the form ended."""
+    prompt = f"{instructions(guidance, page_rules)}\n\n{brief}\n"
+    return await drive(session, tools, prompt, lambda url: command(url, model), plan_env(), _claude_said, "Claude Code")

@@ -250,7 +250,7 @@ def test_file_names_from_the_page_are_kept_as_given_where_this_computer_allows()
 def test_without_the_newer_schema_the_agent_sends_what_it_sent_before(session: Session, capsys: pytest.CaptureFixture[str]) -> None:
     db = Remote(
         "automation_settings", "automation_agent.fetched_at", "automation_jobs.found_at", "automation_jobs.posted_at", "automation_resumes", "automation_rules", "automation_documents",
-        "automation_calendar", "automation_jobs.place", "automation_jobs.points", "automation_tasks", "automation_usage",
+        "automation_calendar", "automation_jobs.place", "automation_jobs.points", "automation_tasks", "automation_usage", "automation_agent.catalog",
     )
     scored(session, 1)
     agent = agent_for(session, db)

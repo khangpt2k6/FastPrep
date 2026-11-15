@@ -35,10 +35,12 @@ TOOLS_OFF = (
     "shell_tool", "unified_exec", "browser_use", "browser_use_external", "browser_use_full_cdp_access", "computer_use", "in_app_browser",
     "apps", "plugins", "remote_plugin", "image_generation", "skill_search",
 )
-# Low effort, no web search, and nothing from the person's own Codex config or rule files: the question holds all it needs.
+# The reasoning efforts Codex takes, from the lightest.
+EFFORTS = ("low", "medium", "high", "xhigh", "max", "ultra")
+# No web search, and nothing from the person's own Codex config or rule files: the question holds all it needs.
 FLAGS = (
     "--skip-git-repo-check", "--ephemeral", "--ignore-user-config", "--ignore-rules", "-s", "read-only",
-    "-c", "model_reasoning_effort=low", "-c", 'web_search="disabled"', *(part for tool in TOOLS_OFF for part in ("--disable", tool)),
+    "-c", 'web_search="disabled"', *(part for tool in TOOLS_OFF for part in ("--disable", tool)),
 )
 ONLY = "Answer with the JSON only. Run no commands and read no files: everything needed is above."
 LIMITED = re.compile(r"usage limit|rate limit|quota|too many requests|limit reached|try again (?:at|in)", re.IGNORECASE)
@@ -72,7 +74,9 @@ def _last_line(text: str) -> str:
     return lines[-1][:300] if lines else "no output"
 
 
-async def ask(system: str, user: str, schema: dict[str, Any], model: str = "", command: Sequence[str] | None = None, timeout: float = TIMEOUT) -> dict[str, Any]:
+async def ask(
+    system: str, user: str, schema: dict[str, Any], model: str = "", command: Sequence[str] | None = None, timeout: float = TIMEOUT, effort: str = "",
+) -> dict[str, Any]:
     """One answer that follows `schema`, from Codex. Raises CodexLimit at the plan's limit and CodexError otherwise.
     `command` is the program to start in place of the installed Codex (for tests)."""
     start = list(command) if command else find_codex()
@@ -81,6 +85,8 @@ async def ask(system: str, user: str, schema: dict[str, Any], model: str = "", c
         (where / "schema.json").write_text(json.dumps(schema), encoding="utf-8")
         answer = where / "answer.json"
         args = [*start, "exec", *FLAGS, "-C", folder, "--output-schema", str(where / "schema.json"), "-o", str(answer)]
+        # Low effort unless the dashboard picked one: a structured question rarely needs more.
+        args += ["-c", f"model_reasoning_effort={effort if effort in EFFORTS else 'low'}"]
         if model:
             args += ["-m", model]
         # The question goes in on stdin ("-"): a long one would not fit on a Windows command line.

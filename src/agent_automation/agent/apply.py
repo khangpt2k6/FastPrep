@@ -708,6 +708,10 @@ async def _read_result(session: Browser, client: AsyncOpenAI, model: str, guidan
         from agent_automation.agent import claude_engine
 
         return text, await claude_engine.ask(verify_system(guidance), asked, VERIFY_SCHEMA)
+    if ENGINE.name == "codex":
+        from agent_automation.agent import codex
+
+        return text, await codex.ask(verify_system(guidance), asked, VERIFY_SCHEMA, ENGINE.model)
     return text, await patiently(lambda: structured(client, model, verify_system(guidance), asked, "submit_outcome", VERIFY_SCHEMA, api_only=True))
 
 
@@ -827,6 +831,11 @@ async def run_on_page(
         from agent_automation.agent.claude_apply import fill_form_with_claude
 
         report = await fill_form_with_claude(session, tools, brief, guidance, page_rules)
+    elif ENGINE.name == "codex":
+        # Codex on the person's ChatGPT plan, the same way (codex_apply.py).
+        from agent_automation.agent.codex_apply import fill_form_with_codex
+
+        report = await fill_form_with_codex(session, tools, brief, guidance, page_rules)
     else:
         report = await fill_form(session, tools, client, model, brief, guidance, page_rules)
     if tracing:

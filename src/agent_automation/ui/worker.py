@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import json
 import logging
 import os
 import re
@@ -80,6 +81,17 @@ REFUSED_BUDGET = "Not run: {why}. Raise the budget on the Agent page, or wait un
 # What the API cost each day, and how many questions Codex was asked: the budget counts on from it after a restart.
 USAGE = "automation_usage"
 USAGE_SECONDS = 10
+# A model's name as the page may set it (the engines' own names: "gpt-6.1-sol", "claude-opus-5-5"), and the efforts.
+MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,79}")
+EFFORTS = ("low", "medium", "high", "xhigh", "max", "ultra")
+# Claude Code's models, newest first: its CLI lists none, so they are named here. Each takes the efforts up to max.
+CLAUDE_MODELS = (
+    ("claude-opus-5-5", "Opus 5.5", "For complex work and everyday tasks"),
+    ("claude-fable-5-2", "Fable 5.2", "For your toughest challenges"),
+    ("claude-sonnet-5-5", "Sonnet 5.5", "Most efficient for simpler tasks"),
+    ("claude-haiku-5-5", "Haiku 5.5", "Fastest for quick answers"),
+)
+CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 # Supabase's answer when a table or column is not there: supabase/schema.sql was not run again since it got it.
 MISSING = frozenset({"42703", "42P01", "PGRST204", "PGRST205"})
 # The parts of the newer schema the agent asks about, and what each one brings.
@@ -95,6 +107,9 @@ PARTS = {
     "tasks": "automation_tasks (tasks for Claude Code or Codex typed on the Agent page)",
     "budget": "automation_settings.engine, budget_day and budget_month (the AI engine and its budget)",
     "usage": "automation_usage (what the AI cost each day)",
+    "kinds": "automation_usage.breakdown (what the AI cost went on)",
+    "models": "automation_settings.engine_model and engine_effort (the model picked for Codex or Claude Code)",
+    "catalog": "automation_agent.catalog (the models this computer's Codex and Claude Code offer)",
     "calendar": "automation_calendar (Google Calendar events for the Calendar page)",
 }
 CONTENT_TYPES = {
@@ -150,10 +165,10 @@ def asks_model(command: dict[str, Any]) -> bool:
 
 
 def needs_api(command: dict[str, Any]) -> bool:
-    """Whether this command's work would be paid on the API: filling forms is, unless Claude Code fills them; the rest is
-    when the engine is the API, not a plan (Codex or Claude Code)."""
+    """Whether this command's work would be paid on the API: only when the engine is the API. With Codex or Claude Code
+    the plan fills forms and answers the rest."""
     if command.get("kind") == "apply":
-        return ENGINE.name != "claude"
+        return ENGINE.name == "api"
     return asks_model(command) and not ENGINE.on_plan
 
 
@@ -182,6 +197,30 @@ class Settings:
     engine: str = "api"
     budget_day: float | None = 2.0
     budget_month: float | None = 20.0
+    # The model and the reasoning effort for the plan's engine (Codex or Claude Code); empty is the engine's own default.
+    engine_model: str = ""
+    engine_effort: str = ""
+
+
+def model_catalog(codex_home: Path | None = None) -> dict[str, Any]:
+    """The models this computer's engines offer, for the page's picker: Codex's from its own cache of what the person's
+    plan lists (only the ones it shows), Claude Code's as named above. A cache that is missing or broken gives none."""
+    folder = codex_home or Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex")
+    codex: list[dict[str, Any]] = []
+    try:
+        data = json.loads((folder / "models_cache.json").read_text(encoding="utf-8"))
+        for model in data.get("models") or []:
+            if not isinstance(model, dict) or model.get("visibility") != "list" or not MODEL_NAME.fullmatch(str(model.get("slug") or "")):
+                continue
+            efforts = [level["effort"] for level in model.get("supported_reasoning_levels") or [] if isinstance(level, dict) and level.get("effort") in EFFORTS]
+            codex.append({
+                "id": model["slug"], "name": str(model.get("display_name") or model["slug"])[:60], "description": str(model.get("description") or "")[:120],
+                "efforts": efforts, "effort": model.get("default_reasoning_level") if model.get("default_reasoning_level") in EFFORTS else "",
+            })
+    except (OSError, ValueError, AttributeError, KeyError, TypeError):
+        codex = []
+    claude = [{"id": id_, "name": name, "description": about, "efforts": CLAUDE_EFFORTS, "effort": ""} for id_, name, about in CLAUDE_MODELS]
+    return {"codex": codex[:20], "claude": claude}
 
 
 def settings_from(row: dict[str, Any] | None) -> Settings:
@@ -216,9 +255,13 @@ def settings_from(row: dict[str, Any] | None) -> Settings:
         return amount if amount >= 0 else getattr(default, name)
 
     engine = row.get("engine") if row.get("engine") in ("api", "codex", "claude") else default.engine
+    model = row.get("engine_model")
+    effort = row.get("engine_effort")
     return Settings(
         switch("paused"), switch("auto_fetch"), number("fetch_hours", 1, 48), number("fetch_limit", 0, 200), str(engine),
         dollars("budget_day"), dollars("budget_month"),
+        model if isinstance(model, str) and MODEL_NAME.fullmatch(model) else "",
+        effort if effort in EFFORTS else "",
     )
 
 
@@ -282,7 +325,7 @@ class Support:
 
     def __init__(self) -> None:
         self.settings = self.fetch = self.found_at = self.posted = self.places = self.resumes = self.rules = self.documents = self.calendar = self.tasks = True
-        self.budget = self.usage = True
+        self.budget = self.usage = self.kinds = self.models = self.catalog = True
 
     def drop(self, part: str) -> None:
         if getattr(self, part):
@@ -415,6 +458,9 @@ class Agent:
         self.usage_base: tuple[float, int, int, int, int] = (0.0, 0, 0, 0, 0)
         self.usage_from: tuple[float, int, int, int, int] = (0.0, 0, 0, 0, 0)
         self.usage_written: dict[str, Any] | None = None
+        # Today's breakdown as the row held it when read, and the run's by-kind counts then.
+        self.kinds_base: dict[str, dict[str, float]] = {}
+        self.kinds_from: dict[str, dict[str, float]] = {"usd": {}, "runs": {}}
         # The jobs tried before get their company's name once a run: they are not pushed again.
         self.tried_named = False
         # Which parts of the newer schema the database has, and the Agent page's switches.
@@ -771,6 +817,9 @@ class Agent:
             ("tasks", tasks.TABLE, "id,status"),
             ("budget", AGENT_SETTINGS, "engine,budget_day,budget_month"),
             ("usage", USAGE, "day,api_usd,codex_runs"),
+            ("kinds", USAGE, "breakdown"),
+            ("models", AGENT_SETTINGS, "engine_model,engine_effort"),
+            ("catalog", "automation_agent", "catalog"),
         ):
             try:
                 await self.db.select(table, {"select": columns, "limit": "1"})
@@ -786,12 +835,18 @@ class Agent:
         if not self.support.settings:
             return
         columns = "paused,auto_fetch,fetch_hours,fetch_limit" + (",engine,budget_day,budget_month" if self.support.budget else "")
+        columns += ",engine_model,engine_effort" if self.support.budget and self.support.models else ""
         try:
             rows = await self.db.select(AGENT_SETTINGS, {"user_id": f"eq.{self.db.user_id}", "select": columns})
         except Exception as error:
             if not schema_missing(error):
                 raise
-            # The engine and the budget came later than the rest: without them the switches still work.
+            # The model came later than the engine, and the engine and the budget later than the rest: without them the
+            # switches still work.
+            if self.support.budget and self.support.models:
+                self.support.drop("models")
+                await self.read_settings(engine_only)
+                return
             if self.support.budget:
                 self.support.drop("budget")
                 await self.read_settings(engine_only)
@@ -809,6 +864,7 @@ class Agent:
         since the page could not show or change them."""
         ENGINE.use(settings.engine if self.support.budget else "api")
         BUDGET.day, BUDGET.month = (settings.budget_day, settings.budget_month) if self.support.budget else (None, None)
+        ENGINE.model, ENGINE.effort = (settings.engine_model, settings.engine_effort) if self.support.models else ("", "")
 
     def use_settings(self, settings: Settings) -> None:
         """The page's switches taken in. A pause is said on the page at once, or, while a command or a round of auto-fetch
@@ -848,33 +904,73 @@ class Agent:
         given = sum(given_out for _, given_out in SPEND.tokens.values())
         return SPEND.total, SPEND.calls, ENGINE.runs, taken, given
 
+    def kinds(self) -> dict[str, dict[str, float]]:
+        """What this run's API dollars and plan questions went on, by kind of work."""
+        return {"usd": dict(SPEND.by_kind), "runs": {kind: float(count) for kind, count in ENGINE.by_kind.items()}}
+
     def usage_now(self) -> dict[str, Any]:
         """Today's row as it stands: what it held when read, and this run's counts since."""
         now, base, start = self.counters(), self.usage_base, self.usage_from
-        return {
+        values: dict[str, Any] = {
             "api_usd": round(base[0] + now[0] - start[0], 4), "api_calls": base[1] + now[1] - start[1],
             "codex_runs": base[2] + now[2] - start[2], "tokens_in": base[3] + now[3] - start[3], "tokens_out": base[4] + now[4] - start[4],
         }
+        if self.support.kinds:
+            current, earlier, began = self.kinds(), self.kinds_base, self.kinds_from
+            values["breakdown"] = {
+                part: {
+                    kind: round(amount, 4)
+                    for kind in sorted({*current[part], *earlier.get(part, {})})
+                    if (amount := earlier.get(part, {}).get(kind, 0.0) + current[part].get(kind, 0.0) - began[part].get(kind, 0.0)) > 0
+                }
+                for part in ("usd", "runs")
+            }
+        return values
+
+    async def publish_catalog(self) -> None:
+        """The models this computer's Codex and Claude Code offer, put on the agent's row for the page's model picker."""
+        if not self.support.catalog:
+            return
+        try:
+            await self.db.upsert("automation_agent", [{"user_id": self.db.user_id, "catalog": model_catalog()}], "user_id")
+        except Exception as error:  # noqa: BLE001  The page falls back to the models it knows.
+            if schema_missing(error):
+                self.support.drop("catalog")
+            else:
+                click.echo(f"model list: {error}")
 
     async def load_usage(self) -> None:
         """What the API cost earlier today and this month, from the usage table: the budget counts on from there, so a
         restart does not start it again from zero. Days go by this computer's clock, the person's own."""
         today = date.today()
         self.usage_day, self.usage_from, self.usage_base, self.usage_written = today, self.counters(), (0.0, 0, 0, 0, 0), None
+        self.kinds_base, self.kinds_from = {}, self.kinds()
         month = 0.0
         if self.support.usage:
             fields = "day,api_usd,api_calls,codex_runs,tokens_in,tokens_out"
+            where = {"user_id": f"eq.{self.db.user_id}", "day": f"gte.{today.replace(day=1).isoformat()}"}
             try:
-                rows = await self.db.select(USAGE, {"user_id": f"eq.{self.db.user_id}", "day": f"gte.{today.replace(day=1).isoformat()}", "select": fields})
+                rows = await self.db.select(USAGE, {**where, "select": fields + (",breakdown" if self.support.kinds else "")})
             except Exception as error:
                 if not schema_missing(error):
                     raise
+                # The breakdown came later than the rest: without it the dollars still count.
+                if self.support.kinds:
+                    self.support.drop("kinds")
+                    await self.load_usage()
+                    return
                 self.support.drop("usage")
                 rows = []
             for row in rows:
                 numbers = tuple(row.get(name) or 0 for name in fields.split(",")[1:])
                 if str(row.get("day")) == today.isoformat():
                     self.usage_base = (float(numbers[0]), *(int(number) for number in numbers[1:]))  # type: ignore[assignment]
+                    kept = row.get("breakdown")
+                    if isinstance(kept, dict):
+                        self.kinds_base = {
+                            part: {str(k): float(v) for k, v in kept[part].items() if isinstance(v, int | float)}
+                            for part in ("usd", "runs") if isinstance(kept.get(part), dict)
+                        }
                 else:
                     month += float(numbers[0])
         BUDGET.start(self.usage_base[0], month + self.usage_base[0])
@@ -890,6 +986,7 @@ class Agent:
             same_month = (today.year, today.month) == (self.usage_day.year, self.usage_day.month)
             month = BUDGET.spent()[1] if same_month else 0.0
             self.usage_day, self.usage_from, self.usage_base, self.usage_written = today, self.counters(), (0.0, 0, 0, 0, 0), None
+            self.kinds_base, self.kinds_from = {}, self.kinds()
             BUDGET.start(0.0, month)
         await self._write_usage(self.usage_day)
 
@@ -904,7 +1001,8 @@ class Agent:
             self.usage_written = values
         except Exception as error:  # noqa: BLE001  Written again on the next round; the budget counts in memory meanwhile.
             if schema_missing(error):
-                self.support.drop("usage")
+                # Without the breakdown's column the row still goes up; without the table nothing does.
+                self.support.drop("kinds" if "breakdown" in values else "usage")
             else:
                 click.echo(f"usage: {error}")
 
@@ -1449,6 +1547,7 @@ class Agent:
             try:
                 await self.load_usage()
                 await self.read_settings(engine_only=True)
+                await self.publish_catalog()
             except Exception as error:  # noqa: BLE001  The API and no limit until the settings are read again.
                 click.echo(f"engine and budget: {error}")
             if self.resume:
