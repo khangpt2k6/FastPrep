@@ -907,6 +907,30 @@ def test_a_send_the_guard_holds_back_is_told_to_the_model(monkeypatch: pytest.Mo
     assert browser.page["url"].endswith("/apply")
 
 
+class SignInPage(SendsOnClick):
+    """Workday's sign-in: its button is labelled Submit, so the guard holds it, and the page has a password field."""
+
+    async def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> Any:
+        arguments = arguments or {}
+        if name == "browser_evaluate" and "input[type=password]" in arguments.get("expression", ""):
+            self.calls.append((name, {"expression": "password"}))
+            return SimpleNamespace(isError=False, content=[SimpleNamespace(text="true")])
+        return await super().call_tool(name, arguments)
+
+
+def test_a_dry_run_held_at_a_sign_in_ends_there_as_a_trial(monkeypatch: pytest.MonkeyPatch) -> None:
+    from agent_automation.agent.apply import DRY_RUN, DRY_RUN_AT_SIGN_IN
+
+    monkeypatch.setenv("AGENT_DRY_RUN", "1")
+    browser = SignInPage(held=[0, 1])
+    # The model would go on trying to sign in; the form ends after the first held click instead.
+    model = ScriptedModel([tool_call("browser_click", selector="div[aria-label=Submit]")], [tool_call("browser_press_key", key="Enter")])
+    report = asyncio.run(fill_form(browser, [], model, "m", "brief"))  # type: ignore[arg-type]
+    assert (report.status, report.blocked_by, report.summary) == ("blocked", DRY_RUN, DRY_RUN_AT_SIGN_IN)
+    assert len(model.requests) == 1
+    assert browser.page["url"].endswith("/apply")
+
+
 # What a long form costs: older page readings are shortened.
 
 

@@ -64,6 +64,10 @@ DRY_RUN_HELD = (
     "Dry run: that would have sent the application, so it was held back and nothing was sent. Do not try to send it. "
     "If every required field is filled, call finish_form with status ready and the send control's selector."
 )
+# A send the guard held on a page with a password field was a sign-in or a new account (Workday labels its sign-in button
+# Submit). A dry run never signs in, so the form ends there, instead of the model going round the guard for minutes.
+DRY_RUN_AT_SIGN_IN = "Dry run: stopped at the site's sign-in. A dry run never signs in or sends; Live mode signs in and fills the form."
+ASKS_PASSWORD = "Array.from(document.querySelectorAll('input[type=password]')).some((field) => field.offsetParent !== null)"
 DRY_RUN_GUARD = r"""(() => {
   const w = window;
   const install = (win) => {
@@ -107,6 +111,14 @@ async def _guard(session: Any) -> int | None:
     except Exception:  # noqa: BLE001  A page between two addresses: the next action puts the guard in again.
         return None
     return held if isinstance(held, int) else None
+
+
+async def _asks_password(session: Any) -> bool:
+    """Whether the page shows a password field: a sign-in, or a new account. False when the page cannot be read."""
+    try:
+        return json.loads(tool_text(await session.call_tool("browser_evaluate", {"expression": ASKS_PASSWORD}))) is True
+    except Exception:  # noqa: BLE001
+        return False
 
 
 async def _until_typed(session: Any) -> str:
@@ -635,6 +647,9 @@ class Hands:
             # The mailbox sent the browser to its sign-in page: that is the person's to do, once.
             return result, "", _blocked(MAIL_NOT_SIGNED_IN, MAILBOX_SIGNED_OUT, watch.turns)
         said = tool_text(result)
+        if held_back and await _asks_password(session):
+            await _step_shot(session, watch.turns, name, arguments, said + "\n" + DRY_RUN_AT_SIGN_IN, self.run)
+            return result, "", _blocked(DRY_RUN_AT_SIGN_IN, DRY_RUN, watch.turns)
         if held_back:
             said += "\n" + DRY_RUN_HELD
         if name == "browser_type" and STILL_TYPING in said:
