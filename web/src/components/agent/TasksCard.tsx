@@ -1,30 +1,31 @@
 // Tasks for Claude Code or Codex, typed on the dashboard and run on the person's computer by the task runner
 // (src/agent_automation/ui/tasks.py), on their own Claude or ChatGPT plan. No API key of the agent is used. These are the
-// pieces the Automation page is made of: the composer, a task's row, the list, and the data.
-import { useCallback, useState, type FormEvent } from 'react';
+// pieces the Automation page is made of: the data, the composer docked under the transcript, and the transcript itself.
+import { useCallback, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { supabase, TABLES } from '../../lib/supabase';
 import { timeAgo } from '../../lib/format';
+import { EASE_OUT, SPRING } from '../../lib/motion';
 import { useLiveTable } from '../../hooks/useLiveTable';
-import { BrandLogo } from '../BrandLogo';
-import { IconPlay, IconX } from '../Icons';
+import { BrandLogo, type Brand } from '../BrandLogo';
+import { IconAlert, IconArrowRight, IconBriefcase, IconCalendar, IconTarget } from '../Icons';
 import type { ModelCatalog } from '../../lib/types';
-import { EnginePicker, type EngineOption } from './EnginePicker';
-import { ModelPicker } from './ModelPicker';
+import { ModelPicker, modelLabel, modelsOf } from './ModelPicker';
 import { TaskTimeline, type Engine, type TaskRow } from './TaskTimeline';
 import './tasks.css';
 
-const ENGINE_LABEL: Record<Engine, string> = { claude: 'Claude Code', codex: 'Codex' };
-const ENGINES: EngineOption<Engine>[] = [
-  { value: 'claude', brand: 'claude', name: 'Claude Code', note: 'Claude plan' },
-  { value: 'codex', brand: 'openai', name: 'Codex', note: 'ChatGPT plan' },
+const ENGINES: { value: Engine; brand: Brand; name: string; plan: string }[] = [
+  { value: 'claude', brand: 'claude', name: 'Claude Code', plan: 'Claude plan' },
+  { value: 'codex', brand: 'openai', name: 'Codex', plan: 'ChatGPT plan' },
 ];
-const STATUS_LABEL: Record<string, string> = { pending: 'Queued', running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled' };
-// A short chip, and the task it types.
-const PRESETS = [
-  { label: 'New internships', prompt: 'Fetch new internship jobs, score them against my resume and add them to the dashboard' },
-  { label: 'Interview prep', prompt: 'Prepare me for my next interview on the calendar: likely questions and short answers' },
-  { label: 'Missing skills', prompt: 'Which skills do my top 20 jobs ask for that my resume does not show?' },
+
+/** Tasks to start from: a short label with its icon and tint, and the task it types. */
+export const PRESETS = [
+  { label: 'New internships', Icon: IconBriefcase, tone: 'ember', prompt: 'Fetch new internship jobs, score them against my resume and add them to the dashboard' },
+  { label: 'Interview prep', Icon: IconCalendar, tone: 'sky', prompt: 'Prepare me for my next interview on the calendar: likely questions and short answers' },
+  { label: 'Missing skills', Icon: IconTarget, tone: 'pine', prompt: 'Which skills do my top 20 jobs ask for that my resume does not show?' },
 ];
+
 // The engine picked last, kept in this browser so the next task starts with it.
 const ENGINE_KEY = 'tasks:engine';
 
@@ -83,113 +84,224 @@ export async function cancelTask(id: number) {
   await supabase.from(TABLES.tasks).update({ status: 'cancelled', finished_at: new Date().toISOString() }).eq('id', id).in('status', ['pending', 'running']);
 }
 
-/** Pick the AI, say what to do, run it. */
-export function TaskComposer({ onRun, disabled = '', catalog }: {
+/** Claude Code or Codex: a logo and a name each, the one in use filled with its tint. */
+function EngineSwitch({ value, onChange }: { value: Engine; onChange: (engine: Engine) => void }) {
+  const step = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const next = value === 'claude' ? 'codex' : 'claude';
+    onChange(next);
+    event.currentTarget.querySelector<HTMLButtonElement>(`[data-engine="${next}"]`)?.focus();
+  };
+  return (
+    <div className="eswitch" role="radiogroup" aria-label="Engine" onKeyDown={step}>
+      {ENGINES.map((option) => {
+        const on = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={on ? 0 : -1}
+            data-engine={option.value}
+            className={`eswitch__btn eswitch__btn--${option.value} ${on ? 'is-on' : ''}`}
+            onClick={() => onChange(option.value)}
+            title={`${option.name}, on your ${option.plan}`}
+          >
+            {on ? <motion.span layoutId="eswitch-pill" className="eswitch__pill" transition={SPRING} /> : null}
+            <BrandLogo brand={option.brand} size={14} />
+            <span className="eswitch__name">{option.name}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The presets as small chips, for the end of the transcript, over the composer. */
+export function PresetChips({ onPick }: { onPick: (prompt: string) => void }) {
+  return (
+    <motion.div
+      className="qchips"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 6 }}
+      transition={{ duration: 0.2, ease: EASE_OUT }}
+    >
+      {PRESETS.map((preset) => (
+        <button key={preset.label} type="button" className="qchip" onClick={() => onPick(preset.prompt)} title={preset.prompt}>
+          <span className={`qchip__icon qchip__icon--${preset.tone}`} aria-hidden="true">
+            <preset.Icon size={13} />
+          </span>
+          {preset.label}
+        </button>
+      ))}
+    </motion.div>
+  );
+}
+
+// The box grows with what is typed, one line to eight, then scrolls.
+const LINE = 22;
+const MAX_LINES = 8;
+const PAD = 12;
+
+/** Say what to do, pick the engine and the model, send it to this PC. Enter sends, Shift+Enter adds a line. */
+export function TaskComposer({ onRun, disabled = '', catalog, value, onChange, inputRef }: {
   onRun: (engine: Engine, prompt: string, model: string, effort: string) => Promise<string>;
+  /** Why a run cannot go now ("This PC is offline"); '' when it can. */
   disabled?: string;
   catalog?: ModelCatalog | null;
+  value: string;
+  onChange: (value: string) => void;
+  inputRef?: RefObject<HTMLTextAreaElement>;
 }) {
-  const [prompt, setPrompt] = useState('');
+  const own = useRef<HTMLTextAreaElement>(null);
+  const input = inputRef ?? own;
   const [engine, setEngine] = useState<Engine>(lastEngine);
   const [pick, setPick] = useState(() => lastPick(lastEngine()));
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
+  const text = value.trim();
+  const blocked = Boolean(disabled);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    const text = prompt.trim();
-    if (!text || disabled) return;
+  useLayoutEffect(() => {
+    const box = input.current;
+    if (!box) return;
+    box.style.height = 'auto';
+    box.style.height = `${Math.min(box.scrollHeight, LINE * MAX_LINES + PAD)}px`;
+  }, [value, input]);
+
+  async function submit(event?: FormEvent) {
+    event?.preventDefault();
+    if (!text || busy || blocked) return;
     setBusy(true);
     setProblem('');
     const error = await onRun(engine, text, pick.model, pick.effort);
     setBusy(false);
     if (error) setProblem(error);
-    else setPrompt('');
+    else onChange('');
+  }
+
+  function keys(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      void submit();
+    }
   }
 
   return (
-    <form className="tasks__form" onSubmit={submit}>
-      <EnginePicker
-        label="Engine"
-        value={engine}
-        options={ENGINES}
-        onChange={(value) => {
-          setEngine(value);
-          keepEngine(value);
-          setPick(lastPick(value));
-        }}
-      />
-      <textarea
-        id="task-prompt"
-        className="input tasks__input"
-        rows={3}
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="What should it do?"
-        aria-label="Task"
-      />
-      <div className="tasks__presets">
-        {PRESETS.map((p) => (
-          <button key={p.label} type="button" className="tasks__preset" onClick={() => setPrompt(p.prompt)} title={p.prompt}>
-            {p.label}
-          </button>
-        ))}
-      </div>
-      <div className="tasks__go">
-        <ModelPicker
-          engine={engine}
-          catalog={catalog}
-          model={pick.model}
-          effort={pick.effort}
-          compact
-          onChange={(model, effort) => {
-            setPick({ model, effort });
-            keepPick(engine, model, effort);
-          }}
+    <div className="composer">
+      <form className="composer__box" onSubmit={submit}>
+        <textarea
+          ref={input}
+          className="composer__input"
+          rows={1}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={keys}
+          placeholder="Describe a task"
+          aria-label="Task"
         />
-        <button type="submit" className="btn btn--primary tasks__run" disabled={busy || !prompt.trim() || Boolean(disabled)} title={disabled || undefined}>
-          <IconPlay size={13} />
-          Run on this PC
-        </button>
-      </div>
-      {problem ? <p className="tasks__error">{problem}</p> : null}
-    </form>
-  );
-}
-
-function TaskItem({ task, now, onCancel }: { task: TaskRow; now: number; onCancel: (id: number) => void }) {
-  const live = task.status === 'pending' || task.status === 'running';
-  const engine = task.engine === 'codex' ? 'codex' : 'claude';
-  return (
-    <li className={`task task--${task.status}`}>
-      <div className="task__head">
-        <span className={`task__status task__status--${task.status}`}>{STATUS_LABEL[task.status] ?? task.status}</span>
-        <span className="task__engine">
-          <BrandLogo brand={engine === 'codex' ? 'openai' : 'claude'} size={13} />
-          {ENGINE_LABEL[engine]}
-        </span>
-        <span className="task__time num">{timeAgo(task.created_at, now)}</span>
-        {live ? (
-          <button type="button" className="btn btn--ghost btn--sm task__cancel" onClick={() => onCancel(task.id)}>
-            <IconX size={13} />
-            Cancel
+        <div className="composer__bar">
+          <EngineSwitch
+            value={engine}
+            onChange={(next) => {
+              setEngine(next);
+              keepEngine(next);
+              setPick(lastPick(next));
+            }}
+          />
+          <span className="composer__model">
+            <ModelPicker
+              engine={engine}
+              catalog={catalog}
+              model={pick.model}
+              effort={pick.effort}
+              compact
+              onChange={(model, effort) => {
+                setPick({ model, effort });
+                keepPick(engine, model, effort);
+              }}
+            />
+          </span>
+          <span className="composer__space" />
+          {blocked ? (
+            <span className="composer__offline" title={disabled}>
+              <span className="composer__offdot" aria-hidden="true" />
+              {disabled}
+            </span>
+          ) : null}
+          <button
+            type="submit"
+            className={`composer__send ${busy ? 'is-busy' : ''}`}
+            disabled={busy || !text || blocked}
+            title="Run on this PC"
+            aria-label="Run on this PC"
+          >
+            {busy ? <span className="spinner" aria-hidden="true" /> : <IconArrowRight size={17} />}
           </button>
-        ) : null}
-      </div>
-      <p className="task__prompt">{task.prompt}</p>
-      <TaskTimeline task={task} now={now} />
-    </li>
+        </div>
+      </form>
+      {problem ? (
+        <p className="composer__error" role="alert">
+          <IconAlert size={14} />
+          {problem}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
-/** The runs, newest first, each with its timeline. */
-export function TaskList({ tasks, now, onCancel }: { tasks: TaskRow[]; now: number; onCancel: (id: number) => void }) {
-  const sorted = [...tasks].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+/** Oldest first, the way a chat reads: the newest run sits over the composer. */
+export const byTime = (a: TaskRow, b: TaskRow) => Date.parse(a.created_at) - Date.parse(b.created_at) || a.id - b.id;
+
+function TaskItem({ task, now, onCancel, catalog, online }: {
+  task: TaskRow;
+  now: number;
+  onCancel: (id: number) => void;
+  catalog?: ModelCatalog | null;
+  online: boolean;
+}) {
+  const engine: Engine = task.engine === 'codex' ? 'codex' : 'claude';
+  const model = task.model || task.effort ? modelLabel(modelsOf(engine, catalog), task.model ?? '', task.effort ?? '') : '';
+  const when = Date.parse(task.created_at);
   return (
-    <ul className="tasks__list">
-      {sorted.map((task) => (
-        <TaskItem key={task.id} task={task} now={now} onCancel={onCancel} />
-      ))}
-    </ul>
+    <motion.li
+      className="xchg"
+      data-id={task.id}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4, ease: EASE_OUT }}
+    >
+      <div className="xchg__ask">
+        <p className="xchg__bubble">{task.prompt}</p>
+        <time className="xchg__when num" dateTime={task.created_at} title={Number.isFinite(when) ? new Date(when).toLocaleString() : undefined}>
+          {timeAgo(task.created_at, now)}
+        </time>
+      </div>
+      <TaskTimeline task={task} now={now} model={model} onCancel={onCancel} online={online} />
+    </motion.li>
+  );
+}
+
+/** The runs as a transcript: each prompt on the right, the reply under it on the left. */
+export function TaskList({ tasks, now, onCancel, catalog, online = true }: {
+  tasks: TaskRow[];
+  now: number;
+  onCancel: (id: number) => void;
+  catalog?: ModelCatalog | null;
+  online?: boolean;
+}) {
+  const sorted = [...tasks].sort(byTime);
+  return (
+    <ol className="xlog" aria-label="Runs">
+      <AnimatePresence initial={false}>
+        {sorted.map((task) => (
+          <TaskItem key={task.id} task={task} now={now} onCancel={onCancel} catalog={catalog} online={online} />
+        ))}
+      </AnimatePresence>
+    </ol>
   );
 }

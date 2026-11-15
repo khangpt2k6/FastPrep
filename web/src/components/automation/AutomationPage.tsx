@@ -1,60 +1,25 @@
-// The Automation page: work typed here runs on the person's own computer, with their own plans (Claude Code or Codex),
-// and comes back here step by step. A domain of its own, apart from the agent's settings.
-import { useState } from 'react';
+// The Automation page: a chat with this PC. A task typed here runs on the person's own computer with Claude Code or Codex,
+// on their own plan, and comes back step by step, then with its answer. Oldest run at the top, newest at the bottom, over
+// a composer that stays docked under the transcript.
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { useUserId } from '../../hooks/useDocuments';
-import { BrandLogo } from '../BrandLogo';
-import { EmptyState } from '../common';
-import { IconCheck, IconGlobe, IconInfo, IconTerminal } from '../Icons';
+import { IconAlert, IconArrowRight, IconInfo } from '../Icons';
+import { Wolf } from '../mascot/Wolf';
 import { GuideDialog } from '../guide/GuideDialog';
-import { TaskComposer, TaskList, addTask, cancelTask, useTasks } from '../agent/TasksCard';
+import { PRESETS, PresetChips, TaskComposer, TaskList, addTask, byTime, cancelTask, useTasks } from '../agent/TasksCard';
 import type { Engine, TaskRow } from '../agent/TaskTimeline';
 import type { ModelCatalog } from '../../lib/types';
 import './automation.css';
-
-/** Where a click goes: this page, then this PC, then the plans, then back here. The PC is lit while the agent is online. */
-function Flow({ online, onGuide }: { online: boolean; onGuide: () => void }) {
-  return (
-    <div className="aflow">
-      <ol className="aflow__steps" aria-label="Where a task runs">
-        <li className="aflow__node">
-          <span className="aflow__icon">
-            <IconGlobe size={16} />
-          </span>
-          Dashboard
-        </li>
-        <li className={`aflow__node ${online ? 'is-on' : 'is-off'}`}>
-          <span className="aflow__icon">
-            <IconTerminal size={16} />
-          </span>
-          This PC
-          <span className={`aflow__dot ${online ? 'is-on' : ''}`} title={online ? 'Online' : 'Offline'} />
-        </li>
-        <li className="aflow__node">
-          <span className="aflow__icon aflow__icon--duo">
-            <BrandLogo brand="claude" size={15} />
-            <BrandLogo brand="openai" size={15} />
-          </span>
-          Your plans
-        </li>
-        <li className="aflow__node">
-          <span className="aflow__icon">
-            <IconCheck size={16} />
-          </span>
-          Back here
-        </li>
-      </ol>
-      <button type="button" className="btn btn--ghost btn--sm" onClick={onGuide}>
-        <IconInfo size={14} />
-        Guide
-      </button>
-    </div>
-  );
-}
 
 export interface AutomationViewProps {
   tasks: TaskRow[];
   /** The tasks table is not in the database yet. */
   missing?: boolean;
+  /** The runs are still on their way. */
+  loading?: boolean;
+  /** Why the runs did not load, when they did not. */
+  error?: string;
   now: number;
   /** Whether the agent on the person's computer is online: tasks run there. */
   online: boolean;
@@ -64,35 +29,150 @@ export interface AutomationViewProps {
   onCancel: (id: number) => void;
 }
 
-export function AutomationView({ tasks, missing = false, now, online, catalog, onRun, onCancel }: AutomationViewProps) {
+/**
+ * Keeps the newest run in view the way a chat does: at the bottom when the page opens, scrolled to when a new run
+ * comes in, and followed as it works while the reader is already near the bottom.
+ */
+function useFollow(tasks: TaskRow[]) {
+  const last = tasks.length ? [...tasks].sort(byTime)[tasks.length - 1] : null;
+  const mark = last ? `${last.id}:${last.status}:${last.events?.length ?? 0}:${last.output ? 1 : 0}` : '';
+  const seen = useRef<number | null>(null);
+  const near = useRef(true);
+
+  useEffect(() => {
+    const measure = () => {
+      const page = document.documentElement;
+      near.current = page.scrollHeight - (window.scrollY + window.innerHeight) < 220;
+    };
+    measure();
+    window.addEventListener('scroll', measure, { passive: true });
+    return () => window.removeEventListener('scroll', measure);
+  }, []);
+
+  useEffect(() => {
+    if (!last) return;
+    const first = seen.current === null;
+    const fresh = !first && seen.current !== last.id;
+    if (!first && !fresh && !near.current) {
+      seen.current = last.id;
+      return;
+    }
+    const still = first || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // After the frame, once the new rows have their height. The run counts as seen only once the page has moved to it.
+    const frame = window.requestAnimationFrame(() => {
+      seen.current = last.id;
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: still ? 'auto' : 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+    // The mark says what changed at the end of the transcript; nothing else is a reason to move.
+  }, [mark]);
+}
+
+/** No runs yet: the wolf at its laptop and three tasks to start from. */
+function Hero({ onPick }: { onPick: (prompt: string) => void }) {
+  return (
+    <div className="auto__hero">
+      <Wolf mood="laptop" size={120} motion="idle" eager className="auto__wolf" />
+      <h2 className="auto__herotitle">New run</h2>
+      <ul className="auto__presets">
+        {PRESETS.map((preset, i) => (
+          <li key={preset.label} style={{ animationDelay: `${120 + i * 60}ms` }}>
+            <button type="button" className="preset" onClick={() => onPick(preset.prompt)} title={preset.prompt}>
+              <span className={`ibadge ibadge--${preset.tone} ibadge--lg`} aria-hidden="true">
+                <preset.Icon size={19} />
+              </span>
+              <span className="preset__foot">
+                <span className="preset__label">{preset.label}</span>
+                <IconArrowRight size={15} className="preset__go" />
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Runs on their way: two quiet exchanges. */
+function Skeleton() {
+  return (
+    <div className="auto__skel" aria-busy="true" aria-label="Loading runs">
+      {[62, 44].map((width, i) => (
+        <div className="auto__skelx" key={width} style={{ animationDelay: `${i * 120}ms` }}>
+          <span className="skeleton auto__skelask" style={{ width: `${width}%` }} />
+          <span className="auto__skelreply">
+            <span className="skeleton auto__skelava" />
+            <span className="auto__skellines">
+              <span className="skeleton skeleton--line" style={{ width: '38%' }} />
+              <span className="skeleton auto__skelcard" />
+            </span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AutomationView({ tasks, missing = false, loading = false, error = '', now, online, catalog, onRun, onCancel }: AutomationViewProps) {
   const [guide, setGuide] = useState(false);
+  const [draft, setDraft] = useState('');
+  const input = useRef<HTMLTextAreaElement>(null);
+  const runs = useMemo(() => tasks.filter((t) => t && t.id !== undefined), [tasks]);
+  useFollow(runs);
+
+  const pick = (prompt: string) => {
+    setDraft(prompt);
+    input.current?.focus();
+  };
+
   return (
     <div className="page auto">
-      <Flow online={online} onGuide={() => setGuide(true)} />
-      {missing ? (
-        <p className="groupnote groupnote--warn">Needs the latest supabase/schema.sql.</p>
-      ) : (
-        <div className="auto__grid">
-          <section className="card auto__new" aria-labelledby="auto-new">
-            <h2 id="auto-new" className="auto__title">
-              New run
-            </h2>
-            <TaskComposer onRun={onRun} catalog={catalog} disabled={online ? '' : 'This PC is offline'} />
-          </section>
-          <section className="auto__runs" aria-labelledby="auto-runs">
-            <h2 id="auto-runs" className="auto__title">
-              Runs <span className="auto__count num">{tasks.length}</span>
-            </h2>
-            {tasks.length ? (
-              <div className="card auto__list">
-                <TaskList tasks={tasks} now={now} onCancel={onCancel} />
-              </div>
-            ) : (
-              <EmptyState compact friend="robot-laptop" title="No runs yet" text="Pick an engine, say what to do, run it." />
-            )}
-          </section>
+      <div className="auto__chat">
+        <div className="auto__bar">
+          <span className={`pcpill ${online ? 'is-on' : ''}`} role="status">
+            <span className="pcpill__dot" aria-hidden="true" />
+            {online ? 'This PC online' : 'This PC offline'}
+          </span>
+          <button type="button" className="btn btn--ghost btn--sm auto__guide" onClick={() => setGuide(true)}>
+            <IconInfo size={14} />
+            Guide
+          </button>
         </div>
-      )}
+
+        {missing ? (
+          <p className="auto__note">
+            <span className="auto__noteicon" aria-hidden="true">
+              <IconAlert size={15} />
+            </span>
+            Needs the latest supabase/schema.sql.
+          </p>
+        ) : (
+          <>
+            <section className="auto__log" aria-label="Transcript">
+              {runs.length ? (
+                <>
+                  <TaskList tasks={runs} now={now} onCancel={onCancel} catalog={catalog} online={online} />
+                  <AnimatePresence initial={false}>{draft ? null : <PresetChips key="chips" onPick={pick} />}</AnimatePresence>
+                </>
+              ) : loading ? (
+                <Skeleton />
+              ) : error ? (
+                <p className="auto__note auto__note--error" title={error}>
+                  <span className="auto__noteicon" aria-hidden="true">
+                    <IconAlert size={15} />
+                  </span>
+                  Runs did not load
+                </p>
+              ) : (
+                <Hero onPick={pick} />
+              )}
+            </section>
+            <div className="auto__dock">
+              <TaskComposer onRun={onRun} catalog={catalog} disabled={online ? '' : 'This PC is offline'} value={draft} onChange={setDraft} inputRef={input} />
+            </div>
+          </>
+        )}
+      </div>
       <GuideDialog open={guide} onClose={() => setGuide(false)} start="automation" />
     </div>
   );
@@ -101,11 +181,13 @@ export function AutomationView({ tasks, missing = false, now, online, catalog, o
 /** The page wired to the database. */
 export function AutomationPage({ now, online, catalog }: { now: number; online: boolean; catalog?: ModelCatalog | null }) {
   const userId = useUserId();
-  const { rows, error } = useTasks(userId);
+  const { rows, error, loading } = useTasks(userId);
   return (
     <AutomationView
       tasks={rows}
       missing={error?.kind === 'missing-table'}
+      loading={loading || !userId}
+      error={error && error.kind !== 'missing-table' ? error.message : ''}
       now={now}
       online={online}
       catalog={catalog}

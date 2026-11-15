@@ -1,403 +1,1078 @@
-/* Tasks on the Agent page: the engine, a prompt box, and each task's run as a timeline. */
+/* The Automation page's pieces: the transcript (each prompt in a soft ember bubble on the right, the reply under it on the
+   left), a run's steps on a thin thread in a white sheet, the answer on a white sheet of its own, the files it made, and
+   the glass composer that stays docked under it all. No borders: tints, soft shadows and space. */
 
-.tasks__form {
+/* The transcript */
+
+.xlog {
   display: grid;
-  gap: 12px;
-  padding: 16px 18px;
-}
-
-.tasks__input {
-  width: 100%;
-  min-height: 60px;
-  resize: vertical;
-  font: inherit;
-}
-
-.tasks__bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.tasks__presets {
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-width: 0;
-}
-
-.tasks__preset {
-  padding: 5px 12px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--frost);
-  color: var(--ink-2);
-  font: inherit;
-  font-size: 12.5px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.tasks__preset:hover {
-  background: var(--ember-50);
-  color: var(--ember-700);
-}
-
-.tasks__run {
-  flex: none;
-}
-
-/* The model for this run, then Run. */
-.tasks__go {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tasks__go .tasks__run {
-  flex: 1;
-}
-
-.tasks__note,
-.tasks__error {
+  gap: 34px;
   margin: 0;
-  padding: 0 18px 14px;
-  font-size: 13px;
-  color: var(--ink-3);
-}
-
-.tasks__error {
-  color: var(--rose-500);
-}
-
-.tasks__list {
-  display: grid;
-  margin: 0;
-  padding: 0;
+  padding: 6px 0 30px;
   list-style: none;
 }
 
-.task {
+.xchg {
   display: grid;
-  gap: 8px;
-  padding: 14px 18px;
-  border-top: 1px solid var(--line);
+  gap: 14px;
   min-width: 0;
 }
 
-.task__head {
+/* The prompt: a bubble on the right with a smaller corner toward the reply, its time under it. */
+.xchg__ask {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  min-width: 0;
+}
+
+.xchg__bubble {
+  max-width: min(80%, 600px);
+  padding: 10px 15px;
+  border-radius: 18px 18px 6px 18px;
+  background: var(--ember-50);
+  color: var(--ink);
+  font-size: 14.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-shadow: 0 1px 2px rgb(143 63 6 / 0.06), 0 8px 20px -16px rgb(143 63 6 / 0.3);
+}
+
+.xchg__when {
+  padding-right: 6px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
+/* The reply: the engine's badge and name, the model, how it went; under them the steps, the answer and the files. */
+
+.run {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.run__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--ink-3);
+  gap: 6px 10px;
+  min-height: 32px;
 }
 
-/* The engine a task ran on: its logo and its name. */
-.task__engine {
+.run__avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.08), 0 6px 14px -8px rgb(21 24 28 / 0.28);
+}
+
+.run__avatar--claude {
+  background: #fbeee9;
+}
+
+.run__name {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.run__model {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.run__took {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.run__cancel {
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+}
+
+.run__body {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding-left: 42px;
+}
+
+/* How a run went: a small tinted tag. Running shimmers. */
+.xstat {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: var(--ink-2);
-  font-weight: 600;
+  height: 22px;
+  padding: 0 8px 0 7px;
+  border-radius: var(--r-tag);
+  background: var(--gray-bg);
+  color: var(--gray);
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.task__status {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--frost);
-  color: var(--ink-2);
-  font-weight: 600;
-}
-
-.task__status--running {
+.xstat--pending {
   background: var(--sand-50);
   color: var(--sand-700);
 }
 
-.task__status--done {
-  background: #e7f4ed;
-  color: var(--pine-500);
+.xstat--running {
+  background: var(--ember-50);
+  color: var(--ember-700);
 }
 
-.task__status--failed {
-  background: #fbe9ec;
-  color: var(--rose-500);
+.xstat--done {
+  background: var(--pine-50);
+  color: var(--pine-700);
 }
 
-.task__cancel {
-  margin-left: auto;
+.xstat--failed {
+  background: var(--rose-50);
+  color: var(--rose-700);
 }
 
-.task__prompt {
-  margin: 0;
-  color: var(--ink);
-  font-weight: 600;
-  overflow-wrap: anywhere;
+.xstat__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ember-500);
 }
 
-/* The run: a summary line (shimmering while it works), the steps on a thread, the answer. */
-
-.tl {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
+.xstat--running .shimmer {
+  --sh-base: var(--ember-700);
+  --sh-hi: var(--ember-300);
+  /* The text is painted through its background: room under the line keeps the g whole. */
+  line-height: 1.4;
 }
 
-.tl__summary {
-  display: inline-flex;
+.composer__input {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+/* A queued run: one quiet line until this PC takes it. */
+.run__wait {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  justify-self: start;
-  padding: 2px 0;
-  border: 0;
-  background: none;
+  gap: 10px;
+  min-height: 30px;
   color: var(--ink-3);
-  font: inherit;
   font-size: 13px;
-  cursor: pointer;
 }
 
-.tl__summary:disabled {
-  cursor: default;
-}
-
-.tl__summary:hover:not(:disabled) {
-  color: var(--ink);
-}
-
-.tl__dot {
+.run__waitdot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
-  background: var(--pine-500);
+  flex: none;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: var(--sand-500);
+  animation: run-wait 1.8s ease-in-out infinite;
 }
 
-.tl__dot.is-live {
-  background: var(--ember-500);
-  animation: tl-pulse 1.4s ease-in-out infinite;
-}
-
-.tl__count {
-  padding: 0 7px;
+/* The pill the steps fold under: "Worked for 1m 12s · 6 steps". */
+.run__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 7px;
+  max-width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
   border-radius: 999px;
-  background: var(--frost);
-  font-size: 11.5px;
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 12.5px;
   font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.05);
+  transition: box-shadow var(--dur-2) var(--ease), color var(--dur-1) ease, transform 120ms ease;
 }
 
-.tl__chev {
-  transition: transform 0.2s ease;
+.run__pill:hover {
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.06), 0 8px 18px -10px rgb(21 24 28 / 0.32);
 }
 
-.tl__chev.is-flipped {
-  transform: rotate(180deg);
+.run__pill:active {
+  transform: scale(0.98);
 }
 
-.tl__fold {
+.run__pillicon {
+  flex: none;
+  color: var(--ink-3);
+}
+
+.run.is-live .run__pillicon {
+  color: var(--ember-600);
+}
+
+.run__sep {
+  color: var(--ink-4);
+}
+
+.run__chev {
+  flex: none;
+  color: var(--ink-3);
+  transition: transform var(--dur-2) var(--ease);
+}
+
+/* The steps: a white sheet, each step an icon in a tinted circle on a thin thread, then a word and its target. */
+.run__fold {
+  margin: -2px -2px -4px;
+  padding: 2px 2px 4px;
   overflow: hidden;
 }
 
-.tl__steps {
+.steps {
   position: relative;
   display: grid;
-  gap: 4px;
+  gap: 1px;
   margin: 0;
-  padding: 2px 0 2px 0;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: var(--card);
   list-style: none;
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.04);
 }
 
-/* The thread the steps hang on. */
-.tl__steps::before {
+.steps::before {
   content: '';
   position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 11px;
-  width: 2px;
+  top: 22px;
+  bottom: 22px;
+  left: 21.25px;
+  width: 1.5px;
   border-radius: 2px;
-  background: linear-gradient(var(--line), var(--frost));
+  background: var(--line);
 }
 
-.tl__step {
+/* With earlier steps folded away, the thread starts at the first step shown. */
+.steps:has(> .steps__earlier)::before {
+  top: 52px;
+}
+
+.step {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
   min-width: 0;
-  padding: 3px 0;
-  font-size: 13px;
-  color: var(--ink-2);
 }
 
-.tl__node {
+.step__row {
+  --ring: var(--card);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 8px 4px 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+
+button.step__row {
+  cursor: pointer;
+  transition: background-color var(--dur-1) ease;
+}
+
+button.step__row:hover {
+  --ring: var(--frost);
+  background: var(--frost);
+}
+
+button.step__row:focus-visible {
+  outline-offset: -2px;
+}
+
+.step__node {
   position: relative;
   z-index: 1;
-  flex: none;
   display: grid;
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
-  background: var(--card);
+  flex: none;
+  border-radius: 50%;
+  background: var(--frost);
+  color: var(--ink-2);
+  box-shadow: 0 0 0 2px var(--ring, var(--card));
+  transition: box-shadow var(--dur-1) ease;
+}
+
+.step--plum .step__node {
+  background: #f2eef5;
+  color: #654a7d;
+}
+
+.step--mist .step__node {
+  background: var(--frost);
   color: var(--ink-3);
-  box-shadow: 0 0 0 3px var(--card), 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-.tl__step--think .tl__node {
-  color: var(--plum-500, #7c5cc4);
-}
-
-.tl__step--run .tl__node {
+.step--ink .step__node {
+  background: #eceef1;
   color: var(--ink);
 }
 
-.tl__step--edit .tl__node {
-  color: var(--ember-600);
+.step--sky .step__node {
+  background: var(--sky-50);
+  color: var(--sky-700);
 }
 
-.tl__step--web .tl__node {
-  color: var(--sky-500, #2f7fd0);
+.step--ember .step__node {
+  background: var(--ember-50);
+  color: var(--ember-700);
 }
 
-.tl__step--error .tl__node {
-  color: var(--rose-500);
+.step--pine .step__node {
+  background: var(--pine-50);
+  color: var(--pine-700);
 }
 
-.tl__step--think .tl__line {
+.step--sand .step__node {
+  background: var(--sand-50);
+  color: var(--sand-700);
+}
+
+.step--rose .step__node {
+  background: var(--rose-50);
+  color: var(--rose-700);
+}
+
+.step__label {
+  flex: none;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* The target: a light chip in the code face, cut to one line. */
+.step__chip {
+  min-width: 0;
+  padding: 2px 8px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: var(--frost);
+  box-shadow: none;
+  color: var(--ink-2);
+  font-family: var(--code);
+  font-size: 12px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.step__row:hover .step__chip {
+  background: var(--card);
+}
+
+.step__text {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step--think .step__text {
   color: var(--ink-3);
   font-style: italic;
 }
 
-.tl__node--now {
-  background: var(--ember-500);
-  box-shadow: 0 0 0 3px var(--card), 0 0 0 7px rgba(240, 123, 31, 0.18);
-  animation: tl-pulse 1.4s ease-in-out infinite;
+.step--error .step__text {
+  color: var(--rose-700);
 }
 
-.tl__node--now::after {
+.step__more {
+  flex: none;
+  margin-left: auto;
+  color: var(--ink-4);
+  transition: transform var(--dur-2) var(--ease), color var(--dur-1) ease;
+}
+
+button.step__row:hover .step__more {
+  color: var(--ink-2);
+}
+
+.step__more.is-open {
+  transform: rotate(90deg);
+}
+
+/* What a step gave back, opened in place: a soft frost panel that scrolls. */
+.step__fold {
+  overflow: hidden;
+}
+
+.step__out {
+  margin: 2px 0 8px 34px;
+  max-height: 220px;
+  padding: 10px 12px;
+  overflow: auto;
+  border-radius: 10px;
+  background: var(--frost);
+  color: var(--ink-2);
+  font-family: var(--code);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.step__out--prose {
+  font-family: var(--font);
+  white-space: normal;
+}
+
+.step__out--prose .md {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.step__whole {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* The step it is on: an ember node that breathes, its words shimmering. */
+.step--now .step__node {
+  background: var(--ember-500);
+  animation: run-pulse 1.8s ease-in-out infinite;
+}
+
+.step--now .step__node::after {
   content: '';
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: 50%;
   background: #fff;
 }
 
-.tl__line {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  padding-top: 3px;
-  overflow-wrap: anywhere;
+.step--now .step__chip {
+  color: var(--ink-3);
 }
 
-.tl__code {
-  justify-self: start;
-  max-width: 100%;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: #15181c;
-  color: #e9edf2;
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  font-size: 12px;
-  white-space: pre-wrap;
+.step--now .step__text {
+  font-style: normal;
 }
 
-.tl__detail summary {
+.steps__earlier {
+  padding: 2px 0 4px 34px;
+}
+
+.steps__more {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--frost);
   color: var(--ink-3);
   font-size: 12px;
-  cursor: pointer;
+  font-weight: 600;
+  transition: background-color var(--dur-1) ease, color var(--dur-1) ease;
 }
 
-.tl__detail pre {
-  margin: 4px 0 0;
-  max-height: 220px;
-  overflow: auto;
-  padding: 8px 10px;
-  border-radius: 8px;
+.steps__more:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+/* The answer: the whole Markdown on a white sheet, at a reading measure. Short answers keep a short sheet. */
+.run__answer {
+  position: relative;
+  display: grid;
+  justify-self: start;
+  max-width: 100%;
+  min-width: 0;
+  padding: 16px 22px 18px 20px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.04), 0 14px 32px -22px rgb(21 24 28 / 0.3);
+}
+
+.run__answer .md {
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.65;
+}
+
+.run__answer .md > :is(p, ul, ol, blockquote, h4, h5, h6) {
+  max-width: 74ch;
+}
+
+.run__answer .md h4,
+.run__answer .md h5 {
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+.run__answer .md > :first-child {
+  margin-top: 0;
+}
+
+.run__answer .md li + li {
+  margin-top: 2px;
+}
+
+/* Copy shows at the sheet's corner under the pointer. */
+.run__copy {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink-3);
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.08), 0 4px 12px -6px rgb(21 24 28 / 0.28);
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease), color var(--dur-1) ease, background-color var(--dur-1) ease;
+}
+
+.run__answer:hover .run__copy,
+.run__copy:focus-visible,
+.run__copy.is-done {
+  opacity: 1;
+  transform: none;
+}
+
+.run__copy:hover {
   background: var(--frost);
-  font-size: 12px;
-  white-space: pre-wrap;
+  color: var(--ink);
 }
 
-.tl__answer {
-  max-height: 460px;
-  overflow: auto;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: var(--frost);
-  overflow-wrap: anywhere;
+.run__copy.is-done {
+  color: var(--pine-700);
 }
 
-.tl__files {
+/* The files a run made: a tile each, the kind as a tinted tag, open by its name, save by the arrow. */
+.run__files {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
 
-.tl__file {
+.run__file {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   max-width: 100%;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--frost);
+  min-width: 0;
+  padding: 6px 8px 6px 6px;
+  border-radius: 14px;
+  background: var(--card);
   font-size: 13px;
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.04), 0 10px 24px -18px rgb(21 24 28 / 0.32);
 }
 
-.tl__file-name {
+.run__filetype {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  flex: none;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--frost);
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
+.run__filetype--rose {
+  background: var(--rose-50);
+  color: var(--rose-700);
+}
+
+.run__filetype--sky {
+  background: var(--sky-50);
+  color: var(--sky-700);
+}
+
+.run__filetype--pine {
+  background: var(--pine-50);
+  color: var(--pine-700);
+}
+
+.run__filetype--ember {
+  background: var(--ember-50);
+  color: var(--ember-700);
+}
+
+.run__filetype--plum {
+  background: #f2eef5;
+  color: #654a7d;
+}
+
+.run__filename {
+  min-width: 0;
   overflow: hidden;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: inherit;
+}
+
+a.run__filename:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.run__filesave {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+  color: var(--ink-3);
+  transition: background-color var(--dur-1) ease, color var(--dur-1) ease;
+}
+
+.run__filesave:hover {
+  background: var(--frost);
+  color: var(--ink);
+}
+
+/* A failed run says why in a soft rose panel. */
+.run__fail {
+  display: flex;
+  align-items: flex-start;
+  justify-self: start;
+  gap: 10px;
+  max-width: 100%;
+  padding: 10px 14px 10px 10px;
+  border-radius: 14px;
+  background: var(--rose-50);
+  color: var(--rose-700);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.run__failicon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: #f6d7dc;
+  color: var(--rose-700);
+}
+
+.run__failtext {
+  min-width: 0;
+  max-height: 200px;
+  margin: 0;
+  padding-top: 2px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The presets as chips at the end of the transcript, right over the composer, while the box is empty. */
+.qchips {
+  display: flex;
+  gap: 8px;
+  margin: auto -4px -6px;
+  padding: 4px 4px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.qchips::-webkit-scrollbar {
+  display: none;
+}
+
+.qchip {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px 0 5px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.05);
+  transition: box-shadow var(--dur-2) var(--ease), color var(--dur-1) ease, transform var(--dur-2) var(--ease);
+}
+
+.qchip:hover {
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.06), 0 8px 18px -10px rgb(21 24 28 / 0.32);
+  transform: translateY(-1px);
+}
+
+.qchip:active {
+  transform: scale(0.97);
+}
+
+.qchip__icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.qchip__icon--ember {
+  background: var(--ember-50);
+  color: var(--ember-700);
+}
+
+.qchip__icon--sky {
+  background: var(--sky-50);
+  color: var(--sky-700);
+}
+
+.qchip__icon--pine {
+  background: var(--pine-50);
+  color: var(--pine-700);
+}
+
+/* The composer: a floating glass box with the task, the engine, the model and the send button. */
+.composer {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.composer__box {
+  display: grid;
+  gap: 8px;
+  padding: 12px 10px 10px 16px;
+  border-radius: 22px;
+  background: rgb(255 255 255 / 0.82);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-edge), 0 1px 2px rgb(21 24 28 / 0.05), 0 20px 44px -22px rgb(21 24 28 / 0.4);
+  transition: box-shadow var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease);
+}
+
+.composer__box:focus-within {
+  background: rgb(255 255 255 / 0.95);
+  box-shadow: var(--glass-edge), 0 1px 2px rgb(21 24 28 / 0.06), 0 24px 52px -22px rgb(21 24 28 / 0.5);
+}
+
+.composer__input {
+  display: block;
+  width: 100%;
+  min-height: 34px;
+  max-height: 188px;
+  padding: 6px 6px 6px 2px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  line-height: 22px;
+  resize: none;
+  overflow-y: auto;
+}
+
+.composer__input:focus-visible {
+  outline: none;
+}
+
+.composer__input::placeholder {
+  color: var(--ink-3);
+}
+
+.composer__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.composer__model {
+  display: flex;
+  min-width: 0;
+}
+
+.composer__model .mpick {
+  max-width: 100%;
+  min-height: 34px;
+  background: var(--tone);
+}
+
+.composer__model .mpick:hover:not(:disabled) {
+  background: var(--card);
+}
+
+.composer__space {
+  flex: 1;
+}
+
+.composer__offline {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px 0 10px;
+  border-radius: 999px;
+  background: var(--tone);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.composer__offdot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink-4);
+}
+
+/* Send: a round ember button; gray while there is nothing to send. */
+.composer__send {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ember-600);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 8px 18px -8px rgb(217 100 12 / 0.75);
+  transition: background-color var(--dur-1) ease, box-shadow var(--dur-2) var(--ease), transform 120ms ease;
+}
+
+.composer__send:hover:not(:disabled) {
+  background: var(--ember-700);
+}
+
+.composer__send:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.composer__send:disabled {
+  background: var(--fill);
+  color: var(--ink-4);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.composer__send.is-busy:disabled {
+  background: var(--ember-600);
+  color: #fff;
+  cursor: progress;
+}
+
+.composer__send:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.composer__send .spinner {
+  width: 16px;
+  height: 16px;
+}
+
+.composer__error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 14px;
+  color: var(--rose-700);
+  font-size: 12.5px;
   font-weight: 600;
 }
 
-a.tl__file-name:hover {
-  text-decoration: underline;
-}
-
-.tl__file-save {
+/* The engine: a compact switch, the one in use filled with its tint (Claude's warm, Codex's white). */
+.eswitch {
+  position: relative;
   display: inline-flex;
-  color: inherit;
-  opacity: 0.6;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--tone);
 }
 
-.tl__file-save:hover {
+.eswitch__btn {
+  position: relative;
+  z-index: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color var(--dur-1) ease;
+}
+
+.eswitch__btn:hover,
+.eswitch__btn.is-on {
+  color: var(--ink);
+}
+
+.eswitch__btn:focus-visible {
+  outline-offset: -2px;
+}
+
+.eswitch__btn .brandlogo {
+  flex: none;
+  transition: filter var(--dur-2) ease, opacity var(--dur-2) ease;
+}
+
+.eswitch__btn:not(.is-on) .brandlogo {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.eswitch__btn:not(.is-on):hover .brandlogo {
+  filter: none;
   opacity: 1;
 }
 
-.tl__error {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--rose-500);
-  white-space: pre-wrap;
+.eswitch__pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 9px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(21 24 28 / 0.08), 0 4px 10px -6px rgb(21 24 28 / 0.2);
 }
 
-@keyframes tl-pulse {
+.eswitch__btn--claude .eswitch__pill {
+  background: #fbe7dd;
+}
+
+@keyframes run-pulse {
   0%,
   100% {
-    opacity: 1;
-    transform: scale(1);
+    box-shadow: 0 0 0 2px var(--card), 0 0 0 3px rgb(240 123 31 / 0.28);
   }
   50% {
-    opacity: 0.55;
-    transform: scale(0.88);
+    box-shadow: 0 0 0 2px var(--card), 0 0 0 8px rgb(240 123 31 / 0);
   }
 }
 
+@keyframes run-wait {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(183 129 26 / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgb(183 129 26 / 0);
+  }
+}
+
+/* Phones: the bubble may take more of the width, the reply starts at the edge, and the engine switch keeps its logos. */
 @media (max-width: 560px) {
-  .tasks__bar {
+  .xlog {
+    gap: 28px;
+  }
+
+  .xchg__bubble {
+    max-width: 88%;
+  }
+
+  .run__body {
+    padding-left: 0;
+  }
+
+  .run__answer {
+    padding: 14px 16px 16px;
+  }
+
+  .eswitch__name {
+    display: none;
+  }
+
+  .eswitch__btn {
+    padding: 0 9px;
+  }
+
+  .composer__box {
+    padding: 10px 8px 8px 14px;
+  }
+
+  .composer__bar {
     flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .composer__offline {
+    order: 5;
+  }
+
+  /* The chips scroll sideways; the edge fades to say there is more. */
+  .qchips {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
+}
+
+/* Without a pointer there is no hover: copy sits under the answer, always there. */
+@media (hover: none) {
+  .run__copy {
+    position: static;
+    justify-self: end;
+    margin: 8px -10px -8px 0;
+    opacity: 1;
+    transform: none;
+    box-shadow: none;
+    background: var(--frost);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tl__dot.is-live,
-  .tl__node--now {
+  .step--now .step__node,
+  .run__waitdot {
     animation: none;
+  }
+
+  .qchip:hover {
+    transform: none;
   }
 }

@@ -480,46 +480,93 @@ function sampleUsage(now: number): UsageRow[] {
   ];
 }
 
-/** Two made-up tasks for the Automation page: one Codex run under way, one Claude Code run with its answer. */
+/** Four made-up runs for the Automation page, newest first as the database gives them: a Codex run under way, a Claude
+ * Code run with a long answer (its last step holds the runner's 300 character cut, the output the whole answer), a run
+ * that failed, and a short one that made a file. */
 function sampleTasks(now: number): TaskRow[] {
   const at = (secondsAgo: number) => new Date(now - secondsAgo * 1000).toISOString();
+  const repo = 'cd "C:/Users/2006t/OneDrive/Desktop/JobApply" &&';
+  const answer = [
+    '### Why it says "Dear Hiring Manager"',
+    '',
+    'The greeting comes from `greeting_for()` in `cover_letter/__init__.py`. It uses a name **only when the job row has one**, and nothing ever fills it in:',
+    '',
+    '- `DEFAULT_HIRING_MANAGER` is `"Hiring Manager"` (line 14), the fallback for every letter.',
+    '- `job.contact_name` is the only place a name can come from, and the **job fetcher never sets it** (models.py, line 41).',
+    '- The recruiter is named in the Stripe posting itself (*Priya Raman, University Recruiting*), but no step reads it.',
+    '',
+    '### Fix',
+    '',
+    '1. When a job is scored, pull a recruiter or hiring manager name out of the posting and save it to `contact_name`.',
+    '2. Keep the fallback for postings without a name, so no letter goes out with an empty greeting.',
+    '',
+    'The cover letter tests pass (**8 passed**). I changed no files.',
+  ].join('\n');
+  const short = 'Done: your **5 best jobs** this week are in the file below. Stripe leads at **4.9**, then Cisco (4.8) and Datadog (4.7).';
   return [
     {
-      id: 2, engine: 'codex', prompt: 'Which skills do my top 20 jobs ask for that my resume does not show?', status: 'running', output: '',
-      step: 'Counting the skills each posting asks for', error: '', created_at: at(41), started_at: at(39), finished_at: null,
+      id: 4, engine: 'codex', model: 'gpt-5.5', effort: 'high', prompt: 'Which skills do my top 20 jobs ask for that my resume does not show?',
+      status: 'running', output: '', step: 'Run: rg -c "Kubernetes|Terraform" data/top20/postings.jsonl', error: '',
+      created_at: at(46), started_at: at(44), finished_at: null,
       events: [
-        { kind: 'think', text: 'Compare the top 20 postings with the resume', at: at(37) },
-        { kind: 'read', text: 'resume.md', at: at(33) },
-        { kind: 'run', text: 'python -m agent_automation.tools.top_jobs --limit 20', at: at(28), detail: '20 jobs, scores 4.6 to 3.9' },
-        { kind: 'search', text: 'Docker|Kubernetes|Terraform|GraphQL in 20 postings', at: at(19) },
-        { kind: 'think', text: 'Docker comes up in 14 of 20, Kubernetes in 9', at: at(11) },
+        { kind: 'think', text: 'Compare the top 20 postings with the skills on the resume', at: at(42) },
+        { kind: 'run', text: 'python -m agent_automation.tools.top_jobs --limit 20 --json', at: at(38), detail: '20 jobs written to data/top20/postings.jsonl (scores 4.9 to 3.9)' },
+        {
+          kind: 'read', text: 'C:\\Users\\2006t\\OneDrive\\Desktop\\JobApply\\data\\resume\\resume.md', at: at(33),
+          detail: '# Alex Rivera\nComputer Science, University of South Florida\n\nSkills: Python, TypeScript, React, PostgreSQL, Docker, Git',
+        },
+        {
+          kind: 'run', text: 'rg -o -i "docker|kubernetes|terraform|graphql|aws" data/top20/postings.jsonl | sort | uniq -c', at: at(24),
+          detail: '     14 docker\n      9 kubernetes\n      7 aws\n      5 terraform\n      3 graphql',
+        },
+        { kind: 'web', text: 'Kubernetes skills software engineering internship 2027', at: at(20) },
+        { kind: 'think', text: 'Docker is on the resume. Kubernetes (9 of 20) and Terraform (5 of 20) are not.', at: at(16) },
+        { kind: 'run', text: 'rg -c "Kubernetes|Terraform" data/top20/postings.jsonl', at: at(6) },
       ],
     },
     {
-      id: 1, engine: 'claude', prompt: 'Prepare me for my next interview on the calendar: likely questions and short answers', status: 'done',
-      output: '', step: '6 steps', error: '', created_at: at(2400), started_at: at(2398), finished_at: at(2326),
+      id: 3, engine: 'claude', model: 'claude-opus-5-5', effort: 'high', prompt: 'Why does my Stripe cover letter still say "Dear Hiring Manager"? The posting names the recruiter.',
+      status: 'done', output: answer, step: '7 turns · 72s · about 0.18 USD of plan usage', error: '',
+      created_at: at(2400), started_at: at(2398), finished_at: at(2326),
       events: [
-        { kind: 'think', text: 'Find the next interview on the calendar', at: at(2396) },
-        { kind: 'tool', text: 'calendar: next event', at: at(2390) },
-        { kind: 'read', text: 'Stripe posting: Software Engineer Intern', at: at(2380) },
-        { kind: 'web', text: 'stripe.com/jobs', at: at(2366) },
-        { kind: 'think', text: 'Pick the questions this team asks most', at: at(2350) },
+        { kind: 'think', text: 'The greeting must fall back to a default somewhere in cover_letter. Find the default first, then where the contact name should come from.', at: at(2395) },
         {
-          kind: 'say', at: at(2327),
-          text: [
-            '### Stripe, Tuesday 10:00 AM',
-            '45 minutes, **technical**, with the payments team.',
-            '',
-            '1. **Walk me through an API you built.**',
-            '   The booking API: Python and Postgres, `2,000` requests a day.',
-            '2. **How would you find a slow endpoint?**',
-            '   Time it, read the query plan, add the index, time it again.',
-            '',
-            '| Topic | Bring up |',
-            '| --- | --- |',
-            '| Scale | Caching cut load 40% |',
-            '| Teamwork | Weekly demo with design |',
-          ].join('\n'),
+          kind: 'run', text: `${repo} grep -n "DEFAULT_HIRING_MANAGER" src/agent_automation/agent/cover_letter/__init__.py | head`, at: at(2390),
+          detail: '14:DEFAULT_HIRING_MANAGER = "Hiring Manager"\n88:    name = job.contact_name or DEFAULT_HIRING_MANAGER\n141:    return f"Dear {name},"',
+        },
+        {
+          kind: 'read', text: 'C:\\Users\\2006t\\OneDrive\\Desktop\\JobApply\\src\\agent_automation\\agent\\cover_letter\\__init__.py', at: at(2381),
+          detail: '84  def greeting_for(job: JobRow) -> str:\n85      """The first line of the letter."""\n86      if job.contact_name:\n87          return f"Dear {job.contact_name},"\n88      name = job.contact_name or DEFAULT_HIRING_MANAGER',
+        },
+        { kind: 'search', text: 'contact_name', at: at(2372), detail: 'src/agent_automation/agent/cover_letter/__init__.py:86\nsrc/agent_automation/jobs/models.py:41\nsupabase/schema.sql:57' },
+        { kind: 'run', text: `${repo} grep -rn "contact_name" src/agent_automation/jobs/ --include=*.py`, at: at(2364), detail: 'src/agent_automation/jobs/models.py:41:    contact_name: str = ""' },
+        { kind: 'run', text: `${repo} .venv/Scripts/python.exe -m pytest tests/test_cover_letter.py -q`, at: at(2340), detail: '........                                                     [100%]\n8 passed in 1.42s' },
+        // The runner flattens a step to one line and cuts it at 300 characters; the whole text is in its detail.
+        { kind: 'say', text: answer.replace(/\s+/g, ' ').trim().slice(0, 300), detail: answer, at: at(2327) },
+      ],
+    },
+    {
+      id: 2, engine: 'codex', model: 'gpt-5.5', effort: '', prompt: 'Rescore my saved jobs with the new rubric and tell me which ones moved the most',
+      status: 'failed', output: '', step: 'You have hit your ChatGPT plan usage limit. Try again at 7:40 PM.',
+      error: 'You have hit your ChatGPT plan usage limit. Try again at 7:40 PM.', created_at: at(7300), started_at: at(7290), finished_at: at(7262),
+      events: [
+        { kind: 'think', text: 'Load the saved jobs, then score each one against the new rubric', at: at(7286) },
+        { kind: 'run', text: 'python -m agent_automation.tools.saved_jobs --json', at: at(7280), detail: '12 saved jobs' },
+        { kind: 'error', text: 'You have hit your ChatGPT plan usage limit. Try again at 7:40 PM.', at: at(7263) },
+      ],
+    },
+    {
+      id: 1, engine: 'claude', prompt: 'Make a CSV of my 5 best jobs this week', status: 'done', output: short,
+      step: '3 turns · 14s · about 0.03 USD of plan usage', error: '', created_at: at(10800), started_at: at(10795), finished_at: at(10781),
+      events: [
+        {
+          kind: 'run', text: `${repo} .venv/Scripts/python.exe -m agent_automation.tools.top_jobs --limit 5 --since 7d --csv outputs/best-jobs-this-week.csv`,
+          at: at(10790), detail: '5 jobs written to outputs/best-jobs-this-week.csv',
+        },
+        { kind: 'say', text: short, at: at(10782) },
+        {
+          kind: 'file', text: 'best-jobs-this-week.csv', at: at(10781),
+          detail: 'data:text/csv;charset=utf-8,Company%2CRole%2CScore%0AStripe%2CSoftware%20Engineering%20Intern%2C4.9%0ACisco%2CSoftware%20Engineer%20Intern%2C4.8',
         },
       ],
     },
