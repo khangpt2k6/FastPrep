@@ -7,7 +7,9 @@ import { timeAgo } from '../../lib/format';
 import { useLiveTable } from '../../hooks/useLiveTable';
 import { BrandLogo } from '../BrandLogo';
 import { IconPlay, IconX } from '../Icons';
+import type { ModelCatalog } from '../../lib/types';
 import { EnginePicker, type EngineOption } from './EnginePicker';
+import { ModelPicker } from './ModelPicker';
 import { TaskTimeline, type Engine, type TaskRow } from './TaskTimeline';
 import './tasks.css';
 
@@ -52,10 +54,29 @@ export function useTasks(userId: string) {
   return useLiveTable<TaskRow>({ table: TABLES.tasks, userId, load, keyOf: (row) => (row.id === undefined ? undefined : String(row.id)), pollMs: 5000 });
 }
 
-/** Adds a task for the runner on the person's computer; resolves to an error message, or '' when it was added. */
-export async function addTask(engine: Engine, prompt: string): Promise<string> {
-  const { error } = await supabase.from(TABLES.tasks).insert({ engine, prompt });
+/** Adds a task for the runner on the person's computer; resolves to an error message, or '' when it was added. The
+ * model and the effort go only when picked, so a database without their columns still takes a plain task. */
+export async function addTask(engine: Engine, prompt: string, model = '', effort = ''): Promise<string> {
+  const { error } = await supabase.from(TABLES.tasks).insert({ engine, prompt, ...(model ? { model } : {}), ...(effort ? { effort } : {}) });
   return error ? error.message : '';
+}
+
+/** The model and effort picked last for each engine, kept in this browser. */
+function lastPick(engine: Engine): { model: string; effort: string } {
+  try {
+    return { model: window.localStorage.getItem(`tasks:model:${engine}`) ?? '', effort: window.localStorage.getItem(`tasks:effort:${engine}`) ?? '' };
+  } catch {
+    return { model: '', effort: '' };
+  }
+}
+
+function keepPick(engine: Engine, model: string, effort: string) {
+  try {
+    window.localStorage.setItem(`tasks:model:${engine}`, model);
+    window.localStorage.setItem(`tasks:effort:${engine}`, effort);
+  } catch {
+    // Kept until the page reloads.
+  }
 }
 
 export async function cancelTask(id: number) {
@@ -63,9 +84,14 @@ export async function cancelTask(id: number) {
 }
 
 /** Pick the AI, say what to do, run it. */
-export function TaskComposer({ onRun, disabled = '' }: { onRun: (engine: Engine, prompt: string) => Promise<string>; disabled?: string }) {
+export function TaskComposer({ onRun, disabled = '', catalog }: {
+  onRun: (engine: Engine, prompt: string, model: string, effort: string) => Promise<string>;
+  disabled?: string;
+  catalog?: ModelCatalog | null;
+}) {
   const [prompt, setPrompt] = useState('');
   const [engine, setEngine] = useState<Engine>(lastEngine);
+  const [pick, setPick] = useState(() => lastPick(lastEngine()));
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
 
@@ -75,7 +101,7 @@ export function TaskComposer({ onRun, disabled = '' }: { onRun: (engine: Engine,
     if (!text || disabled) return;
     setBusy(true);
     setProblem('');
-    const error = await onRun(engine, text);
+    const error = await onRun(engine, text, pick.model, pick.effort);
     setBusy(false);
     if (error) setProblem(error);
     else setPrompt('');
@@ -90,6 +116,7 @@ export function TaskComposer({ onRun, disabled = '' }: { onRun: (engine: Engine,
         onChange={(value) => {
           setEngine(value);
           keepEngine(value);
+          setPick(lastPick(value));
         }}
       />
       <textarea
@@ -108,10 +135,23 @@ export function TaskComposer({ onRun, disabled = '' }: { onRun: (engine: Engine,
           </button>
         ))}
       </div>
-      <button type="submit" className="btn btn--primary tasks__run" disabled={busy || !prompt.trim() || Boolean(disabled)} title={disabled || undefined}>
-        <IconPlay size={13} />
-        Run on this PC
-      </button>
+      <div className="tasks__go">
+        <ModelPicker
+          engine={engine}
+          catalog={catalog}
+          model={pick.model}
+          effort={pick.effort}
+          compact
+          onChange={(model, effort) => {
+            setPick({ model, effort });
+            keepPick(engine, model, effort);
+          }}
+        />
+        <button type="submit" className="btn btn--primary tasks__run" disabled={busy || !prompt.trim() || Boolean(disabled)} title={disabled || undefined}>
+          <IconPlay size={13} />
+          Run on this PC
+        </button>
+      </div>
       {problem ? <p className="tasks__error">{problem}</p> : null}
     </form>
   );

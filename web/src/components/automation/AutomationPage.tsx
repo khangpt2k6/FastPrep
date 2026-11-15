@@ -8,6 +8,7 @@ import { IconCheck, IconGlobe, IconInfo, IconTerminal } from '../Icons';
 import { GuideDialog } from '../guide/GuideDialog';
 import { TaskComposer, TaskList, addTask, cancelTask, useTasks } from '../agent/TasksCard';
 import type { Engine, TaskRow } from '../agent/TaskTimeline';
+import type { ModelCatalog } from '../../lib/types';
 import './automation.css';
 
 /** Where a click goes: this page, then this PC, then the plans, then back here. The PC is lit while the agent is online. */
@@ -57,11 +58,13 @@ export interface AutomationViewProps {
   now: number;
   /** Whether the agent on the person's computer is online: tasks run there. */
   online: boolean;
-  onRun: (engine: Engine, prompt: string) => Promise<string>;
+  /** The models this computer's engines offer. */
+  catalog?: ModelCatalog | null;
+  onRun: (engine: Engine, prompt: string, model: string, effort: string) => Promise<string>;
   onCancel: (id: number) => void;
 }
 
-export function AutomationView({ tasks, missing = false, now, online, onRun, onCancel }: AutomationViewProps) {
+export function AutomationView({ tasks, missing = false, now, online, catalog, onRun, onCancel }: AutomationViewProps) {
   const [guide, setGuide] = useState(false);
   return (
     <div className="page auto">
@@ -74,7 +77,7 @@ export function AutomationView({ tasks, missing = false, now, online, onRun, onC
             <h2 id="auto-new" className="auto__title">
               New run
             </h2>
-            <TaskComposer onRun={onRun} disabled={online ? '' : 'This PC is offline'} />
+            <TaskComposer onRun={onRun} catalog={catalog} disabled={online ? '' : 'This PC is offline'} />
           </section>
           <section className="auto__runs" aria-labelledby="auto-runs">
             <h2 id="auto-runs" className="auto__title">
@@ -96,7 +99,7 @@ export function AutomationView({ tasks, missing = false, now, online, onRun, onC
 }
 
 /** The page wired to the database. */
-export function AutomationPage({ now, online }: { now: number; online: boolean }) {
+export function AutomationPage({ now, online, catalog }: { now: number; online: boolean; catalog?: ModelCatalog | null }) {
   const userId = useUserId();
   const { rows, error } = useTasks(userId);
   return (
@@ -105,7 +108,8 @@ export function AutomationPage({ now, online }: { now: number; online: boolean }
       missing={error?.kind === 'missing-table'}
       now={now}
       online={online}
-      onRun={(engine, prompt) => (userId ? addTask(engine, prompt) : Promise.resolve('Not signed in'))}
+      catalog={catalog}
+      onRun={(engine, prompt, model, effort) => (userId ? addTask(engine, prompt, model, effort) : Promise.resolve('Not signed in'))}
       onCancel={(id) => void cancelTask(id)}
     />
   );

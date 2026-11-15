@@ -13,6 +13,7 @@ import { WolfRing } from '../mascot/Wolf';
 import { Contours } from '../motif';
 import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
 import { UsagePanel, type UsagePanelProps } from './UsagePanel';
+import { ModelPicker } from './ModelPicker';
 import { EnginePicker, type EngineOption } from './EnginePicker';
 import { BrandLogo } from '../BrandLogo';
 
@@ -317,9 +318,22 @@ export function AgentPage(props: AgentPageProps) {
             label="AI engine"
             value={settings.engine}
             options={ENGINES}
-            onChange={(v) => onSettings({ engine: v })}
+            onChange={(v) => onSettings({ engine: v, engine_model: '', engine_effort: '' })}
             disabled={off}
           />
+          {settings.engine !== 'api' ? (
+            <div className="engine__model">
+              <span>Model</span>
+              <ModelPicker
+                engine={settings.engine}
+                catalog={agent?.catalog}
+                model={settings.engine_model}
+                effort={settings.engine_effort}
+                onChange={(model, effort) => onSettings({ engine_model: model, engine_effort: effort })}
+                disabled={off}
+              />
+            </div>
+          ) : null}
         </SettingRow>
         <SettingRow title="Daily budget">
           <PillSelect<number>

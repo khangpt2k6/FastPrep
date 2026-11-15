@@ -1,0 +1,207 @@
+/* The model picker: a pill with the engine's logo, the model and the effort; a floating menu of models with a line each,
+   a check on the one in use, and a stepped effort track under them. */
+
+.mpick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--frost);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mpick:hover:not(:disabled) {
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(21, 24, 28, 0.12);
+}
+
+.mpick:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mpick:focus-visible {
+  outline: 2px solid var(--ember-500);
+  outline-offset: 2px;
+}
+
+.mpick__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mpick .is-flipped {
+  transform: rotate(180deg);
+}
+
+.mpick--compact {
+  min-height: 34px;
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+
+.mmenu {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  max-height: min(520px, calc(100vh - 24px));
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 24px 60px -20px rgba(21, 24, 28, 0.45), 0 2px 8px rgba(21, 24, 28, 0.12);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.mmenu__head {
+  margin: 0;
+  padding: 12px 16px 6px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.mmenu__list {
+  margin: 0;
+  padding: 0 6px 6px;
+  overflow: auto;
+  list-style: none;
+}
+
+.mmenu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mmenu__item:hover,
+.mmenu__item:focus-visible {
+  background: var(--frost);
+  outline: none;
+}
+
+.mmenu__text {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mmenu__name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mmenu__about {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.mmenu__item svg {
+  flex: none;
+  color: var(--ink);
+}
+
+.mmenu__effort {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.mmenu__elabel {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mmenu__evalue {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+/* The effort track: one dot per level, filled up to the one in use. */
+.etrack {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(var(--steps) * 22px + 28px);
+  max-width: 60%;
+  height: 22px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: var(--frost);
+}
+
+.etrack__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ember-300), var(--ember-500));
+  transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.etrack__dot {
+  position: relative;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.etrack__dot::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 999px;
+  background: var(--ink-4);
+}
+
+.etrack__dot.is-on::after {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.etrack__dot.is-at::after {
+  inset: 1px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(21, 24, 28, 0.35);
+}
+
+.etrack__dot:focus-visible {
+  outline: 2px solid var(--ember-500);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .etrack__fill,
+  .mpick {
+    transition: none;
+  }
+}

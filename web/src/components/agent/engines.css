@@ -119,6 +119,18 @@
   width: 100%;
 }
 
+/* Under the engines: the model and effort the plan's engine uses. */
+.engine__model {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 @media (max-width: 560px) {
   .engines {
     grid-template-columns: 1fr;

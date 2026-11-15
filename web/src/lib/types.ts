@@ -27,6 +27,8 @@ export interface AgentRow {
   next_fetch_at?: string | null;
   /** How many new jobs the last round found. */
   fetched_new?: number | null;
+  /** The models this computer's Codex and Claude Code offer, as the agent wrote them at its start. */
+  catalog?: ModelCatalog | null;
 }
 
 /** The agent's switches, one row per user. A missing row means the defaults. */
@@ -43,10 +45,28 @@ export interface AgentSettings {
   /** The most the API may cost a day and a month, in dollars; null is no limit. */
   budget_day: number | null;
   budget_month: number | null;
+  /** The model and the effort for Codex or Claude Code; '' is the engine's own default. */
+  engine_model: string;
+  engine_effort: string;
 }
 
 /** The OpenAI API (paid per use), or a plan the person already pays for: Codex (ChatGPT) or Claude Code (Claude). */
 export type AiEngine = 'api' | 'codex' | 'claude';
+
+/** One model an engine offers: its name to pass, its name to show, a line about it, and the efforts it takes. */
+export interface ModelInfo {
+  id: string;
+  name: string;
+  description: string;
+  efforts: string[];
+  /** The effort it uses when none is picked; '' when unknown. */
+  effort: string;
+}
+
+export interface ModelCatalog {
+  codex?: ModelInfo[];
+  claude?: ModelInfo[];
+}
 
 /** One day of automation_usage, as the agent writes it: what the API cost, and how often Codex was asked. */
 export interface UsageRow {

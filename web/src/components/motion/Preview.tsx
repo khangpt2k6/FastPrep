@@ -533,7 +533,7 @@ export default function Preview() {
   const [jobs, setJobs] = useState<JobRow[]>(mockJobs);
   const [mode, setMode] = useState<Mode>('applying');
   const [agentBase, setAgentBase] = useState<AgentRow>(AGENT);
-  const [settings, setSettings] = useState<AgentSettings>({ paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40, engine: 'api', budget_day: 2, budget_month: 20 });
+  const [settings, setSettings] = useState<AgentSettings>({ paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40, engine: 'api', budget_day: 2, budget_month: 20, engine_model: '', engine_effort: '' });
   const [oldDb, setOldDb] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState(NO_JOB_FILTERS);

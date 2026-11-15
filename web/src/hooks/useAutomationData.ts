@@ -216,7 +216,7 @@ export async function sendSearch() {
 
 /** What the agent does with no settings row yet. Keep in step with automation_settings in supabase/schema.sql. */
 export const DEFAULT_SETTINGS: AgentSettings = {
-  paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40, engine: 'api', budget_day: 2, budget_month: 20,
+  paused: false, auto_fetch: true, fetch_hours: 3, fetch_limit: 40, engine: 'api', budget_day: 2, budget_month: 20, engine_model: '', engine_effort: '',
 };
 
 /** A budget from the row: missing is the default, null is no limit, else a sum of zero or more. */
@@ -242,6 +242,8 @@ export function readSettings(row: Partial<AgentSettingsRow> | null | undefined):
     engine: row.engine === 'codex' || row.engine === 'claude' ? row.engine : 'api',
     budget_day: dollars(row, 'budget_day'),
     budget_month: dollars(row, 'budget_month'),
+    engine_model: typeof row.engine_model === 'string' ? row.engine_model : '',
+    engine_effort: typeof row.engine_effort === 'string' ? row.engine_effort : '',
   };
 }
 
@@ -262,13 +264,15 @@ export function useAgentSettings(userId: string) {
 }
 
 export async function saveAgentSettings(settings: AgentSettings) {
-  const { paused, auto_fetch, fetch_hours, fetch_limit, engine, budget_day, budget_month } = settings;
-  const { error } = await supabase
-    .from(TABLES.settings)
-    .upsert(
-      { paused, auto_fetch, fetch_hours, fetch_limit, engine, budget_day, budget_month, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id' },
-    );
+  const { paused, auto_fetch, fetch_hours, fetch_limit, engine, budget_day, budget_month, engine_model, engine_effort } = settings;
+  const base = { paused, auto_fetch, fetch_hours, fetch_limit, engine, budget_day, budget_month, updated_at: new Date().toISOString() };
+  const { error } = await supabase.from(TABLES.settings).upsert({ ...base, engine_model, engine_effort }, { onConflict: 'user_id' });
+  // A database without the model's columns yet still saves the rest.
+  if (error?.code === 'PGRST204') {
+    const again = await supabase.from(TABLES.settings).upsert(base, { onConflict: 'user_id' });
+    if (again.error) throw again.error;
+    return;
+  }
   if (error) throw error;
 }
 

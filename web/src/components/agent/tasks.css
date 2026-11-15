@@ -48,6 +48,17 @@
   flex: none;
 }
 
+/* The model for this run, then Run. */
+.tasks__go {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tasks__go .tasks__run {
+  flex: 1;
+}
+
 .tasks__note,
 .tasks__error {
   margin: 0;

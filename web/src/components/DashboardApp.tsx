@@ -630,7 +630,7 @@ export default function DashboardApp({ userId, email }: DashboardProps) {
       content = <CalendarPage userId={userId} table={calendarT} jobs={jobsT.rows} inbox={inboxT.rows} now={now} online={online} toast={push} />;
       break;
     case 'automation':
-      content = <AutomationPage now={now} online={online} />;
+      content = <AutomationPage now={now} online={online} catalog={agent?.catalog} />;
       break;
     case 'agent':
       content = (
