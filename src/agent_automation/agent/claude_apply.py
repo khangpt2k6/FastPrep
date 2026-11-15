@@ -49,7 +49,7 @@ MODEL = "sonnet"
 for _name in ("mcp.server.streamable_http", "mcp.server.streamable_http_manager", "mcp.server.lowlevel.server", "uvicorn.error"):
     logging.getLogger(_name).setLevel(logging.WARNING)
 # One form's limits: its steps (each a browser call) and its time.
-STEP_LIMIT = 250
+STEP_LIMIT = 400  # a Workday form (sign-in, 5 pages, work history) took 250 and was still going
 FORM_SECONDS = 45 * 60
 # After finish_form, how long Claude Code may take to end its turn before it is stopped.
 END_GRACE = 30.0
