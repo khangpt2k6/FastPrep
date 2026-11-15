@@ -5,7 +5,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Shimmer } from '../motion';
 import { Markdown, MarkdownLine } from '../Markdown';
-import { IconAlert, IconChat, IconChevronDown, IconFile, IconGlobe, IconPencil, IconSearch, IconSliders, IconSpark, IconTerminal } from '../Icons';
+import { useSignedUrl } from '../../hooks/useSignedUrl';
+import { IconAlert, IconChat, IconChevronDown, IconDownload, IconFile, IconGlobe, IconPencil, IconSearch, IconSliders, IconSpark, IconTerminal } from '../Icons';
 
 export type Engine = 'claude' | 'codex';
 
@@ -62,7 +63,10 @@ export function answerOf(output: string): string {
 
 export function TaskTimeline({ task, now }: { task: TaskRow; now: number }) {
   const live = task.status === 'running' || task.status === 'pending';
-  const events = Array.isArray(task.events) ? task.events.filter((e) => e && typeof e.text === 'string') : [];
+  const all = Array.isArray(task.events) ? task.events.filter((e) => e && typeof e.text === 'string') : [];
+  // Files the run made, sent to the bucket: shown under the answer, not as steps.
+  const files = all.filter((e) => e.kind === 'file' && e.detail);
+  const events = all.filter((e) => e.kind !== 'file');
   // The last thing it said is the answer; the rest are its steps.
   const last = events.length && events[events.length - 1].kind === 'say' && !live ? events[events.length - 1] : null;
   const steps = last ? events.slice(0, -1) : events;
@@ -136,7 +140,37 @@ export function TaskTimeline({ task, now }: { task: TaskRow; now: number }) {
           <Markdown text={answer} />
         </motion.div>
       ) : null}
+      {files.length ? (
+        <div className="tl__files">
+          {files.map((file) => (
+            <TaskFile key={file.detail} name={file.text} path={file.detail ?? ''} />
+          ))}
+        </div>
+      ) : null}
       {task.error && task.status === 'failed' ? <p className="tl__error">{task.error}</p> : null}
     </div>
+  );
+}
+
+/** A file the run made: opens in a new tab, with a button to save it. */
+function TaskFile({ name, path }: { name: string; path: string }) {
+  const open = useSignedUrl(path, '');
+  const save = useSignedUrl(path, '', name);
+  return (
+    <span className="tl__file">
+      <IconFile size={14} />
+      {open.url ? (
+        <a href={open.url} target="_blank" rel="noreferrer" className="tl__file-name">
+          {name}
+        </a>
+      ) : (
+        <span className="tl__file-name">{open.failed ? `${name} (not found)` : name}</span>
+      )}
+      {save.url ? (
+        <a href={save.url} className="tl__file-save" aria-label={`Download ${name}`} title="Download">
+          <IconDownload size={14} />
+        </a>
+      ) : null}
+    </span>
   );
 }

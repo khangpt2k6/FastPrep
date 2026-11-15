@@ -232,3 +232,30 @@ def test_a_task_runs_on_the_model_and_effort_it_names_and_never_on_a_flag() -> N
     codex = command("codex", "x", found, "gpt-6.1-sol", "xhigh")
     assert codex[codex.index("-m") + 1] == "gpt-6.1-sol" and "model_reasoning_effort=xhigh" in codex
     assert "model_reasoning_effort=medium" in command("codex", "x", found) and "-m" not in command("codex", "x", found)
+
+
+def test_files_a_run_makes_go_to_the_bucket_as_file_steps(tmp_path) -> None:
+    (tmp_path / "old.pdf").write_bytes(b"old")
+    (tmp_path / "README.md").write_text("notes")
+    (tmp_path / "node_modules").mkdir()
+    before = tasks.deliverables(tmp_path)
+    (tmp_path / "Cover Letter Tesla.pdf").write_bytes(b"%PDF")
+    (tmp_path / "node_modules" / "x.pdf").write_bytes(b"x")
+    (tmp_path / "README.md").write_text("changed")
+    (tmp_path / "outputs").mkdir()
+    (tmp_path / "outputs" / "plan.md").write_text("plan")
+    new = tasks.made(before, tasks.deliverables(tmp_path))
+    assert sorted(p.name for p in new) == ["Cover Letter Tesla.pdf", "plan.md"]
+
+    sent: dict[str, bytes] = {}
+
+    class Bucket:
+        user_id = "u1"
+
+        async def upload(self, path: str, data: bytes, content_type: str = "") -> None:
+            sent[path] = data
+
+    progress = Progress()
+    asyncio.run(tasks.send_files(Bucket(), 7, new, progress))  # type: ignore[arg-type]
+    assert sent["u1/tasks/7/Cover-Letter-Tesla.pdf"] == b"%PDF"
+    assert ("Cover Letter Tesla.pdf", "u1/tasks/7/Cover-Letter-Tesla.pdf") in [(e["text"], e["detail"]) for e in progress.events if e["kind"] == "file"]

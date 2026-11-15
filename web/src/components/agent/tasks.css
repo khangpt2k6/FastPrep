@@ -331,6 +331,45 @@
   overflow-wrap: anywhere;
 }
 
+.tl__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tl__file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--frost);
+  font-size: 13px;
+}
+
+.tl__file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  font-weight: 600;
+}
+
+a.tl__file-name:hover {
+  text-decoration: underline;
+}
+
+.tl__file-save {
+  display: inline-flex;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.tl__file-save:hover {
+  opacity: 1;
+}
+
 .tl__error {
   margin: 0;
   font-size: 12.5px;

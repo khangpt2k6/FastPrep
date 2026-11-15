@@ -28,3 +28,6 @@ resumes/
 supabase/.temp/
 .playwright-mcp/
 *.tsbuildinfo
+
+# files dashboard tasks make (sent to the page)
+outputs/
