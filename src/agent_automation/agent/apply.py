@@ -29,7 +29,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from openai import AsyncOpenAI
 
-from agent_automation.agent.llm import SPEND, chat, not_answering, structured
+from agent_automation.agent.llm import ENGINE, SPEND, chat, not_answering, structured
 from agent_automation.memory.config import DRY_RUN_ENV, KEY_ENV, dry_run
 from agent_automation.memory.store import Proof, safe_name
 from agent_automation.tools.chrome import UPLOAD_DIRS_ENV
@@ -568,13 +568,59 @@ async def _not_one(session: Browser, selector: str) -> str:
     return f"{selector} matches {count} elements on this page, and a click sends only the first. Name the one control that sends the form, then call finish_form again."
 
 
+class Hands:
+    """What goes on around each browser action a model asks for, whichever model it is (the API's, or Claude Code through
+    claude_apply.py): the two mailbox visits the skills allow, the dry-run guard put in before an action and read after it
+    (a send it held back is said to the model), the stop when a dry run reaches a sent page anyway, the stop when the
+    mailbox wants a sign-in, and the wait while a long answer is still being typed."""
+
+    def __init__(self, session: Browser, watch: _Watch) -> None:
+        self.session = session
+        self.watch = watch
+        self.trial = dry_run()
+        self.held = 0
+
+    async def act(self, name: str, arguments: dict[str, Any]) -> tuple[Any, str, Report | None]:
+        """Runs one tool: its result, the words the model reads, and the Report that ends the form here, if one does."""
+        session, watch = self.session, self.watch
+        # The skills say two visits to the mailbox; the code holds the model to it, whatever it reasons.
+        if name == "browser_navigate" and watch.one_visit_too_many(str(arguments.get("url", ""))):
+            return None, "", _blocked(NO_CODE, NO_CODE_REASON, watch.turns)
+        held_back = False
+        if self.trial and name in ACTING_TOOLS:
+            self.held = await _guard(session) or self.held
+        result = await session.call_tool(name, arguments)
+        if self.trial and name in ACTING_TOOLS:
+            address = await _address_now(session)
+            if SENT_ADDRESS.search(urlsplit(address).path):
+                # The guard did not hold this one: say so, and stop, so the record says it was sent.
+                return result, "", Report(
+                    "ready", f"The page moved to {address} during a dry run: the form looks sent although nothing should have been.",
+                    "", SENT_IN_DRY_RUN, False, watch.turns,
+                )
+            now_held = await _guard(session)
+            if now_held is not None and now_held > self.held:
+                self.held = now_held
+                held_back = True
+        if name == "browser_navigate" and watch.in_mailbox and not _is_mailbox(await _address_now(session)):
+            # The mailbox sent the browser to its sign-in page: that is the person's to do, once.
+            return result, "", _blocked(MAIL_NOT_SIGNED_IN, MAILBOX_SIGNED_OUT, watch.turns)
+        said = tool_text(result)
+        if held_back:
+            said += "\n" + DRY_RUN_HELD
+        if name == "browser_type" and STILL_TYPING in said:
+            # A long answer goes on typing at a person's pace for minutes, and every action meanwhile is refused: the
+            # code waits for it here, so the model neither stops the form nor counts refusals as going round in circles.
+            said += "\n" + await _until_typed(session)
+        return result, said, None
+
+
 async def fill_form(session: Browser, tools: list[dict[str, Any]], client: AsyncOpenAI, model: str, brief: str, guidance: str = "", page_rules: str = "") -> Report:
     """The model works on the open page until it calls finish_form; returns how it ended. There is no limit on steps:
     a form takes the steps it needs, and the watch ends a run that goes nowhere."""
     messages: list[Any] = [{"role": "system", "content": instructions(guidance, page_rules)}, {"role": "user", "content": brief}]
     watch = _Watch()
-    trial = dry_run()
-    held = 0
+    hands = Hands(session, watch)
     while True:
         response, request_id = await patiently(lambda: chat(client, model=model, messages=messages, tools=[*tools, FINISH_TOOL]))
         SPEND.note(model, getattr(response, "usage", None), request_id)
@@ -603,37 +649,11 @@ async def fill_form(session: Browser, tools: list[dict[str, Any]], client: Async
                     str(arguments.get("status", "")), str(arguments.get("summary", "")), str(arguments.get("submit_selector", "")),
                     str(arguments.get("blocked_by") or ""), bool(arguments.get("made_account")), watch.turns, written_answers(arguments),
                 )
-            # The skills say two visits to the mailbox; the code holds the model to it, whatever it reasons.
-            if name == "browser_navigate" and watch.one_visit_too_many(str(arguments.get("url", ""))):
-                return _blocked(NO_CODE, NO_CODE_REASON, watch.turns)
-            held_back = False
-            if trial and name in ACTING_TOOLS:
-                held = await _guard(session) or held
-            result = await session.call_tool(name, arguments)
-            if trial and name in ACTING_TOOLS:
-                address = await _address_now(session)
-                if SENT_ADDRESS.search(urlsplit(address).path):
-                    # The guard did not hold this one: say so, and stop, so the record says it was sent.
-                    return Report(
-                        "ready", f"The page moved to {address} during a dry run: the form looks sent although nothing should have been.",
-                        "", SENT_IN_DRY_RUN, False, watch.turns,
-                    )
-                now_held = await _guard(session)
-                if now_held is not None and now_held > held:
-                    held = now_held
-                    held_back = True
-            if name == "browser_navigate" and watch.in_mailbox and not _is_mailbox(await _address_now(session)):
-                # The mailbox sent the browser to its sign-in page: that is the person's to do, once.
-                return _blocked(MAIL_NOT_SIGNED_IN, MAILBOX_SIGNED_OUT, watch.turns)
+            result, said, stop = await hands.act(name, arguments)
+            if stop is not None:
+                return stop
             pictures = _images(result)
             seen += pictures
-            said = tool_text(result)
-            if held_back:
-                said += "\n" + DRY_RUN_HELD
-            if name == "browser_type" and STILL_TYPING in said:
-                # A long answer goes on typing at a person's pace for minutes, and every action meanwhile is refused: the
-                # code waits for it here, so the model neither stops the form nor counts refusals as going round in circles.
-                said += "\n" + await _until_typed(session)
             messages.append({"role": "tool", "tool_call_id": call.id, "content": said or "Done: what it shows comes next."})
             watch.saw(name, arguments, said, "".join(part["image_url"]["url"] for part in pictures))
         why, warning = await watch.after(client, model)
@@ -682,7 +702,13 @@ async def _address_now(session: Browser) -> str:
 async def _read_result(session: Browser, client: AsyncOpenAI, model: str, guidance: str, address: str) -> tuple[str, dict[str, Any]]:
     """The page's text, and what the verifying model makes of it after a send."""
     text = tool_text(await session.call_tool("browser_read_text", {"selector": "body"}))
-    return text, await patiently(lambda: structured(client, model, verify_system(guidance), f"The page's address: {address}\n\n{text}", "submit_outcome", VERIFY_SCHEMA, api_only=True))
+    asked = f"The page's address: {address}\n\n{text}"
+    if ENGINE.name == "claude":
+        # With Claude Code filling the form, it reads the page after the send too: no API call for an application.
+        from agent_automation.agent import claude_engine
+
+        return text, await claude_engine.ask(verify_system(guidance), asked, VERIFY_SCHEMA)
+    return text, await patiently(lambda: structured(client, model, verify_system(guidance), asked, "submit_outcome", VERIFY_SCHEMA, api_only=True))
 
 
 async def submit_and_verify(session: Browser, client: AsyncOpenAI, model: str, selector: str, summary: str, guidance: str, shot: Path) -> Outcome:
@@ -796,7 +822,13 @@ async def run_on_page(
         traced = _Traced(session, shot.parent.parent / "trace.log", _secrets_in(answers))
         traced.note(f"== {job.company}: {job.title} at {job.apply_url}{' (dry run)' if trial else ''}")
         session = traced
-    report = await fill_form(session, tools, client, model, brief, guidance, page_rules)
+    if ENGINE.name == "claude":
+        # Claude Code on the person's plan fills the form, through the same checks (claude_apply.py).
+        from agent_automation.agent.claude_apply import fill_form_with_claude
+
+        report = await fill_form_with_claude(session, tools, brief, guidance, page_rules)
+    else:
+        report = await fill_form(session, tools, client, model, brief, guidance, page_rules)
     if tracing:
         traced.note(f"== finish_form: {json.dumps(asdict(report), ensure_ascii=False)[:500]}")
     if trial:

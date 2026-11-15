@@ -150,9 +150,11 @@ def asks_model(command: dict[str, Any]) -> bool:
 
 
 def needs_api(command: dict[str, Any]) -> bool:
-    """Whether this command's work would be paid on the API: filling forms always is; the rest is when the engine is the
-    API, not Codex."""
-    return command.get("kind") == "apply" or (asks_model(command) and not ENGINE.on_plan)
+    """Whether this command's work would be paid on the API: filling forms is, unless Claude Code fills them; the rest is
+    when the engine is the API, not a plan (Codex or Claude Code)."""
+    if command.get("kind") == "apply":
+        return ENGINE.name != "claude"
+    return asks_model(command) and not ENGINE.on_plan
 
 
 def schema_missing(error: BaseException) -> bool:
