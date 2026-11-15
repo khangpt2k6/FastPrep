@@ -483,3 +483,7 @@ do $$
 begin
   begin alter publication supabase_realtime add table public.automation_usage; exception when duplicate_object then null; end;
 end $$;
+
+-- Each task's steps for the Agent page's timeline, the newest last, at most 200: {kind: think|say|run|read|search|edit|
+-- web|tool|error, text (one line), detail (optional, what the step gave back), at}. Written by ui/tasks.py as it runs.
+alter table public.automation_tasks add column if not exists events jsonb not null default '[]'::jsonb;

@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import shutil
 import sys
 import time
@@ -47,6 +48,16 @@ CLAUDE_ALLOWED = [
     "Read", "Grep", "Glob", "WebSearch", "WebFetch", "Edit", "Write",
     "Bash(.venv/Scripts/python.exe:*)", "Bash(python:*)", "Bash(git status:*)", "Bash(git log:*)", "Bash(git diff:*)",
 ]
+# The steps a row keeps for the page's timeline, the newest last.
+EVENTS_KEPT = 200
+# Claude Code tools by the kind of step the page draws.
+CLAUDE_KINDS = {"Bash": "run", "Read": "read", "Grep": "search", "Glob": "search", "Edit": "edit", "Write": "edit",
+                "NotebookEdit": "edit", "WebSearch": "web", "WebFetch": "web"}
+# Codex features an unattended task never gets: driving the desktop or a browser, apps, plugins, images.
+CODEX_OFF = (
+    "computer_use", "browser_use", "browser_use_external", "browser_use_full_cdp_access", "in_app_browser",
+    "apps", "plugins", "remote_plugin", "image_generation",
+)
 API_KEYS = frozenset({"OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "CODEX_API_KEY"})
 # Secrets stay out of the task's words: the project's own scripts read .env themselves.
 CLAUDE_DENIED = ["Bash(git push:*)", "Bash(git commit:*)", "Bash(rm:*)", "Bash(curl:*)", "Read(.env)", "Read(./.env)", "Read(**/.env)", "Read(**/.env.*)"]
@@ -78,7 +89,13 @@ def command(engine: str, prompt: str, find: Callable[[str], str | None] = shutil
         exe = find("codex")
         if not exe:
             raise RuntimeError("Codex is not installed on this computer: npm install -g @openai/codex, then sign in with codex login")
-        return [exe, "exec", f"{RULES}\n\nTask: {prompt}"]
+        # JSON events on stdout, the task on stdin ("-"): no banner, and the same steps and answer as Claude's stream.
+        # The person's Codex config is loaded (on Windows its sandbox settings are what let a task read files at all),
+        # but nothing in it that reaches outside the shell: no computer use, no browser driving, no apps or plugins.
+        # Files change in the repository alone; the network stays on for the project's own calls (Supabase).
+        return [exe, "exec", "--json", "--skip-git-repo-check", "--ephemeral", "-s", "workspace-write",
+                "-c", "sandbox_workspace_write.network_access=true", "-c", "model_reasoning_effort=medium",
+                *(part for feature in CODEX_OFF for part in ("--disable", feature)), "-C", str(REPO), "-"]
     raise RuntimeError(f"unknown engine {engine!r}")
 
 
@@ -91,6 +108,23 @@ class Progress:
     answer: str = ""
     failed: bool = False
     note: str = ""
+    events: list[dict[str, str]] = field(default_factory=list)
+
+    def add(self, kind: str, text: str, detail: str = "") -> None:
+        """One step for the page's timeline: think, say, run, read, search, edit, web, tool or error."""
+        text = " ".join(str(text or "").split())
+        if not text and not detail:
+            return
+        event = {"kind": kind, "text": text[:300], "at": _now()}
+        if detail:
+            event["detail"] = str(detail)[-2000:]
+        self.events.append(event)
+        del self.events[:-EVENTS_KEPT]
+
+    def detail_last(self, detail: str) -> None:
+        """What the last step gave back (a command's output), kept on it."""
+        if self.events and detail and detail.strip():
+            self.events[-1]["detail"] = detail.strip()[-2000:]
 
     @property
     def output(self) -> str:
@@ -118,8 +152,23 @@ def read_claude(line: str, progress: Progress) -> None:
         for part in (event.get("message") or {}).get("content") or []:
             if part.get("type") == "text" and part.get("text"):
                 progress.words.append(part["text"])
+                progress.add("say", part["text"], part["text"] if len(part["text"]) > 300 else "")
+            elif part.get("type") == "thinking" and part.get("thinking"):
+                progress.add("think", part["thinking"], part["thinking"] if len(part["thinking"]) > 300 else "")
             elif part.get("type") == "tool_use":
-                progress.step = f"{part.get('name', 'tool')}: {_brief(part.get('input'))}"[:200]
+                name = str(part.get("name") or "tool")
+                progress.step = f"{name}: {_brief(part.get('input'))}"[:200]
+                brief = _brief(part.get("input"))
+                progress.add(CLAUDE_KINDS.get(name, "tool"), brief if name in CLAUDE_KINDS else f"{name}: {brief}")
+    elif kind == "user":
+        for part in (event.get("message") or {}).get("content") or []:
+            if isinstance(part, dict) and part.get("type") == "tool_result":
+                content = part.get("content")
+                if isinstance(content, str):
+                    text = content
+                else:
+                    text = " ".join(str(c.get("text", "")) for c in content or [] if isinstance(c, dict))
+                progress.detail_last(text)
     elif kind == "result":
         progress.answer = str(event.get("result") or "")
         progress.failed = bool(event.get("is_error")) or event.get("subtype") not in (None, "success")
@@ -128,6 +177,61 @@ def read_claude(line: str, progress: Progress) -> None:
         if cost is not None:
             progress.note += f" · about {cost:.2f} USD of plan usage"
         progress.step = ""
+        if progress.failed:
+            progress.add("error", progress.answer or str(event.get("subtype") or "Claude Code stopped with an error"))
+
+
+def stdin_for(engine: str, prompt: str) -> str:
+    """What the engine reads on stdin: Codex takes the rules and the task there; Claude takes both as arguments."""
+    return f"{RULES}\n\nTask: {prompt}\n" if engine == "codex" else ""
+
+
+def _command_text(command: Any) -> str:
+    """A Codex shell step without the PowerShell wrapper Windows puts around it."""
+    text = " ".join(command) if isinstance(command, list) else str(command or "")
+    text = re.sub(r'^.*?powershell(\.exe)?"?\s+-Command\s+', "", text, flags=re.IGNORECASE)
+    return text.strip().strip("'\"")[:140]
+
+
+def read_codex(line: str, progress: Progress) -> None:
+    """One line of `codex exec --json`, folded into the progress."""
+    try:
+        event = json.loads(line)
+    except ValueError:
+        return
+    kind, item = event.get("type"), event.get("item") or {}
+    sort = item.get("type")
+    if kind == "item.completed" and sort == "agent_message" and item.get("text"):
+        progress.words.append(item["text"])
+        progress.add("say", item["text"], item["text"] if len(item["text"]) > 300 else "")
+    elif kind == "item.completed" and sort == "reasoning" and item.get("text"):
+        progress.add("think", item["text"], item["text"] if len(item["text"]) > 300 else "")
+    elif kind == "item.started" and sort == "command_execution":
+        progress.step = f"Run: {_command_text(item.get('command'))}"
+        progress.add("run", _command_text(item.get("command")))
+    elif kind == "item.completed" and sort == "command_execution":
+        progress.detail_last(str(item.get("aggregated_output") or ""))
+    elif kind == "item.completed" and sort == "file_change":
+        paths = ", ".join(str(change.get("path", "")) for change in item.get("changes") or [])
+        progress.step = f"Edit: {paths}"[:200]
+        progress.add("edit", paths)
+    elif kind == "item.started" and sort == "web_search":
+        progress.step = f"Search: {item.get('query', '')}"[:200]
+        progress.add("web", str(item.get("query", "")))
+    elif kind == "item.started" and sort == "mcp_tool_call":
+        progress.add("tool", f"{item.get('server', '')} {item.get('tool', '')}".strip())
+    elif kind == "turn.completed":
+        progress.answer = progress.words[-1] if progress.words else ""
+        usage = event.get("usage") or {}
+        tokens = int(usage.get("input_tokens") or 0) + int(usage.get("output_tokens") or 0)
+        progress.note = f"{tokens:,} tokens of plan usage" if tokens else ""
+        progress.step = ""
+    elif kind in ("turn.failed", "error"):
+        progress.failed = True
+        error = event.get("error")
+        message = error.get("message") if isinstance(error, dict) else event.get("message")
+        progress.note = str(message or "Codex stopped with an error")[:300]
+        progress.add("error", progress.note)
 
 
 def read_plain(line: str, progress: Progress) -> None:
@@ -135,18 +239,22 @@ def read_plain(line: str, progress: Progress) -> None:
     progress.words.append(line.rstrip("\n"))
 
 
-Runner = Callable[[list[str], Callable[[str], None], Callable[[], Awaitable[bool]]], Awaitable[int]]
+Runner = Callable[[list[str], Callable[[str], None], Callable[[], Awaitable[bool]], str], Awaitable[int]]
 
 
-async def run_process(argv: list[str], on_line: Callable[[str], None], cancelled: Callable[[], Awaitable[bool]]) -> int:
+async def run_process(argv: list[str], on_line: Callable[[str], None], cancelled: Callable[[], Awaitable[bool]], stdin_text: str = "") -> int:
     """Run the engine in the repository, give each line it prints to `on_line`, and stop it when `cancelled` says so or
     the time is up. Its exit code; -1 when it was stopped."""
     # No API key reaches the engines: with one, Claude Code and Codex bill it per call instead of using the person's plan.
     env = {name: value for name, value in os.environ.items() if name not in API_KEYS} | {"PYTHONIOENCODING": "utf-8"}
     process = await asyncio.create_subprocess_exec(
-        *argv, cwd=str(REPO), stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env,
-        limit=8 * 1024 * 1024,
+        *argv, cwd=str(REPO), stdin=asyncio.subprocess.PIPE if stdin_text else asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT, env=env, limit=8 * 1024 * 1024,
     )
+    if stdin_text and process.stdin is not None:
+        process.stdin.write(stdin_text.encode("utf-8"))
+        await process.stdin.drain()
+        process.stdin.close()
     started = time.monotonic()
     assert process.stdout is not None
     while True:
@@ -165,6 +273,32 @@ async def run_process(argv: list[str], on_line: Callable[[str], None], cancelled
     return await process.wait()
 
 
+_events_column = True
+
+
+def _missing_column(error: BaseException) -> bool:
+    response = getattr(error, "response", None)
+    try:
+        code = str((response.json() or {}).get("code") or "") if response is not None else ""
+    except ValueError:
+        code = ""
+    return code in ("42703", "PGRST204")
+
+
+async def write(db: Database, where: dict[str, str], values: dict[str, Any], progress: Progress) -> list[dict[str, Any]]:
+    """A task row's update, with its steps when the table has the events column; once it says it has not, without."""
+    global _events_column
+    if _events_column:
+        try:
+            return await db.update(TABLE, where, {**values, "events": progress.events})
+        except Exception as error:
+            if not _missing_column(error):
+                raise
+            _events_column = False
+            click.echo("tasks: automation_tasks.events is not in the database yet: steps show once supabase/schema.sql runs")
+    return await db.update(TABLE, where, values)
+
+
 async def run_task(db: Database, task: dict[str, Any], runner: Runner = run_process, find: Callable[[str], str | None] = shutil.which) -> str:
     """Run one claimed task to its end and write it back; its final status."""
     where = {"user_id": f"eq.{db.user_id}", "id": f"eq.{task['id']}"}
@@ -175,7 +309,7 @@ async def run_task(db: Database, task: dict[str, Any], runner: Runner = run_proc
     except RuntimeError as error:
         await db.update(TABLE, where, {"status": "failed", "error": str(error), "finished_at": _now()})
         return "failed"
-    read = read_claude if engine == "claude" else read_plain
+    read = {"claude": read_claude, "codex": read_codex}.get(engine, read_plain)
     last = 0.0
     stopped = False
 
@@ -184,11 +318,11 @@ async def run_task(db: Database, task: dict[str, Any], runner: Runner = run_proc
         if time.monotonic() - last < WRITE_EVERY:
             return False
         last = time.monotonic()
-        rows = await db.update(TABLE, {**where, "status": "eq.running"}, {"output": progress.output, "step": progress.step})
+        rows = await write(db, {**where, "status": "eq.running"}, {"output": progress.output, "step": progress.step}, progress)
         stopped = not rows  # the page set it to cancelled meanwhile
         return stopped
 
-    code = await runner(argv, lambda line: read(line, progress), cancelled)
+    code = await runner(argv, lambda line: read(line, progress), cancelled, stdin_for(engine, str(task.get("prompt") or "")))
     if stopped or code == -1:
         status = "cancelled" if stopped else "failed"
         error = "" if stopped else f"stopped after {TIMEOUT_SECONDS // 60} minutes"
@@ -198,7 +332,7 @@ async def run_task(db: Database, task: dict[str, Any], runner: Runner = run_proc
     values = {"output": progress.output, "step": progress.note, "error": error, "finished_at": _now()}
     if status != "cancelled":
         values["status"] = status
-    await db.update(TABLE, where, values)
+    await write(db, where, values, progress)
     return status
 
 

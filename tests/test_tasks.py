@@ -52,7 +52,7 @@ def claude_lines(*events: dict[str, Any]) -> list[str]:
 def engine(lines: list[str], code: int = 0, cancel_after: int | None = None):
     seen: dict[str, Any] = {}
 
-    async def run(argv: list[str], on_line, cancelled) -> int:
+    async def run(argv: list[str], on_line, cancelled, stdin_text: str = "") -> int:
         seen["argv"] = argv
         for number, line in enumerate(lines):
             on_line(line)
@@ -76,7 +76,12 @@ def test_claude_runs_with_the_rules_and_a_fixed_set_of_tools() -> None:
     assert argv[argv.index("--setting-sources") + 1] == "project" and argv[argv.index("--permission-mode") + 1] == "default"
     settings = json.loads(argv[argv.index("--settings") + 1])
     assert "Read(**/.env)" in settings["permissions"]["deny"] and "Bash" not in settings["permissions"]["allow"]
-    assert command("codex", "x", found)[:2] == ["/bin/codex", "exec"]
+    codex = command("codex", "x", found)
+    assert codex[:3] == ["/bin/codex", "exec", "--json"] and codex[-1] == "-"
+    off = [codex[i + 1] for i, part in enumerate(codex) if part == "--disable"]
+    assert {"computer_use", "browser_use", "plugins"} <= set(off) and "shell_tool" not in off
+    assert codex[codex.index("-s") + 1] == "workspace-write"
+    assert tasks.stdin_for("codex", "x").endswith("Task: x" + chr(10)) and tasks.stdin_for("claude", "x") == ""
     with pytest.raises(RuntimeError, match="Codex is not installed"):
         command("codex", "x", lambda name: None)
 
@@ -119,7 +124,7 @@ def test_a_task_cancelled_on_the_page_is_stopped_and_stays_cancelled(monkeypatch
     db = Table({"id": 4, "user_id": "u1", "engine": "claude", "prompt": "long", "status": "pending", "created_at": "1"})
     lines = claude_lines({"type": "assistant", "message": {"content": [{"type": "text", "text": "Working."}]}})
 
-    async def run(argv, on_line, cancelled) -> int:
+    async def run(argv, on_line, cancelled, stdin_text: str = "") -> int:
         on_line(lines[0])
         assert await cancelled() is False  # still running: its words are written
         assert db.rows[0]["output"] == "Working."
@@ -150,3 +155,69 @@ def test_no_api_key_reaches_the_engines(monkeypatch: pytest.MonkeyPatch) -> None
     with pytest.raises(RuntimeError, match="stop here"):
         asyncio.run(tasks.run_process(["claude"], lambda line: None, lambda: asyncio.sleep(0, False)))
     assert "OPENAI_API_KEY" not in seen and "ANTHROPIC_API_KEY" not in seen and seen["PYTHONIOENCODING"] == "utf-8"
+
+
+def test_the_codex_stream_gives_the_step_and_the_last_message_as_the_answer() -> None:
+    progress = Progress()
+    wrapped = '"C:/WINDOWS/powershell.exe" -Command "rg --files src"'
+    lines = [
+        {"type": "thread.started", "thread_id": "t"},
+        {"type": "item.completed", "item": {"type": "agent_message", "text": "I'll count the files."}},
+        {"type": "item.started", "item": {"type": "command_execution", "command": wrapped}},
+        {"type": "item.completed", "item": {"type": "agent_message", "text": "9"}},
+        {"type": "turn.completed", "usage": {"input_tokens": 1000, "output_tokens": 20}},
+    ]
+    for event in lines[:3]:
+        tasks.read_codex(json.dumps(event), progress)
+    assert progress.step == "Run: rg --files src"
+    for event in lines[3:]:
+        tasks.read_codex(json.dumps(event), progress)
+    assert progress.output == "9" and progress.note == "1,020 tokens of plan usage" and not progress.failed
+    tasks.read_codex(json.dumps({"type": "turn.failed", "error": {"message": "usage limit reached"}}), progress)
+    assert progress.failed and progress.note == "usage limit reached"
+    tasks.read_codex("Reading additional input from stdin...", progress)
+
+
+def test_each_step_lands_on_the_timeline_with_what_it_gave_back() -> None:
+    progress = Progress()
+    claude = [
+        {"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": "Need the calendar rows."}]}},
+        {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash", "input": {"command": "python read.py"}}]}},
+        {"type": "user", "message": {"content": [{"type": "tool_result", "content": "2 events"}]}},
+        {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Grep", "input": {"pattern": "calendar"}}]}},
+        {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "TodoWrite", "input": {"todos": []}}]}},
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "Two interviews."}]}},
+    ]
+    for event in claude:
+        read_claude(json.dumps(event), progress)
+    assert [(e["kind"], e["text"]) for e in progress.events][:4] == [
+        ("think", "Need the calendar rows."), ("run", "python read.py"), ("search", "calendar"), ("tool", "TodoWrite: {\"todos\": []}")]
+    assert progress.events[1]["detail"] == "2 events" and progress.events[-1]["kind"] == "say"
+    codex = Progress()
+    for event in [
+        {"type": "item.completed", "item": {"type": "reasoning", "text": "Counting."}},
+        {"type": "item.started", "item": {"type": "command_execution", "command": "rg --files"}},
+        {"type": "item.completed", "item": {"type": "command_execution", "command": "rg --files", "aggregated_output": "a.py\nb.py"}},
+        {"type": "item.completed", "item": {"type": "file_change", "changes": [{"path": "notes.md"}]}},
+    ]:
+        tasks.read_codex(json.dumps(event), codex)
+    assert [e["kind"] for e in codex.events] == ["think", "run", "edit"] and codex.events[1]["detail"] == "a.py\nb.py"
+
+
+def test_the_steps_are_left_out_while_the_table_has_no_events_column(monkeypatch: pytest.MonkeyPatch) -> None:
+    import httpx
+
+    monkeypatch.setattr(tasks, "_events_column", True)
+    db = Table({"id": 7, "user_id": "u1", "engine": "claude", "prompt": "hi", "status": "pending", "created_at": "1"})
+    plain = db.update
+
+    async def update(table: str, params: dict[str, str], values: dict[str, Any]) -> list[dict[str, Any]]:
+        if "events" in values:
+            request = httpx.Request("PATCH", "https://x/rest/v1/automation_tasks")
+            raise httpx.HTTPStatusError("400", request=request, response=httpx.Response(400, json={"code": "PGRST204"}, request=request))
+        return await plain(table, params, values)
+
+    db.update = update  # type: ignore[method-assign]
+    run, _ = engine(claude_lines({"type": "result", "subtype": "success", "result": "Hello.", "num_turns": 1}))
+    assert asyncio.run(next_task(db, run, found)) == "done"
+    assert db.rows[0]["output"] == "Hello." and "events" not in db.rows[0] and tasks._events_column is False
