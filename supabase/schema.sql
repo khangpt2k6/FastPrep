@@ -414,3 +414,31 @@ alter table public.automation_inbox add column if not exists messages jsonb not 
 -- place as "City, ST; ..." with Remote first when allowed, points as [[lat, lon], ...], for the Jobs distance filter.
 alter table public.automation_jobs add column if not exists place text not null default '';
 alter table public.automation_jobs add column if not exists points jsonb not null default '[]'::jsonb;
+
+-- Tasks typed on the Agent page and run on the person's computer by Claude Code (claude -p) or Codex (codex exec), by
+-- src/agent_automation/ui/tasks.py, on the person's own Claude or ChatGPT plan: no API key of the agent is used.
+-- status: pending (waiting for the runner), running, done, failed, cancelled (set by the page to stop it).
+create table if not exists public.automation_tasks (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  engine text not null default 'claude' check (engine in ('claude', 'codex')),
+  prompt text not null,
+  status text not null default 'pending' check (status in ('pending', 'running', 'done', 'failed', 'cancelled')),
+  output text not null default '',
+  step text not null default '',
+  error text not null default '',
+  created_at timestamptz not null default now(),
+  started_at timestamptz,
+  finished_at timestamptz
+);
+create index if not exists automation_tasks_user on public.automation_tasks (user_id, created_at desc);
+
+alter table public.automation_tasks enable row level security;
+drop policy if exists "own tasks" on public.automation_tasks;
+create policy "own tasks" on public.automation_tasks for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+do $$
+begin
+  begin alter publication supabase_realtime add table public.automation_tasks; exception when duplicate_object then null; end;
+end $$;

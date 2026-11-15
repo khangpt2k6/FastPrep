@@ -12,6 +12,7 @@ import { IconActivity, IconAlert, IconCheckCircle, IconClock, IconDownload, Icon
 import { WolfRing } from '../mascot/Wolf';
 import { Contours } from '../motif';
 import { CurrentJob, START_SHORTCUT, StartHint, agentTone, logItem, type LogEntry } from './live';
+import { TasksCard } from './TasksCard';
 
 const COMMAND_KIND: Record<string, string> = { apply: 'Apply', search: 'Search', cover_letter: 'Letters', resume: 'Resume', linkedin: 'LinkedIn', calendar_add: 'Calendar' };
 
@@ -296,6 +297,8 @@ export function AgentPage(props: AgentPageProps) {
       ) : settingsState.error ? (
         <GroupNote tone="warn">{settingsState.error}</GroupNote>
       ) : null}
+
+      <TasksCard now={now} />
 
       <Group title="Activity" icon={<IconActivity size={15} />} tone="sky" bare>
         <div className="card stats">
