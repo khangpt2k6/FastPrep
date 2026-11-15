@@ -41,7 +41,7 @@ from agent_automation.memory.store import SENT_WORDS, SUBMITTED, Stored, safe_na
 from agent_automation.memory.web_profile import add_from_linkedin, mirror_to_home, prefill, profile_answers, writing_text
 from agent_automation.memory.web_rules import answer_rules_text, builtin_rules, mirror_rules
 from agent_automation.tools.places import locate
-from agent_automation.ui import calendar_push
+from agent_automation.ui import calendar_push, tasks
 from agent_automation.ui.inbox_push import keep_current
 from agent_automation.ui.keeper import LOCK_FILE, STOP_FILE, keeper_running, release, take_lock
 
@@ -86,6 +86,7 @@ PARTS = {
     "resumes": "automation_resumes (resumes uploaded on the page)",
     "rules": "automation_rules (rules edited on the Rules page)",
     "documents": "automation_documents (a transcript uploaded on the page)",
+    "tasks": "automation_tasks (tasks for Claude Code or Codex typed on the Agent page)",
     "calendar": "automation_calendar (Google Calendar events for the Calendar page)",
 }
 CONTENT_TYPES = {
@@ -242,7 +243,7 @@ class Support:
     once, and from then on the agent does what it did before that part came."""
 
     def __init__(self) -> None:
-        self.settings = self.fetch = self.found_at = self.posted = self.places = self.resumes = self.rules = self.documents = self.calendar = True
+        self.settings = self.fetch = self.found_at = self.posted = self.places = self.resumes = self.rules = self.documents = self.calendar = self.tasks = True
 
     def drop(self, part: str) -> None:
         if getattr(self, part):
@@ -719,6 +720,7 @@ class Agent:
             ("rules", RULES, "id,kind,body,enabled"),
             ("calendar", calendar_push.TABLE, "id,starts_at,kind"),
             ("documents", DOCUMENTS, "id,kind,name,path"),
+            ("tasks", tasks.TABLE, "id,status"),
         ):
             try:
                 await self.db.select(table, {"select": columns, "limit": "1"})
@@ -1258,6 +1260,12 @@ class Agent:
                 task.cancel()
             await asyncio.gather(*pending, return_exceptions=True)
 
+    async def tasks_loop(self) -> None:
+        """Tasks typed on the Agent page, run on this computer by Claude Code or Codex on the person's own plan
+        (ui/tasks.py). They run while the agent is paused too: no OpenAI API is called. None without the table."""
+        if self.support.tasks:
+            await tasks.loop(self.db)
+
     async def run(self) -> None:
         asyncio.get_running_loop().set_exception_handler(_quiet)
         # A library the agent loads logs every HTTP request at INFO: with a poll every 2 s that alone would fill agent.log
@@ -1308,6 +1316,7 @@ class Agent:
                 # The Gmail inbox on the page's Inbox: every 15 minutes, or said once and ended when Gmail is not set up.
                 keep_current(self.db, self.session.workspace),
                 self.calendar_loop(),
+                self.tasks_loop(),
             )
         finally:
             self.state, self.message, self.download = "offline", "", ""
