@@ -568,6 +568,33 @@ async def _not_one(session: Browser, selector: str) -> str:
     return f"{selector} matches {count} elements on this page, and a click sends only the first. Name the one control that sends the form, then call finish_form again."
 
 
+STEP_SHOTS_ENV = "AGENT_STEP_SHOTS"
+# Arguments that hold what the person typed are not written to the step log.
+_PRIVATE_ARGUMENTS = frozenset({"text", "value", "password"})
+
+
+async def _step_shot(session: Browser, step: int, name: str, arguments: dict[str, Any], said: str, run: str = "") -> None:
+    """For debugging a form: with AGENT_STEP_SHOTS set to a folder, the page after each step is kept there (in the form's
+    own `run` folder) as <step>-<tool>.png, and one line of steps.log says what was done and what the page answered. Typed
+    values stay out of the log. Never stops the form."""
+    folder = os.environ.get(STEP_SHOTS_ENV, "").strip()
+    if not folder:
+        return
+    try:
+        where = Path(folder) / run if run else Path(folder)
+        where.mkdir(parents=True, exist_ok=True)
+        shown = {key: ("…" if key in _PRIVATE_ARGUMENTS else value) for key, value in arguments.items()}
+        line = f"{datetime.now().isoformat(timespec='seconds')} {step:03d} {name} {json.dumps(shown, ensure_ascii=False)[:300]} -> {' '.join(said.split())[:300]}\n"
+        with (where / "steps.log").open("a", encoding="utf-8") as log:
+            log.write(line)
+        shot = await session.call_tool("browser_take_screenshot")
+        picture = next((part.data for part in shot.content if getattr(part, "type", "") == "image"), None)
+        if picture:
+            (where / f"{step:03d}-{name}.png").write_bytes(base64.b64decode(picture))
+    except Exception:  # noqa: BLE001  A debugging aid: the form goes on whatever happens here.
+        return
+
+
 class Hands:
     """What goes on around each browser action a model asks for, whichever model it is (the API's, or Claude Code through
     claude_apply.py): the two mailbox visits the skills allow, the dry-run guard put in before an action and read after it
@@ -579,6 +606,8 @@ class Hands:
         self.watch = watch
         self.trial = dry_run()
         self.held = 0
+        # The folder this form's step pictures go in, when AGENT_STEP_SHOTS asks for them.
+        self.run = datetime.now().strftime("%Y%m%d-%H%M%S")
 
     async def act(self, name: str, arguments: dict[str, Any]) -> tuple[Any, str, Report | None]:
         """Runs one tool: its result, the words the model reads, and the Report that ends the form here, if one does."""
@@ -612,6 +641,7 @@ class Hands:
             # A long answer goes on typing at a person's pace for minutes, and every action meanwhile is refused: the
             # code waits for it here, so the model neither stops the form nor counts refusals as going round in circles.
             said += "\n" + await _until_typed(session)
+        await _step_shot(session, watch.turns, name, arguments, said, self.run)
         return result, said, None
 
 

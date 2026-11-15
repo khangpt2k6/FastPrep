@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 
 from agent_automation.agent import apply as apply_module
+from agent_automation.agent import claude_apply
 from agent_automation.agent.claude_apply import fill_form_with_claude
 from fakes import ScriptedBrowser
 
@@ -109,3 +110,18 @@ def test_a_page_that_looks_sent_in_a_dry_run_stops_the_form(tmp_path: Path, monk
 def test_ending_without_finish_form_is_a_stop_not_a_ready_form(tmp_path: Path) -> None:
     report, _ = run(tmp_path, ScriptedBrowser(), [("browser_click", {"selector": "#a"})])
     assert report.status == "blocked" and report.blocked_by == apply_module.STUCK
+
+
+def test_claude_code_waits_for_the_browser_server_before_its_first_turn(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without MCP_CONNECTION_NONBLOCKING=0 the real CLI starts with the server "pending" and no tool, and the form ends
+    stuck before it is touched (seen on 2026-11-15). The form filler's environment has it, and still no key."""
+    seen: dict[str, dict[str, str]] = {}
+
+    async def drive(session: Any, tools: Any, prompt: str, argv_for: Any, env: dict[str, str], read: Any, engine: str) -> str:
+        seen["env"] = env
+        return "report"
+
+    monkeypatch.setattr(claude_apply, "drive", drive)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-not-for-claude")
+    assert asyncio.run(claude_apply.fill_form_with_claude(None, [], "brief")) == "report"  # type: ignore[arg-type]
+    assert seen["env"]["MCP_CONNECTION_NONBLOCKING"] == "0" and "OPENAI_API_KEY" not in seen["env"]

@@ -229,4 +229,11 @@ async def fill_form_with_claude(session: Browser, tools: list[dict[str, Any]], b
                                 model: str = "") -> Report:
     """Claude Code works on the open page until it calls finish_form, or the agent stops it; how the form ended."""
     prompt = f"{instructions(guidance, page_rules)}\n\n{brief}\n"
-    return await drive(session, tools, prompt, lambda url: command(url, model), plan_env(), _claude_said, "Claude Code")
+    return await drive(session, tools, prompt, lambda url: command(url, model), claude_env(), _claude_said, "Claude Code")
+
+
+def claude_env() -> dict[str, str]:
+    """Claude Code's environment for a form: the plan's, and its MCP servers connected before the first turn. Without that,
+    Claude Code starts with the browser server still "pending" and no tool at all, says what it would do, and ends: the
+    form was never touched (two applications ended "stuck" that way on 2026-11-15)."""
+    return {**plan_env(), "MCP_CONNECTION_NONBLOCKING": "0"}
