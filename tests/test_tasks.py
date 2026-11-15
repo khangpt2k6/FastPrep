@@ -73,6 +73,9 @@ def test_claude_runs_with_the_rules_and_a_fixed_set_of_tools() -> None:
     allowed = argv[argv.index("--allowedTools") + 1 : argv.index("--disallowedTools")]
     assert "WebSearch" in allowed and "Bash(git push:*)" not in allowed
     assert "Bash(git push:*)" in argv[argv.index("--disallowedTools") + 1 :]
+    assert argv[argv.index("--setting-sources") + 1] == "project" and argv[argv.index("--permission-mode") + 1] == "default"
+    settings = json.loads(argv[argv.index("--settings") + 1])
+    assert "Read(**/.env)" in settings["permissions"]["deny"] and "Bash" not in settings["permissions"]["allow"]
     assert command("codex", "x", found)[:2] == ["/bin/codex", "exec"]
     with pytest.raises(RuntimeError, match="Codex is not installed"):
         command("codex", "x", lambda name: None)

@@ -48,7 +48,8 @@ CLAUDE_ALLOWED = [
     "Bash(.venv/Scripts/python.exe:*)", "Bash(python:*)", "Bash(git status:*)", "Bash(git log:*)", "Bash(git diff:*)",
 ]
 API_KEYS = frozenset({"OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "CODEX_API_KEY"})
-CLAUDE_DENIED = ["Bash(git push:*)", "Bash(git commit:*)", "Bash(rm:*)", "Bash(curl:*)"]
+# Secrets stay out of the task's words: the project's own scripts read .env themselves.
+CLAUDE_DENIED = ["Bash(git push:*)", "Bash(git commit:*)", "Bash(rm:*)", "Bash(curl:*)", "Read(.env)", "Read(./.env)", "Read(**/.env)", "Read(**/.env.*)"]
 
 
 class Database(Protocol):
@@ -68,7 +69,10 @@ def command(engine: str, prompt: str, find: Callable[[str], str | None] = shutil
         exe = find("claude")
         if not exe:
             raise RuntimeError("Claude Code is not installed on this computer: npm install -g @anthropic-ai/claude-code")
+        # Only these permissions: the person's own Claude Code settings (which may allow any shell command) are not loaded.
+        settings = {"permissions": {"defaultMode": "default", "allow": CLAUDE_ALLOWED, "deny": CLAUDE_DENIED}}
         return [exe, "-p", prompt, "--output-format", "stream-json", "--verbose", "--append-system-prompt", RULES,
+                "--setting-sources", "project", "--permission-mode", "default", "--settings", json.dumps(settings),
                 "--allowedTools", *CLAUDE_ALLOWED, "--disallowedTools", *CLAUDE_DENIED]
     if engine == "codex":
         exe = find("codex")
